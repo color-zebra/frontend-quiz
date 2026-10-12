@@ -139,8 +139,49 @@ ${["s1", "s2", "s3"]
     await p.getByRole("button", { name: /^Статистика/ }).click();
     await setCard.waitFor();
     check("раскрытый набор запомнен", (await setCard.getAttribute("open")) !== null);
+    // Тема без подтемы: полоска по теме, в слабом месте одна строка — без «Все вопросы».
+    check("тема без подтемы — полоска «Протокол»", await visible(setCard.getByRole("img", { name: /^Протокол:/ })));
+    check("в слабом месте нет строки «Все вопросы»", (await setWeak.getByText("Все вопросы").count()) === 0);
     await setWeak.click();
     check("«Прорешать» запускает ошибку из набора", await visible(p.getByText(`НАБОР-${wrongId}`)));
+
+    // Набор совсем без тем и подтем: одна полоска «Все вопросы», слабое место — одной строкой.
+    const plainYaml = `title: Без тем
+questions:
+${["p1", "p2"]
+  .map(
+    (id) =>
+      `  - id: ${id}\n    level: junior\n    question: ПРОСТОЙ-${id}\n    options:\n` +
+      `      - text: ${id}-верно\n        correct: true\n      - text: ${id}-нет\n`,
+  )
+  .join("")}`;
+    await p.goto(t.url);
+    await p.getByRole("button", { name: /Мои наборы/ }).click();
+    await p.locator('input[type="file"]').setInputFiles(fileInput("plain.yaml", plainYaml));
+    await p.getByRole("button", { name: /^Без тем/ }).click();
+    await p.getByRole("button", { name: /^Начать/ }).click();
+    const plainWrong = (await p.locator("article").first().innerText()).match(/ПРОСТОЙ-(p\d)/)[1];
+    await p.locator("ol li button").filter({ hasText: `${plainWrong}-нет` }).click();
+    await p.getByRole("button", { name: "Выйти из сессии" }).click();
+    await openCabinet(p, t.url);
+    await p.getByRole("button", { name: /^Статистика/ }).click();
+    const plainCard = p.locator("details").filter({ hasText: "Набор «Без тем»" });
+    check("набор без тем: свёрнутый, «видел 1 из 2 · верных 0 %»", await visible(plainCard.getByText("видел 1 из 2 · верных 0 %")));
+    await plainCard.getByText("Набор «Без тем»").click();
+    const plainBars = plainCard.getByRole("img");
+    check(
+      "набор без тем: одна полоска «Все вопросы»",
+      (await plainBars.count()) === 1 && (await plainBars.first().getAttribute("aria-label")).startsWith("Все вопросы:"),
+    );
+    const plainWeak = plainCard.getByRole("button", { name: /^Прорешать/ });
+    check(
+      "набор без тем: слабое место одной строкой «Все вопросы»",
+      (await plainWeak.count()) === 1 && (await plainWeak.getAttribute("aria-label")) === "Прорешать: Все вопросы",
+    );
+    check("цифры набора без тем не смешались с другим набором", await visible(setCard.getByText("Видел 1 из 3 вопросов")));
+    await t.shot(p, "plain-set", true);
+    await plainWeak.click();
+    check("«Прорешать» в наборе без тем запускает его ошибку", await visible(p.getByText(`ПРОСТОЙ-${plainWrong}`)));
     await seeded.close();
   });
 }
