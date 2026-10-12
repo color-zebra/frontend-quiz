@@ -1,0 +1,467 @@
+# yaml-language-server: $schema=../../schema.json
+topic: javascript
+subtopic: event-loop
+questions:
+  - id: javascript-event-loop-001
+    level: junior
+    tags: [setTimeout, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      console.log('A');
+      setTimeout(() => console.log('B'), 0);
+      console.log('C');
+    codeLang: js
+    options:
+      - text: '`A B C`'
+        why: 'Задержка 0 не значит «прямо сейчас». Колбэк попадает в очередь задач и ждёт, пока выполнится весь текущий код.'
+      - text: '`A C B`'
+        correct: true
+        why: 'Синхронный код выполняется до конца: `A`, затем `C`. Колбэк таймера — отдельная задача, она выполнится, когда стек вызовов опустеет.'
+      - text: '`B A C`'
+        why: 'Колбэк таймера не может выполниться раньше кода, который его запланировал.'
+      - text: '`A C`, а `B` не выведется'
+        why: 'Таймер с нулевой задержкой сработает, просто после текущего кода.'
+    explanation: |
+      JavaScript выполняет код в одном потоке. `setTimeout` передаёт колбэк окружению (браузеру или Node),
+      а оно по истечении задержки ставит его в очередь задач (task queue, macrotask). Event loop берёт
+      следующую задачу, только когда стек вызовов пуст, то есть текущий скрипт полностью выполнен. Поэтому
+      даже `setTimeout(fn, 0)` выполнится после всего синхронного кода. В браузере после пяти уровней вложенных
+      таймеров действует ещё и минимальная задержка 4 мс.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Execution_model
+      - https://javascript.info/event-loop
+    source: own
+
+  - id: javascript-event-loop-002
+    level: middle
+    tags: [microtasks, promise, setTimeout, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      console.log(1);
+      setTimeout(() => console.log(2));
+      Promise.resolve().then(() => console.log(3));
+      console.log(4);
+    codeLang: js
+    options:
+      - text: '`1 2 3 4`'
+        why: 'Это порядок строк в коде, но колбэки таймера и промиса асинхронны и выполняются после синхронного кода.'
+      - text: '`1 4 2 3`'
+        why: 'Таймер был запланирован раньше, но очередь микрозадач опустошается до следующей задачи, поэтому промис идёт первым.'
+      - text: '`1 4 3 2`'
+        correct: true
+        why: 'Сначала синхронный код (`1`, `4`), затем все микрозадачи (`3`), и только потом следующая задача — колбэк таймера (`2`).'
+      - text: '`1 3 4 2`'
+        why: 'Колбэк `then` асинхронный, даже если промис уже выполнен: он не запустится посреди синхронного кода.'
+    explanation: |
+      Кроме очереди задач есть очередь микрозадач: туда попадают колбэки `then`/`catch`/`finally`,
+      продолжения после `await` и `queueMicrotask`. Правило: после каждой задачи (в том числе после основного
+      скрипта) event loop выполняет все микрозадачи, пока очередь не опустеет, и только потом берёт следующую
+      задачу или рисует кадр. Таймеры, события ввода, сообщения `postMessage` — это задачи. Поэтому любой
+      уже выполненный промис «обгоняет» `setTimeout(fn, 0)`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide
+      - https://jakearchibald.com/2015/tasks-microtasks-queues-and-schedules/
+    source: own
+
+  - id: javascript-event-loop-003
+    level: junior
+    tags: [promise, executor, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      console.log('start');
+      new Promise((resolve) => {
+        console.log('executor');
+        resolve();
+      }).then(() => console.log('then'));
+      console.log('end');
+    codeLang: js
+    options:
+      - text: '`start end executor then`'
+        why: 'Функция, переданная в `new Promise`, не откладывается: она вызывается сразу внутри конструктора.'
+      - text: '`start executor end then`'
+        correct: true
+        why: 'Executor выполняется синхронно, во время `new Promise`. Асинхронен только колбэк `then`: он ждёт конца синхронного кода.'
+      - text: '`start executor then end`'
+        why: 'Даже если промис выполнен мгновенно, `then` всегда вызывается асинхронно, после текущего кода.'
+      - text: '`executor start end then`'
+        why: 'Код выполняется сверху вниз: `start` выводится до создания промиса.'
+    explanation: |
+      Частое заблуждение — что всё, связанное с промисом, асинхронно. Executor (функция с `resolve` и `reject`)
+      вызывается синхронно прямо в конструкторе: так промис может сразу запустить, например, запрос.
+      Асинхронны только реакции на результат — колбэки `then`, `catch`, `finally`. Они всегда ставятся в очередь
+      микрозадач, даже если промис уже выполнен. Это гарантирует предсказуемость: код после `.then(...)`
+      всегда выполнится раньше колбэка.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/Promise
+    source: own
+
+  - id: javascript-event-loop-004
+    level: senior
+    tags: [async-await, microtasks, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      async function a() {
+        console.log('a1');
+        await b();
+        console.log('a2');
+      }
+      async function b() {
+        console.log('b');
+      }
+
+      console.log('s');
+      a();
+      Promise.resolve().then(() => console.log('p'));
+      console.log('e');
+    codeLang: js
+    options:
+      - text: '`s a1 b a2 e p`'
+        why: '`await` всегда прерывает функцию, даже если ожидаемый промис уже выполнен. Продолжение `a2` уходит в микрозадачу.'
+      - text: '`s a1 b e a2 p`'
+        correct: true
+        why: '`a1` и `b` — синхронно до первого `await`. Продолжение после `await` встаёт в очередь микрозадач раньше, чем колбэк `p`, поэтому `a2` идёт первым.'
+      - text: '`s a1 b e p a2`'
+        why: 'Так было бы, если бы `await` тратил больше одного шага очереди. Для уже выполненного нативного промиса продолжение планируется сразу.'
+      - text: '`s e a1 b a2 p`'
+        why: 'Вызов `a()` синхронный: тело async-функции выполняется сразу, до первого `await`.'
+    explanation: |
+      Async-функция выполняется синхронно до первого `await`. Здесь это `a1` и вызов `b()`, который тоже
+      синхронно печатает `b` и возвращает уже выполненный промис. На `await` функция приостанавливается, а её
+      продолжение ставится в очередь микрозадач. Затем синхронно регистрируется колбэк `p` (он встаёт в очередь
+      после продолжения `a`) и печатается `e`. Микрозадачи выполняются по порядку: `a2`, потом `p`. Порядок
+      точен для современных движков: с 2019 года `await` уже выполненного нативного промиса занимает один шаг
+      очереди.
+    links:
+      - https://v8.dev/blog/fast-async
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/await
+    source: own
+
+  - id: javascript-event-loop-005
+    level: senior
+    tags: [microtasks, macrotasks, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      setTimeout(() => {
+        console.log('t1');
+        Promise.resolve().then(() => console.log('m1'));
+      });
+      setTimeout(() => console.log('t2'));
+    codeLang: js
+    options:
+      - text: '`t1 t2 m1`'
+        why: 'Микрозадачи не ждут, пока выполнятся все таймеры. Очередь микрозадач опустошается после каждой задачи.'
+      - text: '`t1 m1 t2`'
+        correct: true
+        why: 'Колбэк первого таймера — задача. После неё event loop выполняет все микрозадачи (`m1`) и только потом берёт следующую задачу (`t2`).'
+      - text: '`m1 t1 t2`'
+        why: 'Микрозадача `m1` создаётся внутри первого таймера и не может выполниться до него.'
+      - text: '`t1 t2`, а `m1` не выведется'
+        why: 'Микрозадачи, созданные внутри задачи, выполняются гарантированно — сразу после неё.'
+    explanation: |
+      Цикл событий устроен так: взять одну задачу из очереди → выполнить её → выполнить все микрозадачи,
+      включая новые, появившиеся по ходу → при необходимости отрисовать кадр → взять следующую задачу.
+      Два таймера с одинаковой задержкой — две разные задачи. Между ними обязательно опустошается очередь
+      микрозадач. Поэтому промис, созданный в первом таймере, выполнится раньше второго таймера. Так же
+      ведут себя обработчики событий: микрозадачи из обработчика выполняются сразу после него.
+    links:
+      - https://html.spec.whatwg.org/multipage/webappapis.html#event-loop-processing-model
+      - https://jakearchibald.com/2015/tasks-microtasks-queues-and-schedules/
+    source: own
+
+  - id: javascript-event-loop-006
+    level: middle
+    tags: [microtasks, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      setTimeout(() => console.log('timeout'));
+
+      Promise.resolve().then(() => {
+        console.log('p1');
+        Promise.resolve().then(() => console.log('p2'));
+      });
+    codeLang: js
+    options:
+      - text: '`p1 timeout p2`'
+        why: 'Новая микрозадача, созданная во время выполнения микрозадач, выполняется в той же «пачке», до следующей задачи.'
+      - text: '`p1 p2 timeout`'
+        correct: true
+        why: 'Event loop выполняет микрозадачи, пока очередь не опустеет, включая добавленные по ходу. Только потом берётся задача таймера.'
+      - text: '`timeout p1 p2`'
+        why: 'Таймер был запланирован первым, но таймеры — задачи, а промисы — микрозадачи, которые всегда выполняются раньше следующей задачи.'
+      - text: '`p1 timeout`, а `p2` не выведется'
+        why: 'Вложенные микрозадачи не теряются, они выполняются в той же пачке.'
+    explanation: |
+      Очередь микрозадач выполняется «до дна»: если микрозадача добавила новую, та выполнится в этом же
+      проходе. Отсюда опасность: бесконечная цепочка микрозадач (например, рекурсивный `then`) никогда не
+      отдаст управление таймерам, событиям и отрисовке — страница зависнет, как от `while (true)`. Рекурсия
+      через `setTimeout` такого не делает: каждая итерация — новая задача, и между ними браузер успевает
+      обработать клики и нарисовать кадр.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide/In_depth
+    source: own
+
+  - id: javascript-event-loop-007
+    level: senior
+    tags: [promise-chain, microtasks, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      Promise.resolve()
+        .then(() => console.log(1))
+        .then(() => console.log(2));
+
+      Promise.resolve()
+        .then(() => console.log(3))
+        .then(() => console.log(4));
+    codeLang: js
+    options:
+      - text: '`1 2 3 4`'
+        why: 'Второй `then` первой цепочки ставится в очередь, только когда выполнится первый. К этому моменту колбэк `3` уже в очереди.'
+      - text: '`1 3 2 4`'
+        correct: true
+        why: 'Сначала в очереди колбэки `1` и `3`. Выполнение `1` ставит в конец очереди `2`, выполнение `3` — `4`. Цепочки чередуются.'
+      - text: '`3 4 1 2`'
+        why: 'Первая цепочка создана раньше, и её первый колбэк раньше встаёт в очередь.'
+      - text: '`1 3 4 2`'
+        why: 'Колбэк `2` попал в очередь раньше колбэка `4`: его запланировало выполнение `1`, которое было до `3`.'
+    explanation: |
+      `.then()` не ставит колбэк в очередь сразу — он лишь подписывается на промис. В очередь микрозадач
+      колбэк попадает в момент, когда промис выполнился. У первой цепочки следующий промис выполняется, только
+      когда отработает колбэк `1`, и лишь тогда в очередь встаёт `2`. Поэтому независимые цепочки
+      «чередуются» по одному шагу. Понимание этого помогает читать задачи на порядок вывода.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/then
+    source: own
+
+  - id: javascript-event-loop-008
+    level: senior
+    tags: [promise-chain, thenable, microtasks, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      Promise.resolve()
+        .then(() => {
+          console.log(1);
+          return Promise.resolve();
+        })
+        .then(() => console.log(2));
+
+      Promise.resolve()
+        .then(() => console.log(3))
+        .then(() => console.log(4))
+        .then(() => console.log(5))
+        .then(() => console.log(6));
+    codeLang: js
+    options:
+      - text: '`1 3 2 4 5 6`'
+        why: 'Так было бы, если бы возврат промиса из `then` ничего не стоил. Но разворачивание промиса занимает дополнительные шаги очереди.'
+      - text: '`1 3 4 2 5 6`'
+        why: 'Шагов задержки не один, а два: первый — чтобы вызвать `then` у возвращённого промиса, второй — чтобы его колбэк выполнил внешний промис.'
+      - text: '`1 3 4 5 2 6`'
+        correct: true
+        why: 'Возврат промиса из `then` добавляет два лишних шага: `NewPromiseResolveThenableJob`, затем колбэк, который выполняет внешний промис. За это время вторая цепочка успевает вывести 4 и 5.'
+      - text: '`1 2 3 4 5 6`'
+        why: 'Колбэки разных цепочек чередуются по одному шагу, а здесь `2` ещё и задерживается.'
+    explanation: |
+      Если колбэк `then` возвращает промис (или любой thenable), внешний промис не может просто взять
+      значение: он должен «подписаться» на возвращённый. По спецификации это делается через отдельную
+      микрозадачу, которая вызывает у возвращённого промиса `then`, а уже его колбэк в следующей микрозадаче
+      выполняет внешний промис. Итого два лишних шага, и колбэк `2` отстаёт. Похожий эффект даёт
+      `async`-функция, возвращающая промис: `return await` или `return promise` в разных версиях движков
+      стоили разное число шагов.
+    links:
+      - https://tc39.es/ecma262/#sec-newpromiseresolvethenablejob
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise#thenables
+    source: own
+
+  - id: javascript-event-loop-009
+    level: middle
+    tags: [setTimeout, delay, blocking]
+    question: |
+      Через сколько примерно миллисекунд выведется `timeout`?
+    code: |
+      const start = Date.now();
+      setTimeout(() => console.log('timeout', Date.now() - start), 100);
+
+      while (Date.now() - start < 300) {
+        // занимаем поток на 300 мс
+      }
+    codeLang: js
+    options:
+      - text: 'Через 100 мс: таймер работает в отдельном потоке'
+        why: 'Отсчёт времени идёт вне основного потока, но выполнить колбэк может только основной поток, а он занят.'
+      - text: 'Через 300 мс с небольшим — когда освободится поток'
+        correct: true
+        why: 'Через 100 мс задача таймера встаёт в очередь, но event loop заберёт её только после того, как цикл освободит стек, — примерно через 300 мс.'
+      - text: 'Через 400 мс: задержка отсчитывается после окончания цикла'
+        why: 'Отсчёт начался при вызове `setTimeout`. К концу цикла 100 мс давно прошли, и колбэк выполнится сразу.'
+      - text: 'Никогда: таймер отменяется, если поток был занят'
+        why: 'Таймеры не отменяются из-за занятости, они просто опаздывают.'
+    explanation: |
+      Задержка `setTimeout` — минимальное время до постановки колбэка в очередь, а не гарантия момента
+      выполнения. Пока основной поток занят синхронным кодом (циклом, тяжёлым вычислением, большим
+      `JSON.parse`), ни таймеры, ни клики, ни отрисовка не обработаются. Отсюда правило: долгие вычисления
+      делят на части (через `setTimeout`, `scheduler.yield()`) или выносят в Web Worker. В неактивной вкладке
+      браузер к тому же замедляет таймеры до раза в секунду и реже.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Window/setTimeout#reasons_for_delays_longer_than_specified
+    source: own
+
+  - id: javascript-event-loop-010
+    level: middle
+    tags: [setTimeout, microtasks, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      setTimeout(() => console.log('A'), 0);
+      Promise.resolve().then(() => {
+        setTimeout(() => console.log('B'), 0);
+      });
+      setTimeout(() => console.log('C'), 0);
+    codeLang: js
+    options:
+      - text: '`A B C`'
+        why: 'Таймер `B` создаётся внутри микрозадачи, которая выполняется после основного скрипта, когда `A` и `C` уже стоят в очереди.'
+      - text: '`B A C`'
+        why: 'Микрозадача лишь планирует таймер, а не выводит `B`. Новый таймер встаёт в конец очереди задач.'
+      - text: '`A C B`'
+        correct: true
+        why: 'Скрипт ставит в очередь таймеры `A` и `C`. Микрозадача выполняется после скрипта и добавляет таймер `B` — уже третьим.'
+      - text: '`C A B`'
+        why: 'Таймеры с одинаковой задержкой выполняются в порядке постановки: `A` раньше `C`.'
+    explanation: |
+      Микрозадача выполняется раньше любой задачи, но если она сама создаёт задачу (таймер), та встаёт
+      в конец очереди задач, за уже запланированными. Разница между «выполнить раньше» и «запланировать
+      раньше» — частая ловушка на собеседованиях. Таймеры с одинаковой задержкой выполняются в порядке вызова
+      `setTimeout`.
+    links:
+      - https://javascript.info/event-loop
+    source: own
+
+  - id: javascript-event-loop-011
+    level: senior
+    tags: [microtasks, events, click, no-run]
+    question: |
+      На кнопке два обработчика клика. Что выведется, если пользователь кликнет мышью, и что — если вызвать
+      `button.click()` из кода?
+    code: |
+      button.addEventListener('click', () => {
+        Promise.resolve().then(() => console.log('micro 1'));
+        console.log('listener 1');
+      });
+      button.addEventListener('click', () => {
+        Promise.resolve().then(() => console.log('micro 2'));
+        console.log('listener 2');
+      });
+    codeLang: js
+    options:
+      - text: 'В обоих случаях: `listener 1`, `listener 2`, `micro 1`, `micro 2`'
+        why: 'Так будет только для `button.click()`. При настоящем клике стек опустевает между обработчиками.'
+      - text: 'Клик мышью: `listener 1`, `micro 1`, `listener 2`, `micro 2`; `click()`: `listener 1`, `listener 2`, `micro 1`, `micro 2`'
+        correct: true
+        why: 'При клике пользователя браузер вызывает каждый обработчик отдельно, и после каждого стек пуст — микрозадачи выполняются. При `click()` все обработчики вызываются внутри вашего скрипта, стек не пустеет до конца.'
+      - text: 'В обоих случаях: `listener 1`, `micro 1`, `listener 2`, `micro 2`'
+        why: 'Для `click()` из кода микрозадачи не могут выполниться между обработчиками: стек занят вызывающим скриптом.'
+      - text: 'Клик мышью: `listener 1`, `listener 2`, `micro 1`, `micro 2`; `click()`: `listener 1`, `micro 1`, `listener 2`, `micro 2`'
+        why: 'Ровно наоборот. Синхронная отправка события из кода как раз не даёт микрозадачам выполниться между обработчиками.'
+    explanation: |
+      Микрозадачи выполняются, когда стек вызовов становится пустым. При реальном клике браузер сам вызывает
+      обработчики, один за другим, и после каждого стек пуст — микрозадачи успевают выполниться. `button.click()`
+      и `dispatchEvent` вызывают обработчики синхронно изнутри вашего кода: стек не пустеет, пока не
+      закончится вызвавший скрипт. Разница проявляется в тестах (автотест «кликает» через `click()`) и в
+      библиотеках, которые полагаются на микрозадачи между обработчиками. Классический разбор — статья Джейка
+      Арчибальда о задачах и микрозадачах.
+    links:
+      - https://jakearchibald.com/2015/tasks-microtasks-queues-and-schedules/
+    source: own
+
+  - id: javascript-event-loop-012
+    level: middle
+    tags: [requestAnimationFrame, rendering]
+    question: |
+      Когда браузер вызывает колбэк `requestAnimationFrame`?
+    options:
+      - text: 'Перед отрисовкой следующего кадра, примерно с частотой обновления экрана'
+        correct: true
+        why: 'Колбэки rAF выполняются в шаге «обновить отрисовку» цикла событий, перед расчётом стилей и вёрстки кадра. Так изменения DOM попадают ровно в следующий кадр.'
+      - text: 'Сразу после текущего синхронного кода, как микрозадача'
+        why: 'Микрозадачами являются промисы и `queueMicrotask`. rAF привязан к кадрам отрисовки и может ждать до ~16 мс.'
+      - text: 'Строго каждые 16 мс, даже в неактивной вкладке'
+        why: 'Частота зависит от экрана (60, 120 Гц и т. д.), а в фоновой вкладке rAF приостанавливается, экономя ресурсы.'
+      - text: 'После того как кадр отрисован, чтобы прочитать готовые размеры'
+        why: 'rAF вызывается до отрисовки кадра, а не после. Для «после отрисовки» используют вложенный rAF или `setTimeout` внутри rAF.'
+    explanation: |
+      Цикл событий периодически делает шаг rendering update: вызывает колбэки `requestAnimationFrame`, затем
+      пересчитывает стили, вёрстку и рисует кадр. Поэтому анимации на JS делают через rAF: изменения применяются
+      синхронно с частотой экрана, без лишней работы между кадрами и без рывков, как у `setInterval(fn, 16)`.
+      Колбэк получает метку времени кадра, по которой удобно считать прогресс анимации. В неактивной вкладке
+      rAF не вызывается совсем.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame
+    source: own
+
+  - id: javascript-event-loop-013
+    level: junior
+    tags: [single-thread, web-apis]
+    question: |
+      JavaScript в браузере однопоточный. Почему тогда `fetch` или `setTimeout` не блокируют страницу на время
+      ожидания?
+    options:
+      - text: 'Ожиданием занимается браузер, а колбэк потом встаёт в очередь'
+        correct: true
+        why: 'Сетевой запрос и отсчёт таймера выполняет окружение (Web API) вне JS-потока. Когда результат готов, колбэк ставится в очередь, и event loop выполнит его, когда поток свободен.'
+      - text: 'Для каждого `fetch` движок создаёт новый JS-поток'
+        why: 'Ваш JS-код выполняется в одном потоке. Параллельные JS-потоки бывают только явно — в Web Worker.'
+      - text: 'Движок прерывает текущий код, чтобы обработать ответ'
+        why: 'Выполняющийся JS-код никогда не прерывается посередине: колбэк ждёт, пока стек опустеет.'
+      - text: 'Браузер выполняет асинхронный код на видеокарте'
+        why: 'Видеокарта занимается отрисовкой и композитингом, а не выполнением JavaScript.'
+    explanation: |
+      Однопоточность относится к выполнению вашего кода: в каждый момент выполняется одна функция, и её никто
+      не прерывает (run-to-completion). Но браузер многопоточный: сеть, таймеры, декодирование картинок,
+      композитинг работают в своих потоках. JS лишь просит «сообщи, когда готово», и продолжает работу. Готовый
+      результат превращается в задачу или микрозадачу, и event loop выполнит колбэк, когда стек освободится.
+      Поэтому асинхронные операции не блокируют страницу, а долгий синхронный цикл — блокирует.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Execution_model
+    source: own
+
+  - id: javascript-event-loop-014
+    level: senior
+    tags: [node, nextTick, setImmediate, output]
+    question: |
+      Что выведет этот код в Node.js, если запустить его как CommonJS-скрипт (`node script.cjs`)?
+    code: |
+      setTimeout(() => console.log('timeout'), 0);
+      setImmediate(() => console.log('immediate'));
+      Promise.resolve().then(() => console.log('promise'));
+      process.nextTick(() => console.log('nextTick'));
+      console.log('sync');
+    codeLang: js
+    options:
+      - text: '`sync`, `promise`, `nextTick`, затем `timeout` и `immediate` по очереди'
+        why: 'Очередь `process.nextTick` обрабатывается раньше очереди микрозадач промисов.'
+      - text: '`sync`, `nextTick`, `promise`, затем `timeout`/`immediate` в любом порядке'
+        correct: true
+        why: 'После синхронного кода Node опустошает очередь `nextTick`, затем микрозадачи промисов. Порядок `setTimeout(0)` и `setImmediate` в основном скрипте зависит от того, успел ли истечь таймер к входу в цикл.'
+      - text: '`sync`, `nextTick`, `promise`, `immediate`, `timeout`'
+        why: '`setImmediate` гарантированно раньше таймера только внутри колбэка ввода-вывода. В основном скрипте порядок не определён.'
+      - text: '`sync`, `nextTick`, `timeout`, `promise`, `immediate`'
+        why: 'Микрозадачи промисов выполняются сразу после `nextTick`, до перехода к фазам цикла с таймерами.'
+    explanation: |
+      Цикл событий в Node устроен фазами: таймеры (`setTimeout`, `setInterval`) → ожидание ввода-вывода →
+      check (`setImmediate`) → закрытия. Между колбэками Node сначала опустошает очередь `process.nextTick`, затем
+      очередь микрозадач промисов. Поэтому здесь `nextTick` раньше `then`. Но в ES-модуле код верхнего уровня сам выполняется внутри
+      обработки промисов, и `promise` выведется раньше `nextTick`. Порядок `setTimeout(fn, 0)` и
+      `setImmediate` в основном скрипте не определён: таймер мог ещё не истечь к первой фазе таймеров. А внутри
+      колбэка ввода-вывода `setImmediate` гарантированно выполнится первым. Злоупотреблять `nextTick` опасно: как
+      и бесконечные микрозадачи, он может «заморить голодом» ввод-вывод.
+    links:
+      - https://nodejs.org/en/learn/asynchronous-work/event-loop-timers-and-nexttick
+    source: own

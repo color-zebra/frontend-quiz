@@ -1,0 +1,296 @@
+# yaml-language-server: $schema=../../schema.json
+topic: javascript
+subtopic: functions
+questions:
+  - id: javascript-functions-001
+    level: junior
+    tags: [default-params, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function greet(name = 'гость', greeting = `Привет, ${name}`) {
+        return greeting;
+      }
+
+      console.log(greet(), greet('Аня'), greet(undefined), greet(null));
+    codeLang: js
+    options:
+      - text: '`Привет, гость Привет, Аня Привет, гость Привет, гость`'
+        why: 'Значение по умолчанию подставляется только для `undefined`. `null` — переданное значение, и оно попадёт в строку как есть.'
+      - text: '`Привет, гость Привет, Аня Привет, undefined Привет, null`'
+        why: 'Явно переданный `undefined` равнозначен отсутствующему аргументу, поэтому подставится `гость`.'
+      - text: '`Привет, гость Привет, Аня Привет, гость Привет, null`'
+        correct: true
+        why: 'Параметр по умолчанию срабатывает, если аргумент не передан или равен `undefined`. `null` считается значением. Второй параметр вычисляется при вызове и видит первый.'
+      - text: '`Привет, гость Привет, гость Привет, гость Привет, null`'
+        why: 'Если передать `"Аня"`, параметр `name` получит это значение, а `greeting` вычислится уже с ним.'
+    explanation: |
+      Значения по умолчанию вычисляются при каждом вызове, слева направо, и могут использовать предыдущие
+      параметры. Срабатывают они только для `undefined`: и при отсутствии аргумента, и при явно переданном
+      `undefined`. `null`, `0`, `""` — это значения, и они попадут в параметр. Частый баг: API присылает `null`
+      там, где ожидается значение по умолчанию. Тогда нужен `?? 'гость'` внутри функции.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Default_parameters
+    source: own
+
+  - id: javascript-functions-002
+    level: senior
+    tags: [function-length, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function a(x, y) {}
+      function b(x, y = 1, z) {}
+      function c(...args) {}
+      const d = (x, { y } = {}) => {};
+
+      console.log(a.length, b.length, c.length, d.length);
+    codeLang: js
+    options:
+      - text: '`2 3 0 2`'
+        why: '`length` считает параметры только до первого параметра со значением по умолчанию или rest-параметра.'
+      - text: '`2 1 0 1`'
+        correct: true
+        why: '`length` — число параметров до первого с default или rest. У `b` это только `x`, у `c` — ноль, у `d` второй параметр имеет значение по умолчанию.'
+      - text: '`2 1 1 1`'
+        why: 'Rest-параметр не учитывается в `length`, поэтому у `c` — 0.'
+      - text: '`2 2 0 2`'
+        why: 'Подсчёт прекращается на первом параметре со значением по умолчанию: у `b` это `y`, и `z` после него не считается.'
+    explanation: |
+      Свойство `length` функции показывает число «ожидаемых» аргументов: параметры до первого со значением по
+      умолчанию, до rest-параметра или до деструктуризации с default. Его используют библиотеки: каррирование в
+      lodash и Ramda по `length` понимает, сколько аргументов ждать; Mocha по `length` колбэка решает, асинхронный
+      ли тест с `done`; Express отличает обработчики ошибок с четырьмя параметрами. Поэтому добавление default
+      к параметру может неожиданно поменять поведение такой библиотеки.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/length
+    source: own
+
+  - id: javascript-functions-003
+    level: junior
+    tags: [rest, spread, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function sum(first, ...rest) {
+        return first + rest.length;
+      }
+
+      const numbers = [10, 20, 30];
+      console.log(sum(...numbers), Math.max(...numbers, 50));
+    codeLang: js
+    options:
+      - text: '`12 50`'
+        correct: true
+        why: 'Spread раскрывает массив в аргументы: `first = 10`, `rest = [20, 30]`, итог 10 + 2. Во втором вызове spread добавляет 50 к списку аргументов.'
+      - text: '`60 50`'
+        why: 'Функция складывает `first` с длиной `rest`, а не с суммой его элементов.'
+      - text: '`11 30`'
+        why: 'В `rest` попадают все аргументы после первого — два элемента. А 50 передан дополнительным аргументом в `Math.max`.'
+      - text: '`NaN 50`'
+        why: 'Spread передаёт элементы массива отдельными аргументами, `first` получает число 10.'
+    explanation: |
+      Три точки делают противоположные вещи в зависимости от места. В параметрах функции это rest: собрать
+      оставшиеся аргументы в настоящий массив. В вызове, литерале массива или объекта это spread: раскрыть
+      итерируемое значение в отдельные элементы. Rest-параметр всегда последний и один. В отличие от устаревшего
+      `arguments`, это обычный массив с методами `map` и `filter`, и он доступен в стрелочных функциях.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/rest_parameters
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax
+    source: own
+
+  - id: javascript-functions-004
+    level: middle
+    tags: [pure-functions]
+    question: |
+      Какая из функций чистая?
+    options:
+      - text: '`const add = (cart, item) => { cart.push(item); return cart; }`'
+        why: 'Функция мутирует переданный массив — это побочный эффект. Чистая функция вернула бы новый массив.'
+      - text: '`const total = (items) => items.reduce((sum, i) => sum + i.price, 0)`'
+        correct: true
+        why: 'Результат зависит только от аргумента, внешнего состояния функция не меняет. Одинаковый вход всегда даёт одинаковый результат.'
+      - text: '`const stamp = (order) => ({ ...order, createdAt: Date.now() })`'
+        why: 'Объект не мутируется, но результат зависит от текущего времени: два вызова с одинаковым входом дадут разные результаты.'
+      - text: '`const log = (msg) => { console.log(msg); return msg; }`'
+        why: 'Вывод в консоль — побочный эффект: функция меняет что-то за пределами своего результата.'
+    explanation: |
+      Чистая функция удовлетворяет двум условиям: результат зависит только от аргументов (детерминированность) и
+      нет побочных эффектов — мутаций аргументов и внешних переменных, сетевых запросов, логирования, работы с
+      DOM, чтения времени или случайных чисел. Такие функции легко тестировать, кэшировать и безопасно вызывать
+      повторно. Поэтому React требует, чтобы рендер компонентов и редьюсеры были чистыми, а побочные эффекты
+      жили в `useEffect` и обработчиках событий.
+    links:
+      - https://react.dev/learn/keeping-components-pure
+    source: own
+
+  - id: javascript-functions-005
+    level: senior
+    tags: [named-function-expression, scope, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const factorial = function fact(n) {
+        return n <= 1 ? 1 : n * fact(n - 1);
+      };
+
+      console.log(factorial(5), typeof fact, factorial.name);
+    codeLang: js
+    options:
+      - text: '`120 function fact`'
+        why: 'Имя function expression видно только внутри самой функции. Снаружи переменной `fact` нет.'
+      - text: '`120 undefined fact`'
+        correct: true
+        why: 'Имя `fact` доступно только внутри тела функции — для рекурсии. Снаружи его нет, а `name` берётся из имени выражения.'
+      - text: '`120 undefined factorial`'
+        why: 'У именованного выражения `name` — его собственное имя `fact`. Имя переменной подставляется, только если функция анонимная.'
+      - text: '`ReferenceError`: `fact` не определена'
+        why: 'Внутри функции `fact` доступна, а `typeof` снаружи не бросает ошибку для необъявленных имён.'
+    explanation: |
+      У именованного function expression имя существует только в его собственной области видимости. Это
+      удобно для надёжной рекурсии: даже если переменную `factorial` переприсвоят, функция продолжит вызывать
+      себя по `fact`. Свойство `name` у функций выводится автоматически: для анонимных выражений — из имени
+      переменной или свойства (`const f = () => {}` получит `name === 'f'`). Оно используется в стектрейсах и
+      отладке, поэтому именованные функции упрощают чтение ошибок.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/function#named_function_expression
+    source: own
+
+  - id: javascript-functions-006
+    level: senior
+    tags: [arguments, strict-mode, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function sloppy(a) {
+        arguments[0] = 99;
+        return a;
+      }
+
+      function strict(a) {
+        'use strict';
+        arguments[0] = 99;
+        return a;
+      }
+
+      console.log(sloppy(1), strict(1));
+    codeLang: js
+    options:
+      - text: '`1 1`'
+        why: 'В нестрогом режиме у функции с простыми параметрами `arguments` связан с параметрами: изменение одного меняет другое.'
+      - text: '`99 99`'
+        why: 'Строгий режим разрывает связь `arguments` с параметрами, поэтому `a` останется 1.'
+      - text: '`99 1`'
+        correct: true
+        why: 'В нестрогой функции `arguments[0]` и `a` — одна и та же «ячейка». В строгом режиме `arguments` — независимая копия значений.'
+      - text: '`1 99`'
+        why: 'Ровно наоборот: связь есть именно в нестрогом режиме.'
+    explanation: |
+      Объект `arguments` в нестрогих функциях с простым списком параметров «связан» с ними: запись в `arguments[i]`
+      меняет параметр и наоборот. Это мешало оптимизациям движков и порождало странные баги. В строгом режиме, а
+      также в любых функциях с default-, rest-параметрами или деструктуризацией связь отсутствует. У стрелочных
+      функций своего `arguments` нет вовсе. В современном коде `arguments` заменяют rest-параметром `...args`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/arguments#assigning_to_indices
+    source: own
+
+  - id: javascript-functions-007
+    level: middle
+    tags: [memoize, closures, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function memoize(fn) {
+        const cache = new Map();
+        return (arg) => {
+          if (!cache.has(arg)) cache.set(arg, fn(arg));
+          return cache.get(arg);
+        };
+      }
+
+      let calls = 0;
+      const square = memoize((n) => { calls++; return n * n; });
+
+      square(4); square(4); square({ n: 4 }); square({ n: 4 });
+      console.log(calls);
+    codeLang: js
+    options:
+      - text: '`2`'
+        why: 'Два разных литерала `{ n: 4 }` — разные объекты, а `Map` сравнивает ключи-объекты по ссылке. Каждый из них — промах кэша.'
+      - text: '`3`'
+        correct: true
+        why: 'Число 4 закэшировалось после первого вызова. Объекты `{ n: 4 }` создаются заново при каждом вызове и для `Map` — разные ключи, поэтому функция вызвалась ещё дважды.'
+      - text: '`4`'
+        why: 'Повторный вызов с числом 4 берёт значение из кэша, функция не вызывается.'
+      - text: '`1`'
+        why: 'Кэш по ссылке не распознаёт объекты с одинаковым содержимым, поэтому объектные вызовы не попадают в кэш.'
+    explanation: |
+      Мемоизация хранит результаты в замыкании и возвращает их при повторных вызовах с тем же аргументом.
+      Ключевой вопрос — как сравнивать аргументы. `Map` сравнивает объекты по ссылке, поэтому новый, но
+      одинаковый объект — промах. Решения: сериализовать аргументы в ключ (`JSON.stringify`), сравнивать
+      поверхностно (как `React.memo`) или хранить только последний вызов (как `useMemo`). Ещё один
+      вопрос — рост кэша: без ограничения он растёт бесконечно, поэтому применяют LRU или `WeakMap` для
+      ключей-объектов.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Glossary/Memoization
+    source: own
+
+  - id: javascript-functions-008
+    level: junior
+    tags: [iife]
+    question: |
+      Зачем раньше оборачивали код в IIFE: `(function () { ... })();`?
+    options:
+      - text: 'Чтобы спрятать переменные от глобальной области видимости'
+        correct: true
+        why: 'До ES6-модулей и `let` единственной областью видимости была функция. IIFE прятала переменные скрипта от других скриптов на странице.'
+      - text: 'Чтобы код выполнился асинхронно, после загрузки страницы'
+        why: 'IIFE вызывается сразу и синхронно. Отложенный запуск дают `defer`, события или таймеры.'
+      - text: 'Чтобы ускорить выполнение кода внутри функции'
+        why: 'Обёртка не ускоряет код. Её смысл — изоляция переменных.'
+      - text: 'Чтобы функцию можно было вызывать повторно по имени'
+        why: 'IIFE обычно анонимна и вызывается один раз в месте объявления.'
+    explanation: |
+      IIFE (Immediately Invoked Function Expression) — функция, которая объявляется и тут же вызывается. До
+      появления модулей все скрипты страницы делили одну глобальную область, и переменные разных библиотек
+      конфликтовали. IIFE давала каждому скрипту приватную область, а наружу отдавался только нужный объект —
+      паттерн «модуль», на котором держались jQuery-плагины. Скобки вокруг функции нужны, чтобы парсер увидел
+      выражение, а не объявление. Сегодня изоляцию дают ES-модули и блочный `let`, но IIFE до сих пор
+      встречается в собранных бандлах и для запуска async-кода: `(async () => { ... })()`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Glossary/IIFE
+    source: own
+
+  - id: javascript-functions-009
+    level: middle
+    tags: [higher-order-functions, compose, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const compose = (...fns) => (x) => fns.reduceRight((acc, fn) => fn(acc), x);
+      const pipe = (...fns) => (x) => fns.reduce((acc, fn) => fn(acc), x);
+
+      const add1 = (n) => n + 1;
+      const double = (n) => n * 2;
+
+      console.log(compose(add1, double)(5), pipe(add1, double)(5));
+    codeLang: js
+    options:
+      - text: '`12 11`'
+        why: 'Порядок перепутан: `compose` применяет функции справа налево, а `pipe` — слева направо.'
+      - text: '`11 12`'
+        correct: true
+        why: '`compose(add1, double)(5)` = `add1(double(5))` = 11: последняя функция применяется первой. `pipe` идёт слева направо: `double(add1(5))` = 12.'
+      - text: '`12 12`'
+        why: '`compose` и `pipe` различаются именно направлением применения функций, поэтому результаты разные.'
+      - text: '`11 11`'
+        why: '`pipe` сначала прибавляет 1, а потом удваивает: 6 × 2 = 12.'
+    explanation: |
+      Функции высшего порядка принимают или возвращают функции. `compose` и `pipe` собирают конвейер из
+      маленьких функций. `compose(f, g)(x)` = `f(g(x))`, как в математике — справа налево. `pipe(f, g)(x)` =
+      `g(f(x))`, слева направо, как читается текст. Их используют в функциональных библиотеках, middleware
+      Redux (`compose(applyMiddleware(...))`) и обработке данных. Реализация на `reduce` и `reduceRight` —
+      частая задача на собеседовании.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Glossary/First-class_Function
+    source: own

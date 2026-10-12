@@ -1,0 +1,308 @@
+# yaml-language-server: $schema=../../schema.json
+topic: react
+subtopic: forms
+questions:
+  - id: react-forms-001
+    level: junior
+    tags: [controlled, uncontrolled]
+    question: |
+      Чем управляемое поле ввода отличается от неуправляемого?
+    options:
+      - text: 'Значение задаёт состояние через `value`'
+        correct: true
+        why: 'Управляемое поле показывает то, что лежит в состоянии, и меняется только через `onChange` → `setState`. Неуправляемое хранит значение само в DOM, а React задаёт лишь начальное через `defaultValue`.'
+      - text: 'Его нельзя изменить с клавиатуры'
+        why: 'Изменить можно: ввод вызывает `onChange`, обработчик обновляет состояние, и поле перерисовывается с новым значением.'
+      - text: 'Оно работает только внутри тега `<form>`'
+        why: 'Управляемым может быть любое поле, независимо от наличия формы.'
+      - text: 'Его значение доступно только через `ref`'
+        why: 'Наоборот, через реф или `FormData` читают неуправляемые поля. У управляемого значение уже лежит в состоянии.'
+    explanation: |
+      Управляемое поле (controlled): `<input value={name} onChange={e => setName(e.target.value)} />`. React —
+      единственный источник правды, и значение можно валидировать, форматировать и показывать в других местах
+      сразу при вводе. Неуправляемое (uncontrolled): `<input defaultValue="Ann" name="name" />`. Значение
+      живёт в DOM, его читают при отправке через `FormData` или реф. Неуправляемые поля проще и не вызывают
+      рендер на каждый символ. В React 19 с Actions они снова в моде.
+    links:
+      - https://react.dev/reference/react-dom/components/input#controlling-an-input-with-a-state-variable
+    source: own
+
+  - id: react-forms-002
+    level: junior
+    tags: [controlled, read-only]
+    question: |
+      Что произойдёт, когда пользователь попробует ввести текст в это поле?
+    code: |
+      function App() {
+        return <input value="fixed" />;
+      }
+    codeLang: jsx
+    options:
+      - text: 'Текст не изменится, а React выведет предупреждение'
+        correct: true
+        why: '`value` делает поле управляемым: React после каждого ввода возвращает значение `fixed`. Без `onChange` изменить его нечем, и в разработке React предупреждает, что поле фактически только для чтения.'
+      - text: 'Текст изменится, а `value` задаст только начальное значение'
+        why: 'Начальное значение задаёт `defaultValue`. `value` фиксирует то, что показано в поле.'
+      - text: 'Поле станет неактивным, как с атрибутом `disabled`'
+        why: 'Поле остаётся активным: фокус и выделение работают. Не меняется только значение.'
+      - text: 'React бросит ошибку и не отрендерит поле'
+        why: 'Это не ошибка, а предупреждение в разработке. Поле отрендерится.'
+    explanation: |
+      Если у поля есть `value`, React следит, чтобы DOM показывал именно его. Чтобы поле было редактируемым,
+      нужен `onChange`, который обновит состояние. Если поле действительно только для чтения, добавляют
+      `readOnly`, и предупреждение исчезает. Если нужно лишь начальное значение, используют `defaultValue`.
+      Так же устроены `checked` и `defaultChecked` у чекбоксов.
+    links:
+      - https://react.dev/reference/react-dom/components/input#controlling-an-input-with-a-state-variable
+    source: own
+
+  - id: react-forms-003
+    level: middle
+    tags: [controlled, uncontrolled, warning]
+    question: |
+      Что сообщит React в режиме разработки после клика по кнопке?
+    code: |
+      function App() {
+        const [user, setUser] = useState({});
+        return (
+          <>
+            <input value={user.name} onChange={(e) => setUser({ name: e.target.value })} />
+            <button onClick={() => setUser({ name: 'Ann' })}>Заполнить</button>
+          </>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: 'Предупреждение: поле стало управляемым на ходу'
+        correct: true
+        why: 'Сначала `user.name` равен `undefined`, а `value={undefined}` для React означает «значения нет» — поле неуправляемое. После клика появилась строка, и поле стало управляемым. Менять режим на ходу нельзя, поэтому React предупреждает.'
+      - text: 'Ничего: поле просто покажет новое значение `Ann`'
+        why: 'Поле покажет `Ann`, но в разработке React заметит смену режима и выведет предупреждение.'
+      - text: 'Ошибку: `value` у поля не может быть `undefined`'
+        why: '`value={undefined}` допустим, но делает поле неуправляемым. Проблема в смене режима.'
+      - text: 'Предупреждение: у управляемого поля нет `onChange`'
+        why: '`onChange` здесь есть. Предупреждение о другом: значение было `undefined`, а стало строкой.'
+    explanation: |
+      Поле управляемое, если `value` не `undefined` и не `null`. Частая ошибка — начальное состояние без нужного
+      поля (`useState({})`, данные ещё не загружены), из-за чего поле начинает жизнь неуправляемым. Исправление
+      — всегда передавать строку: `value={user.name ?? ''}` или начальное состояние `{ name: '' }`. Если поле
+      должно стать другим (например, при смене пользователя), удобнее пересоздать его через `key`.
+    links:
+      - https://react.dev/reference/react-dom/components/input#im-getting-an-error-a-component-is-changing-an-uncontrolled-input-to-be-controlled
+    source: own
+
+  - id: react-forms-004
+    level: middle
+    tags: [form-actions, FormData, react-19, output, no-run]
+    question: |
+      Пользователь заменил `Ann` на `Bob` и нажал `save`. Что выведется в консоль и что будет в поле после
+      завершения действия?
+    code: |
+      async function save(formData) {
+        console.log('action', formData.get('name'));
+        await saveToServer(formData);
+        console.log('saved');
+      }
+
+      function App() {
+        return (
+          <form action={save}>
+            <input name="name" defaultValue="Ann" />
+            <button>save</button>
+          </form>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`action Bob`, `saved`, в поле снова `Ann`'
+        correct: true
+        why: 'React перехватывает отправку и вызывает функцию из `action` с `FormData` формы. После успешного действия React сбрасывает неуправляемые поля формы к начальным значениям.'
+      - text: '`action Bob`, `saved`, в поле `Bob`'
+        why: 'Когда в `action` передана функция, после её завершения React вызывает сброс формы, и неуправляемое поле возвращается к `defaultValue`.'
+      - text: '`action Ann`, `saved`, в поле `Ann`'
+        why: '`FormData` читает текущие значения из DOM в момент отправки, а пользователь уже ввёл `Bob`.'
+      - text: 'Страница перезагрузится: браузер отправит форму сам'
+        why: 'Если в `action` передана функция, React отменяет стандартную отправку и вызывает функцию.'
+    explanation: |
+      В React 19 у `<form>` можно передать в `action` функцию (Action). React сам вызывает `preventDefault`,
+      собирает `FormData`, запускает функцию внутри перехода (`isPending` доступен через `useFormStatus` или
+      `useActionState`) и после успешного завершения сбрасывает неуправляемые поля. Это сокращает типичный
+      код формы: не нужны состояние для каждого поля и ручной `preventDefault`. Если сброс не нужен,
+      поля делают управляемыми или используют `onSubmit`.
+    links:
+      - https://react.dev/reference/react-dom/components/form#handle-form-submission-with-an-action-prop
+      - https://react.dev/blog/2024/12/05/react-19#form-actions
+    source: own
+
+  - id: react-forms-005
+    level: middle
+    tags: [useActionState, react-19, output, no-run]
+    question: |
+      Что выведется в консоль после нажатия кнопки?
+    code: |
+      async function increment(previous, formData) {
+        console.log('action', previous);
+        await delay(20);
+        return previous + 1;
+      }
+
+      function App() {
+        const [count, formAction, isPending] = useActionState(increment, 0);
+        console.log('render', count, isPending);
+        return (
+          <form action={formAction}>
+            <button>+</button>
+          </form>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`action 0`, `render 0 true`, `render 1 false`'
+        correct: true
+        why: 'Действие получает прошлое состояние первым аргументом. Пока промис не завершён, компонент рендерится с `isPending = true` и старым значением. Возвращённое значение становится новым состоянием.'
+      - text: '`render 1 true`, `action 0`, `render 1 false`'
+        why: 'Новое состояние появляется только после завершения действия: это его возвращаемое значение.'
+      - text: '`action 0`, `render 1 false`'
+        why: 'Пока действие выполняется, React показывает состояние ожидания: рендер с `isPending = true`.'
+      - text: '`action undefined`, `render 0 true`, `render 1 false`'
+        why: 'Первый аргумент действия — текущее состояние, начиная с начального значения `0`. `FormData` приходит вторым.'
+    explanation: |
+      `useActionState(action, initialState)` связывает действие формы с состоянием. Он возвращает текущее
+      состояние, обёрнутое действие для `action` формы или кнопки и флаг `isPending`. Функция получает
+      `(previousState, formData)` и возвращает новое состояние: результат, сообщение об ошибке, данные формы.
+      Вызовы выстраиваются в очередь, и каждый получает результат предыдущего. Хук работает и с серверными
+      функциями, позволяя форме работать до загрузки JavaScript.
+    links:
+      - https://react.dev/reference/react/useActionState
+    source: own
+
+  - id: react-forms-006
+    level: middle
+    tags: [useFormStatus, react-19, no-run]
+    question: |
+      Почему `pending` в `App` всегда `false`, а в `SubmitButton` во время отправки становится `true`?
+    code: |
+      function SubmitButton() {
+        const { pending } = useFormStatus();
+        return <button disabled={pending}>Отправить</button>;
+      }
+
+      function App() {
+        const { pending } = useFormStatus();
+        return (
+          <form action={save}>
+            <SubmitButton />
+            {pending && <p>Сохраняем…</p>}
+          </form>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`useFormStatus` видит только родительскую `<form>`'
+        correct: true
+        why: 'Хук работает как чтение контекста: он ищет ближайший `<form>` выше по дереву. `App` рендерит форму, но сам находится вне неё.'
+      - text: '`useFormStatus` в `App` вызван раньше, чем создана форма'
+        why: 'Порядок вызова не важен. Важно положение: для `App` формы выше по дереву нет.'
+      - text: 'Статус обновляется только у компонентов внутри `<button>`'
+        why: 'Хук работает в любом компоненте внутри формы, не только в кнопке.'
+      - text: 'В `App` нужен `useActionState`, а `useFormStatus` устарел'
+        why: '`useFormStatus` не устарел, это разные инструменты. Проблема в месте вызова.'
+    explanation: |
+      `useFormStatus` из `react-dom` возвращает состояние отправки родительской формы: `pending`, `data`,
+      `method`, `action`. Он рассчитан на дизайн-системы: кнопка отправки или индикатор могут узнать статус без
+      пропсов. Ограничение то же, что у контекста: компонент, который рендерит `<form>`, сам находится снаружи
+      и статус не видит. Поэтому индикатор выносят в отдельный компонент внутри формы, либо берут `isPending`
+      из `useActionState`.
+    links:
+      - https://react.dev/reference/react-dom/hooks/useFormStatus#useformstatus-will-not-return-status-information-for-a-form-rendered-in-the-same-component
+    source: own
+
+  - id: react-forms-007
+    level: senior
+    tags: [useOptimistic, transitions, async, output, no-run]
+    question: |
+      Что выведется в консоль после нажатия кнопки?
+    code: |
+      function App() {
+        const [likes, setLikes] = useState(0);
+        const [optimisticLikes, addOptimistic] = useOptimistic(
+          likes,
+          (current, delta) => current + delta,
+        );
+        console.log('render', likes, optimisticLikes);
+
+        async function like() {
+          addOptimistic(1);
+          await delay(30);
+          setLikes((l) => l + 1);
+        }
+
+        return (
+          <form action={like}>
+            <button>like</button>
+          </form>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`render 0 1`, `render 1 2`, `render 1 1`'
+        correct: true
+        why: 'Оптимистичное значение действует, пока идёт действие. Обновление после `await` не входит в переход действия и применяется сразу, а оптимистичная `+1` ещё накладывается сверху: на мгновение показано 2.'
+      - text: '`render 0 1`, `render 1 1`'
+        why: 'Так было бы, если бы `setLikes` после `await` был обёрнут в `startTransition`: тогда он завершился бы вместе с действием.'
+      - text: '`render 1 1`'
+        why: 'Сначала React показывает оптимистичное значение при старом состоянии: `render 0 1`.'
+      - text: '`render 0 1`, `render 0 0`, `render 1 1`'
+        why: 'Оптимистичное значение не откатывается до конца действия, поэтому промежуточного рендера с 0 нет.'
+    explanation: |
+      `useOptimistic` показывает ожидаемый результат, пока действие выполняется, и автоматически возвращается
+      к реальному состоянию по завершении. Ловушка: в React 19 обновления состояния после `await` внутри
+      действия не попадают в переход и коммитятся сразу. Оптимистичное значение при этом ещё активно, и
+      функция обновления применяется к уже новому `likes`. Получается кратковременное «двойное» значение.
+      Документация советует оборачивать такие обновления в `startTransition(() => setLikes(...))`, пока React
+      не научится сохранять контекст перехода через `await`.
+    links:
+      - https://react.dev/reference/react/useOptimistic
+      - https://react.dev/reference/react/useTransition#react-doesnt-treat-my-state-update-after-await-as-a-transition
+    source: own
+
+  - id: react-forms-008
+    level: junior
+    tags: [uncontrolled, FormData]
+    question: |
+      Как при отправке получить значения неуправляемых полей формы?
+    code: |
+      function Signup() {
+        function handleSubmit(e) {
+          e.preventDefault();
+          // ?
+        }
+        return (
+          <form onSubmit={handleSubmit}>
+            <input name="email" />
+            <input name="password" type="password" />
+            <button>Создать</button>
+          </form>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: 'Через `new FormData(e.currentTarget)`'
+        correct: true
+        why: '`FormData` собирает значения всех полей формы по атрибуту `name`. `e.currentTarget` — сама форма, на которой висит обработчик.'
+      - text: 'Из `e.target.value`'
+        why: 'Цель события `submit` — форма, у неё нет `value`. Значения лежат в полях внутри неё.'
+      - text: 'Из пропсов полей через `props.value`'
+        why: 'Неуправляемые поля хранят значение в DOM, а не в пропсах React.'
+      - text: 'Из `useState`, который React создаёт для каждого поля'
+        why: 'React не создаёт состояние для полей сам. Состояние есть только у управляемых полей, которые вы связали вручную.'
+    explanation: |
+      У неуправляемых полей значения хранит DOM, и прочитать их удобнее всего в момент отправки: `FormData`
+      по именам полей, `Object.fromEntries(formData)` для простого объекта. В React 19 функция в `action` формы
+      получает `FormData` сразу аргументом. Так не нужно состояние на каждое поле, и форма не рендерится на каждый
+      символ. Управляемые поля нужны, когда значение влияет на интерфейс во время ввода: валидация на лету,
+      маски, зависимые поля.
+    links:
+      - https://react.dev/reference/react-dom/components/form
+      - https://developer.mozilla.org/en-US/docs/Web/API/FormData/FormData
+    source: own

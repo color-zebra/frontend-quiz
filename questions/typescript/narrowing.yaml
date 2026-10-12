@@ -1,0 +1,463 @@
+# yaml-language-server: $schema=../../schema.json
+topic: typescript
+subtopic: narrowing
+questions:
+  - id: typescript-narrowing-001
+    level: junior
+    tags: [typeof, narrowing]
+    question: |
+      Какой тип у `value` в последней строке функции?
+    code: |
+      function format(value: string | number) {
+        if (typeof value === 'string') {
+          return value.toUpperCase();
+        }
+        return value.toFixed(2);
+      }
+    codeLang: ts
+    options:
+      - text: '`number`'
+        correct: true
+        why: 'Ветка со строкой завершилась `return`. Компилятор понимает, что до последней строки доходит только значение, не прошедшее проверку, то есть число.'
+      - text: '`string | number`'
+        why: 'Анализ потока управления учитывает ранний `return`: строка до последней строки не дойдёт.'
+      - text: '`unknown`'
+        why: 'Сужение не расширяет тип: из `string | number` убирается `string`, остаётся `number`.'
+      - text: '`never`'
+        why: '`never` получился бы, если бы проверки исключили все варианты объединения. Здесь исключена только строка.'
+    explanation: |
+      Сужение типов (narrowing) — основа работы с объединениями. Компилятор анализирует поток управления
+      (control flow analysis): проверки `typeof`, `instanceof`, `in`, сравнения и ранние `return` уточняют
+      тип переменной в каждой точке кода. После `if (typeof value === 'string') return ...` в оставшемся коде
+      строки уже нет. `typeof` различает значения по результатам `"string"`, `"number"`, `"boolean"`,
+      `"bigint"`, `"symbol"`, `"undefined"`, `"function"` и `"object"`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/narrowing.html
+    source: own
+
+  - id: typescript-narrowing-002
+    level: junior
+    tags: [union, narrowing]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются?
+    code: |
+      function size(value: string | string[]) {
+        return value.length;        // A
+      }
+
+      function shout(value: string | string[]) {
+        return value.toUpperCase(); // B
+      }
+    codeLang: ts
+    options:
+      - text: 'Только B'
+        correct: true
+        why: 'У значения типа-объединения можно использовать только то, что есть у каждого его члена. `length` есть и у строки, и у массива, а `toUpperCase` — только у строки.'
+      - text: 'Только A'
+        why: '`length` есть у обоих членов объединения, поэтому обращение к нему корректно, и тип результата — `number`.'
+      - text: 'A и B'
+        why: 'Сужать тип нужно только для членов, которых нет у всех вариантов. `length` общий.'
+      - text: 'Ни одна'
+        why: 'Если `value` окажется массивом, `toUpperCase` не существует. Компилятор требует сначала проверить тип.'
+    explanation: |
+      Объединение `A | B` означает «значение одного из этих типов, неизвестно какого». Поэтому без проверки
+      разрешено только то, что безопасно для любого варианта: общие свойства и методы. Чтобы использовать
+      специфичное, тип сужают: `typeof value === 'string'` или `Array.isArray(value)`. Типичная ошибка новичков —
+      ждать, что объединение даёт доступ ко всем свойствам всех вариантов. Так ведёт себя скорее пересечение
+      `A & B`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#working-with-union-types
+    source: own
+
+  - id: typescript-narrowing-003
+    level: junior
+    tags: [in-operator, narrowing]
+    question: |
+      Какой тип у `animal` в ветке `else`?
+    code: |
+      type Fish = { swim(): void };
+      type Bird = { fly(): void };
+
+      function move(animal: Fish | Bird) {
+        if ('swim' in animal) {
+          animal.swim();
+        } else {
+          animal.fly();
+        }
+      }
+    codeLang: ts
+    options:
+      - text: '`Bird`'
+        correct: true
+        why: 'Оператор `in` сужает объединение объектов: в ветке `if` остаются варианты со свойством `swim`, в `else` — без него.'
+      - text: '`Fish | Bird`'
+        why: 'Проверка `"swim" in animal` уточняет тип в обеих ветках, а не только в `if`.'
+      - text: '`Fish`'
+        why: 'Свойство `swim` есть только у `Fish`, поэтому `Fish` остаётся в ветке `if`, а в `else` — `Bird`.'
+      - text: '`never`'
+        why: 'В `else` попадает значение без `swim`. Такой вариант в объединении есть — `Bird`.'
+    explanation: |
+      Для объединений объектов `typeof` бесполезен: он вернёт `"object"` для всех. Отличать варианты помогает
+      оператор `in`: `'prop' in obj` оставляет в ветке `true` члены, где свойство есть (обязательное или
+      необязательное), в ветке `false` — где его нет или оно необязательное. Для классов работает
+      `instanceof`. Если объединение проектируете вы сами, удобнее размеченное объединение с общим полем
+      `kind` или `type`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/narrowing.html#the-in-operator-narrowing
+    source: own
+
+  - id: typescript-narrowing-004
+    level: middle
+    tags: [discriminated-union, exhaustiveness, never]
+    question: |
+      В тип `Shape` добавили вариант `triangle`, а функцию `area` не обновили. Что сообщит компилятор?
+    code: |
+      type Shape =
+        | { kind: 'circle'; radius: number }
+        | { kind: 'square'; size: number }
+        | { kind: 'triangle'; base: number; height: number };
+
+      function area(shape: Shape): number {
+        switch (shape.kind) {
+          case 'circle':
+            return Math.PI * shape.radius ** 2;
+          case 'square':
+            return shape.size ** 2;
+          default: {
+            const unreachable: never = shape;
+            return unreachable;
+          }
+        }
+      }
+    codeLang: ts
+    options:
+      - text: 'Ошибку в строке `const unreachable: never = shape`'
+        correct: true
+        why: 'В ветке `default` остался необработанный вариант `triangle`. Значение этого типа нельзя присвоить `never`, и компилятор показывает ошибку с именем пропущенного варианта.'
+      - text: 'Ошибку в объявлении типа `Shape`'
+        why: 'Объявление корректно. Ошибка возникает там, где код рассчитывает, что все варианты уже обработаны.'
+      - text: 'Ничего: ветка `default` обработает новый вариант'
+        why: 'Ветка `default` написана так, что компилятор проверяет: сюда может попасть только `never`. Новый вариант эту проверку ломает.'
+      - text: 'Ошибку в каждом месте, где создаётся `Shape`'
+        why: 'Места создания объектов не меняются: `triangle` — допустимый вариант. Проблема только в функции, которая его не обрабатывает.'
+    explanation: |
+      Размеченное объединение (discriminated union) — объединение объектов с общим полем-литералом (`kind`).
+      Проверка этого поля сужает тип до одного варианта, и в каждом `case` доступны его свойства. Приём
+      exhaustiveness check: в `default` значение присваивается переменной типа `never`. Пока все варианты
+      обработаны, там действительно `never`. Добавленный вариант делает присваивание ошибкой, и компилятор
+      показывает все места, которые нужно обновить. Если убрать `default`, при явном возвращаемом типе
+      `number` тоже будет ошибка: функция может не вернуть значение.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/narrowing.html#exhaustiveness-checking
+    source: own
+
+  - id: typescript-narrowing-005
+    level: middle
+    tags: [type-predicate, type-guard]
+    question: |
+      Какая строка, отмеченная буквой, не скомпилируется?
+    code: |
+      function isStringA(value: unknown): boolean {
+        return typeof value === 'string';
+      }
+
+      function isStringB(value: unknown): value is string {
+        return typeof value === 'string';
+      }
+
+      function demo(x: unknown) {
+        if (isStringA(x)) x.toUpperCase(); // A
+        if (isStringB(x)) x.toUpperCase(); // B
+      }
+    codeLang: ts
+    options:
+      - text: 'A'
+        correct: true
+        why: 'Функция с возвращаемым типом `boolean` для компилятора — просто проверка «да или нет», он не знает, что она проверяет тип. Сужение даёт только предикат `value is string`.'
+      - text: 'B'
+        why: 'Возвращаемый тип `value is string` — это type predicate: при `true` компилятор сужает аргумент до `string`.'
+      - text: 'A и B'
+        why: 'Функция `isStringB` объявлена как type guard, поэтому в строке B `x` уже `string`.'
+      - text: 'Ни одна'
+        why: 'Компилятор не заглядывает в тело функции с явным типом `boolean`, поэтому в строке A `x` остаётся `unknown`.'
+    explanation: |
+      Пользовательский type guard — функция с возвращаемым типом `параметр is Тип`. Когда она возвращает
+      `true`, компилятор сужает аргумент. Важно, что это обещание программиста: если тело проверяет не то,
+      компилятор не заметит, и сужение будет ложным. Явная аннотация `: boolean` превращает проверку в обычную
+      функцию: явный `boolean` отключает и любой автоматический вывод предиката.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-5.html#inferred-type-predicates
+    source: own
+
+  - id: typescript-narrowing-006
+    level: middle
+    tags: [assertion-functions, asserts, no-run]
+    question: |
+      Какой тип у `root` в последней строке?
+    code: |
+      function assertDefined<T>(value: T, name: string): asserts value is NonNullable<T> {
+        if (value === null || value === undefined) {
+          throw new Error(`${name} is missing`);
+        }
+      }
+
+      const root = document.getElementById('root');
+      assertDefined(root, 'root');
+      root.append('ready');
+    codeLang: ts
+    options:
+      - text: '`HTMLElement`'
+        correct: true
+        why: 'Функция с `asserts value is ...` либо бросает исключение, либо гарантирует условие. После её вызова компилятор сужает `root` до `NonNullable<HTMLElement | null>`, то есть `HTMLElement`.'
+      - text: '`HTMLElement | null`'
+        why: 'Это тип до вызова. Assertion-функция сужает тип переменной во всём коде после вызова, без `if`.'
+      - text: '`void`'
+        why: '`void` — возвращаемый тип самой функции. Тип переменной `root` определяется сужением из `asserts`.'
+      - text: '`NonNullable<T>`'
+        why: '`T` — параметр функции, при вызове он подставляется конкретным типом `HTMLElement | null`, и результат вычисляется до `HTMLElement`.'
+    explanation: |
+      Assertion-функция объявляется с возвращаемым типом `asserts условие` или `asserts value is Тип`. Она
+      ничего не возвращает: либо бросает исключение, либо гарантирует условие для кода после вызова. Это
+      удобно для проверок, после которых работа без условия бессмысленна: обязательные элементы DOM,
+      переменные окружения, инварианты. Ограничение: при вызове компилятор должен видеть явный тип
+      функции, поэтому стрелочная функция в `const` без аннотации типа как assertion не сработает.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#assertion-functions
+    source: own
+
+  - id: typescript-narrowing-007
+    level: middle
+    tags: [catch, unknown, useUnknownInCatchVariables]
+    question: |
+      Почему в режиме `strict` здесь ошибка на `error.message`?
+    code: |
+      try {
+        JSON.parse('{');
+      } catch (error) {
+        console.log(error.message);
+      }
+    codeLang: ts
+    options:
+      - text: 'У переменной `catch` тип `unknown`'
+        correct: true
+        why: 'В JavaScript `throw` принимает что угодно: строку, число, объект. Флаг `useUnknownInCatchVariables` из `strict` честно типизирует переменную `catch` как `unknown`.'
+      - text: 'Режим `strict` запрещает `any` в `catch`'
+        why: '`strict` не запрещает `any`. Раньше переменная `catch` была `any`, и `error.message` компилировалось. Ошибка возникает потому, что теперь она `unknown`.'
+      - text: '`JSON.parse` не объявляет бросаемые ошибки'
+        why: 'В TypeScript нет объявления бросаемых исключений, как `throws` в Java. Тип переменной `catch` не зависит от кода в `try`.'
+      - text: 'Переменную `catch` нужно аннотировать `Error`'
+        why: 'Аннотация `catch (error: Error)` запрещена: разрешены только `any` и `unknown`. Тип сужают проверкой внутри блока.'
+    explanation: |
+      Бросить в JavaScript можно любое значение, а исключение может прилететь из любой вызываемой функции.
+      Поэтому TypeScript не может знать тип пойманного значения. С флагом `useUnknownInCatchVariables` (входит в
+      `strict` с версии 4.4) переменная `catch` имеет тип `unknown`, и перед использованием её нужно сузить:
+      `if (error instanceof Error) console.log(error.message)`. Аннотировать переменную можно только как `any` или
+      `unknown`. С промисами иначе: аргумент колбэка `.catch()` имеет тип `any`, и флаг на него не влияет. Это
+      ловит правило typescript-eslint `use-unknown-in-catch-callback-variable`.
+    links:
+      - https://www.typescriptlang.org/tsconfig/#useUnknownInCatchVariables
+    source: own
+
+  - id: typescript-narrowing-008
+    level: senior
+    tags: [filter, type-predicate, inference]
+    question: |
+      Какие типы у `a` и `b` в TypeScript 5.5 и новее?
+    code: |
+      const values = [1, null, 2, undefined];
+
+      const a = values.filter((v) => v != null);
+      const b = values.filter(Boolean);
+    codeLang: ts
+    options:
+      - text: '`number[]` и `(number | null | undefined)[]`'
+        correct: true
+        why: 'Из стрелки `(v) => v != null` компилятор выводит предикат `v is number`, и `filter` использует перегрузку с type guard. `Boolean` объявлен с сигнатурой `<T>(value?: T): boolean`, предиката у него нет.'
+      - text: '`number[]` и `number[]`'
+        why: 'Сигнатура вызова `Boolean` — `<T>(value?: T): boolean`. Предиката типа в ней нет, поэтому сужения нет.'
+      - text: '`(number | null | undefined)[]` и `number[]`'
+        why: 'Наоборот: с TypeScript 5.5 стрелочная проверка становится предикатом, а `Boolean` — нет.'
+      - text: '`(number | null | undefined)[]` и `(number | null | undefined)[]`'
+        why: 'Так было до TypeScript 5.5. Теперь из простой стрелки компилятор сам выводит предикат типа.'
+    explanation: |
+      У `filter` есть перегрузка, принимающая type guard `(value) => value is S` и возвращающая `S[]`. Раньше
+      предикат нужно было писать явно: `filter((v): v is number => v != null)`. С TypeScript 5.5 компилятор
+      выводит его сам, если функция без аннотации возвращает результат проверки, который сужает параметр в
+      обе стороны. Для `filter(Boolean)` вывода нет: у встроенного `Boolean` сигнатура
+      `<T>(value?: T): boolean` без предиката. Ещё одно ограничение: проверка вроде `v => !!v` не станет предикатом,
+      потому что `0` тоже отбросится, и тип «не-ложное число» не выразить.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-5.html#inferred-type-predicates
+    source: own
+
+  - id: typescript-narrowing-009
+    level: senior
+    tags: [closures, narrowing, control-flow]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются в TypeScript 5.4 и новее?
+    code: |
+      function notify(user: { name: string | null }, title: string | null) {
+        if (user.name !== null && title !== null) {
+          setTimeout(() => {
+            console.log(user.name.toUpperCase()); // A
+            console.log(title.toUpperCase());     // B
+          });
+        }
+      }
+    codeLang: ts
+    options:
+      - text: 'Только A'
+        correct: true
+        why: 'Колбэк выполнится позже, и к тому времени свойство `user.name` может измениться, поэтому сужение свойства в замыкании сбрасывается. Параметр `title` после проверки не переприсваивается, и с версии 5.4 его сужение сохраняется.'
+      - text: 'Только B'
+        why: 'Наоборот: для неизменяемой после проверки переменной сужение сохраняется, а для свойства объекта — нет.'
+      - text: 'A и B'
+        why: 'Так было до TypeScript 5.4: сужение `let`-переменных и параметров терялось в любом замыкании. Теперь оно сохраняется, если после последнего присваивания переменная не меняется.'
+      - text: 'Ни одна'
+        why: 'Объект `user` могут изменить снаружи до вызова колбэка, поэтому компилятор не доверяет проверке `user.name`.'
+    explanation: |
+      Сужение действует в точке проверки, а колбэк выполняется позже. Компилятор консервативен: если значение
+      могло измениться между проверкой и вызовом, сужение в замыкании сбрасывается. Свойство объекта может
+      поменять любой код, у которого есть ссылка на объект, поэтому `user.name` снова `string | null`. Для
+      `const` сужение сохранялось всегда. С TypeScript 5.4 оно сохраняется и для `let` и параметров, если их
+      не переприсваивают после проверки. Надёжный приём — сохранить значение в `const` до колбэка:
+      `const name = user.name`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-4.html#preserved-narrowing-in-closures-following-last-assignments
+    source: own
+
+  - id: typescript-narrowing-010
+    level: senior
+    tags: [aliased-conditions, discriminated-union]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются?
+    code: |
+      type Result = { ok: true; data: string } | { ok: false; error: Error };
+
+      function handle(result: Result) {
+        const isOk = result.ok;
+        if (isOk) console.log(result.data);   // A
+
+        let isOkLet = result.ok;
+        if (isOkLet) console.log(result.data); // B
+      }
+    codeLang: ts
+    options:
+      - text: 'Только B'
+        correct: true
+        why: 'Проверку, сохранённую в `const`, компилятор связывает с исходным условием и сужает `result`. Значение в `let` можно переприсвоить, поэтому такую связь он не отслеживает.'
+      - text: 'Только A'
+        why: 'Сохранённое в `const` условие работает как сама проверка `result.ok`: компилятор помнит, откуда оно взялось.'
+      - text: 'A и B'
+        why: 'С TypeScript 4.4 условие, вынесенное в `const`, тоже сужает тип. Строка A компилируется.'
+      - text: 'Ни одна'
+        why: 'Переменная `isOkLet` объявлена через `let`, и компилятор не считает её надёжным признаком варианта `result`.'
+    explanation: |
+      С TypeScript 4.4 работает анализ «вынесенных условий» (aliased conditions): если результат проверки
+      сохранён в `const`, то проверка этой константы сужает исходную переменную, как если бы условие было
+      написано прямо в `if`. Требования: условие в `const` (или в `readonly`-свойстве), а сужаемая переменная —
+      `const`, `readonly` или параметр, который не переприсваивается в функции. С `let` связь не отслеживается:
+      значение могли изменить между объявлением и проверкой. Это позволяет давать условиям понятные имена
+      без потери сужения.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-4.html#control-flow-analysis-of-aliased-conditions-and-discriminants
+    source: own
+
+  - id: typescript-narrowing-011
+    level: senior
+    tags: [equality-narrowing]
+    question: |
+      Какой тип у `a` внутри `if`?
+    code: |
+      function compare(a: string | number, b: string | boolean) {
+        if (a === b) {
+          console.log(a);
+        }
+      }
+    codeLang: ts
+    options:
+      - text: '`string`'
+        correct: true
+        why: 'Строгое равенство возможно, только если оба значения одного типа. Общий тип у `string | number` и `string | boolean` один — `string`, до него сужаются обе переменные.'
+      - text: '`string | number`'
+        why: 'Сравнение `===` тоже сужает тип: значения разных типов строго равны быть не могут.'
+      - text: '`string | number | boolean`'
+        why: 'Сужение не расширяет тип: `a` не может стать `boolean`, а внутри `if` от объединения остаётся только общий с `b` вариант.'
+      - text: '`never`'
+        why: '`never` получился бы, если бы у типов не было общих вариантов. Здесь общий вариант — `string`.'
+    explanation: |
+      Сравнения `===`, `!==`, `==` и `!=` тоже сужают типы. Если `a === b`, значения одного типа, и компилятор
+      оставляет в обеих переменных только пересечение их вариантов. Так же работает сравнение с литералом:
+      `if (status === 'error')` сужает `status` до `'error'`. А `x != null` убирает одновременно `null` и
+      `undefined`, потому что нестрогое равенство с `null` их не различает.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/narrowing.html#equality-narrowing
+    source: own
+
+  - id: typescript-narrowing-012
+    level: middle
+    tags: [typeof, null, narrowing]
+    question: |
+      Что произойдёт при компиляции в режиме `strict`?
+    code: |
+      function printAll(items: string | string[] | null) {
+        if (typeof items === 'object') {
+          for (const item of items) {
+            console.log(item);
+          }
+        }
+      }
+    codeLang: ts
+    options:
+      - text: 'Ошибка в `for...of`: внутри `if` тип `string[] | null`'
+        correct: true
+        why: '`typeof null` в JavaScript равен `"object"`, и TypeScript это знает. Проверка оставляет и массив, и `null`, а по `null` итерироваться нельзя.'
+      - text: 'Компилируется: внутри `if` тип `string[]`'
+        why: 'Компилятор учитывает, что `typeof null === "object"`, и не исключает `null` такой проверкой.'
+      - text: 'Ошибка в `if`: `typeof` нельзя сравнивать с `"object"`'
+        why: '`"object"` — допустимый результат `typeof`, сравнение корректно и сужает тип.'
+      - text: 'Компилируется: `null` отсекается режимом `strict`'
+        why: '`strictNullChecks` не убирает `null` из типов, а наоборот, заставляет его явно обрабатывать.'
+    explanation: |
+      Сужение в TypeScript повторяет поведение JavaScript, включая его странности. `typeof null` возвращает
+      `"object"`, поэтому `typeof x === 'object'` оставляет в типе `null`. Нужна дополнительная проверка:
+      `if (items && typeof items === 'object')` или `Array.isArray(items)`. Проверка на истинность тоже
+      сужает тип, но осторожно: она отбрасывает и пустую строку, и `0`. Для массивов надёжнее всего
+      `Array.isArray`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/narrowing.html#typeof-type-guards
+    source: own
+
+  - id: typescript-narrowing-013
+    level: senior
+    tags: [in-operator, narrowing, unlisted-property]
+    question: |
+      Какой тип у выражения `value.color` в TypeScript 4.9 и новее?
+    code: |
+      function getColor(value: object) {
+        if ('color' in value) {
+          return value.color;
+        }
+      }
+    codeLang: ts
+    options:
+      - text: '`unknown`'
+        correct: true
+        why: 'Если свойство не перечислено в типе, проверка `in` сужает значение до `object & Record<"color", unknown>`. Свойство теперь известно, но тип его значения — нет.'
+      - text: 'Ошибка: у `object` нет свойства `color`'
+        why: 'Так было до TypeScript 4.9: `in` сужал только объединения, где свойство явно объявлено. Теперь он добавляет свойство в тип.'
+      - text: '`any`'
+        why: 'Компилятор не подставляет `any`: тип значения неизвестен, поэтому это безопасный `unknown`.'
+      - text: '`string`'
+        why: '`in` проверяет только наличие ключа, а не тип значения. Чтобы получить `string`, нужна ещё проверка `typeof value.color === "string"`.'
+    explanation: |
+      Оператор `in` сужает типы двумя способами. В объединении он выбирает варианты, где свойство объявлено.
+      Если свойство в типе не перечислено вовсе, то с TypeScript 4.9 компилятор пересекает тип с
+      `Record<"key", unknown>`. Это делает проверку данных из внешних источников удобной: после цепочки
+      `typeof data === 'object' && data !== null && 'color' in data && typeof data.color === 'string'`
+      компилятор знает, что `data.color` — строка, без приведения типов. Так пишут ручные валидаторы и type
+      guard для `unknown`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#unlisted-property-narrowing-with-the-in-operator
+    source: own

@@ -1,0 +1,103 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 8px 12px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  text-align: left;
+}
+
+.current {
+  border-color: var(--accent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.preview {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 8px;
+  height: 110px;
+  margin-bottom: 6px;
+  padding: 10px;
+  overflow: hidden;
+  border-radius: calc(var(--radius) - 6px);
+}
+
+.blob {
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  filter: blur(26px);
+  opacity: var(--blob-opacity);
+}
+
+.b1 {
+  top: -20px;
+  left: -20px;
+  background: var(--blob1);
+}
+
+.b2 {
+  right: -24px;
+  bottom: -10px;
+  background: var(--blob2);
+}
+
+.miniGlass {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: calc(var(--radius) / 2);
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+}
+
+.miniLine {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--text-2);
+  opacity: 0.7;
+}
+
+.short {
+  width: 60%;
+  opacity: 0.4;
+}
+
+.miniButton {
+  position: relative;
+  height: 16px;
+  border-radius: var(--btn-radius);
+  background: var(--primary-bg);
+}
+
+.name {
+  padding: 0 4px;
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.desc {
+  padding: 0 4px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}

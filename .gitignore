@@ -1,0 +1,11 @@
+node_modules/
+
+# Собранная база: её делает pnpm build локально и GitHub Actions при деплое.
+dist/
+
+# Сборка приложения.
+app/dist/
+
+*.log
+.DS_Store
+Thumbs.db

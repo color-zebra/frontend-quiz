@@ -1,0 +1,475 @@
+# yaml-language-server: $schema=../../schema.json
+topic: react
+subtopic: effects
+questions:
+  - id: react-effects-001
+    level: junior
+    tags: [useEffect, dependencies]
+    question: |
+      Когда выполняется эффект, объявленный как `useEffect(fn)` без второго аргумента?
+    options:
+      - text: 'После каждого рендера компонента'
+        correct: true
+        why: 'Без массива зависимостей React не может определить, что эффект можно пропустить, и запускает его после каждого коммита: при монтировании и после каждого обновления.'
+      - text: 'Только один раз, после монтирования'
+        why: 'Один раз выполняется эффект с пустым массивом `[]`. Отсутствие массива — это «каждый раз».'
+      - text: 'Только при размонтировании компонента'
+        why: 'При размонтировании выполняется функция очистки, которую эффект возвращает, а не сам эффект.'
+      - text: 'Никогда: массив зависимостей обязателен'
+        why: 'Второй аргумент необязателен, React допускает эффект без него.'
+    explanation: |
+      Второй аргумент `useEffect` определяет, когда перезапускать эффект. Без него — после каждого рендера.
+      С `[]` — один раз после монтирования, очистка при размонтировании. С `[a, b]` — после монтирования и
+      после рендеров, где `a` или `b` изменились по `Object.is`. Перед каждым повторным запуском и при
+      размонтировании выполняется очистка, которую вернул прошлый запуск. Массив зависимостей — не способ
+      управлять эффектом, а список всех реактивных значений, которые эффект читает. Его проверяет правило
+      линтера `react-hooks/exhaustive-deps`.
+    links:
+      - https://react.dev/reference/react/useEffect#examples-dependencies
+    source: own
+
+  - id: react-effects-002
+    level: middle
+    tags: [useEffect, useLayoutEffect, order, output]
+    question: |
+      Что выведется в консоль при монтировании `App`?
+    code: |
+      function Child() {
+        useLayoutEffect(() => console.log('layout Child'));
+        useEffect(() => console.log('effect Child'));
+        return null;
+      }
+
+      function App() {
+        useEffect(() => console.log('effect App'));
+        useLayoutEffect(() => console.log('layout App'));
+        return <Child />;
+      }
+    codeLang: jsx
+    options:
+      - text: '`layout Child`, `layout App`, `effect Child`, `effect App`'
+        correct: true
+        why: 'Сначала синхронно в коммите выполняются все layout-эффекты, потом, отдельным проходом, обычные эффекты. В каждом проходе дети идут раньше родителя: родитель смонтирован, только когда смонтированы его дети.'
+      - text: '`effect App`, `layout App`, `layout Child`, `effect Child`'
+        why: 'Порядок объявления хуков не определяет порядок между компонентами. Layout-эффекты всего дерева выполняются раньше любых `useEffect`, и дети раньше родителя.'
+      - text: '`layout App`, `layout Child`, `effect App`, `effect Child`'
+        why: 'Эффекты выполняются снизу вверх: эффект родителя может рассчитывать, что эффекты детей уже отработали.'
+      - text: '`layout Child`, `effect Child`, `layout App`, `effect App`'
+        why: 'Эффекты не идут покомпонентно. Сначала проходят все layout-эффекты дерева, и только затем обычные.'
+    explanation: |
+      После того как React применил изменения к DOM, он синхронно, до отрисовки браузером, вызывает
+      `useLayoutEffect` во всём дереве. Затем, обычно уже после отрисовки кадра, React вызывает `useEffect`. В каждом
+      проходе порядок «снизу вверх»: дети раньше родителей. Логика такая: когда выполняется эффект родителя,
+      поддерево уже полностью готово.
+    links:
+      - https://react.dev/reference/react/useLayoutEffect
+      - https://react.dev/reference/react/useEffect#caveats
+    source: own
+
+  - id: react-effects-003
+    level: middle
+    tags: [cleanup, dependencies, output]
+    question: |
+      Проп `id` изменился с `1` на `2`. Что выведется в консоль?
+    code: |
+      function Profile({ id }) {
+        useEffect(() => {
+          console.log('effect', id);
+          return () => console.log('cleanup', id);
+        }, [id]);
+        return null;
+      }
+    codeLang: jsx
+    options:
+      - text: '`cleanup 1`, `effect 2`'
+        correct: true
+        why: 'Перед повторным запуском React вызывает очистку прошлого эффекта. Она создана в рендере с `id = 1` и видит это значение через замыкание.'
+      - text: '`cleanup 2`, `effect 2`'
+        why: 'Функция очистки не получает новых пропсов: это замыкание прошлого эффекта, где `id` равен 1.'
+      - text: '`effect 2`, `cleanup 1`'
+        why: 'Очистка старого эффекта всегда выполняется до запуска нового, иначе две подписки работали бы одновременно.'
+      - text: '`effect 2`'
+        why: 'Очистка вызывается не только при размонтировании, но и перед каждым повторным запуском эффекта.'
+    explanation: |
+      Каждый запуск эффекта и его очистка — пара, привязанная к одному рендеру. Когда зависимость меняется,
+      React сначала вызывает очистку прошлого запуска со старыми значениями, затем эффект с новыми. Так
+      эффект синхронизирует внешнюю систему с текущими пропсами: отписаться от комнаты 1, подписаться на
+      комнату 2. Поэтому в очистке не нужно специально запоминать старый `id`: замыкание уже хранит его.
+    links:
+      - https://react.dev/learn/lifecycle-of-reactive-effects
+    source: own
+
+  - id: react-effects-004
+    level: senior
+    tags: [cleanup, unmount, order, output]
+    question: |
+      Что выведется в консоль, когда `Parent` размонтируется?
+    code: |
+      function Item({ name }) {
+        useEffect(() => () => console.log('unmount', name), []);
+        return null;
+      }
+
+      function Parent() {
+        useEffect(() => () => console.log('unmount Parent'), []);
+        return (
+          <>
+            <Item name="a" />
+            <Item name="b" />
+          </>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`unmount Parent`, `unmount a`, `unmount b`'
+        correct: true
+        why: 'При удалении поддерева React обходит его сверху вниз и вызывает очистки в этом порядке. Монтирование, наоборот, идёт снизу вверх.'
+      - text: '`unmount a`, `unmount b`, `unmount Parent`'
+        why: 'Это порядок монтирования, где дети раньше родителя. Очистка удаляемого поддерева идёт от корня поддерева к листьям.'
+      - text: '`unmount b`, `unmount a`, `unmount Parent`'
+        why: 'Братья обрабатываются в порядке следования, а родитель удаляемого поддерева — первым.'
+      - text: '`unmount Parent`'
+        why: 'Вместе с родителем размонтируются все его потомки, и их очистки тоже выполнятся.'
+    explanation: |
+      При монтировании эффекты выполняются снизу вверх. При удалении поддерева React обходит его сверху вниз и
+      вызывает функции очистки родителя раньше детей. Сначала выполняются очистки layout-эффектов, затем, в
+      проходе обычных эффектов, очистки `useEffect`. Полагаться на порядок очисток между компонентами в
+      логике приложения не стоит: каждая очистка должна отменять только то, что создал её эффект. Но знание
+      порядка помогает при отладке, например когда родитель закрывает соединение, которым пользуются дети.
+    links:
+      - https://react.dev/reference/react/useEffect#caveats
+    source: own
+
+  - id: react-effects-005
+    level: middle
+    tags: [dependencies, referential-equality]
+    question: |
+      Сколько раз выполнится эффект за монтирование и два клика?
+    code: |
+      function App() {
+        const [n, setN] = useState(0);
+        const options = { limit: 10 };
+
+        useEffect(() => {
+          console.log('effect');
+        }, [options]);
+
+        return <button onClick={() => setN(n + 1)}>{n}</button>;
+      }
+    codeLang: jsx
+    options:
+      - text: '3'
+        correct: true
+        why: 'Объект `options` создаётся заново при каждом рендере. React сравнивает зависимости через `Object.is`, новый объект не равен старому, и эффект перезапускается после каждого рендера.'
+      - text: '1'
+        why: 'Содержимое объекта одинаковое, но React сравнивает ссылки, а не поля. Ссылка каждый раз новая.'
+      - text: '2'
+        why: 'Эффект выполняется и при монтировании, и после каждого из двух рендеров, вызванных кликами.'
+      - text: 'Бесконечно много'
+        why: 'Эффект не меняет состояние, поэтому новых рендеров не вызывает. Он просто выполняется после каждого рендера.'
+    explanation: |
+      Объекты, массивы и функции, созданные в теле компонента, при каждом рендере новые. В зависимостях
+      эффекта они ведут себя так, будто изменились всегда. Лучшее решение — убрать такую зависимость: вынести
+      константу за пределы компонента, создать объект внутри эффекта или зависеть от примитивов (`limit`). `useMemo`
+      и `useCallback` тоже помогают, но это скорее последнее средство. Если такой эффект ещё и меняет
+      состояние, получается бесконечный цикл рендеров.
+    links:
+      - https://react.dev/learn/removing-effect-dependencies#does-some-reactive-value-change-unintentionally
+    source: own
+
+  - id: react-effects-006
+    level: senior
+    tags: [useLayoutEffect, set-state-in-effect, order, output]
+    question: |
+      Что выведется в консоль при монтировании?
+    code: |
+      function App() {
+        const [value, setValue] = useState(0);
+        console.log('render', value);
+
+        useLayoutEffect(() => {
+          console.log('layout', value);
+          if (value === 1) setValue(2);
+        }, [value]);
+
+        useEffect(() => {
+          console.log('effect', value);
+          if (value === 0) setValue(1);
+        }, [value]);
+
+        return null;
+      }
+    codeLang: jsx
+    options:
+      - text: '`render 0`, `layout 0`, `effect 0`, `render 1`, `layout 1`, `effect 1`, `render 2`, `layout 2`, `effect 2`'
+        correct: true
+        why: 'Обновление из layout-эффекта обрабатывается синхронно. Но перед новым рендером React обязан выполнить обычные эффекты уже закоммиченного рендера, поэтому `effect 1` выводится раньше `render 2`.'
+      - text: '`render 0`, `layout 0`, `effect 0`, `render 1`, `layout 1`, `render 2`, `layout 2`, `effect 2`'
+        why: 'Рендер с `value = 1` уже закоммичен, и его эффекты не пропускаются. React выполняет их перед тем, как начать следующий рендер.'
+      - text: '`render 0`, `layout 0`, `effect 0`, `render 1`, `layout 1`, `render 2`, `layout 2`, `effect 1`, `effect 2`'
+        why: 'React не копит эффекты нескольких коммитов: ожидающие эффекты выполняются до начала нового рендера.'
+      - text: '`render 0`, `layout 0`, `render 1`, `layout 1`, `render 2`, `layout 2`, `effect 2`'
+        why: 'Обычный эффект первого рендера выполняется, иначе `setValue(1)` вообще не был бы вызван.'
+    explanation: |
+      У обновлений из `useLayoutEffect` синхронный приоритет: React перерисует компонент до того, как браузер
+      покажет кадр. Это удобно для поправок по результатам измерения DOM. Обычные эффекты закоммиченного рендера
+      при этом не теряются. Перед началом любого нового рендера React выполняет ожидающие `useEffect`
+      предыдущего коммита, чтобы эффекты всегда соответствовали тому, что было на экране. Из-за этого цепочки
+      обновлений в эффектах трудно предсказывать. Если значение можно вычислить в рендере, лучше обойтись без
+      эффекта.
+    links:
+      - https://react.dev/reference/react/useLayoutEffect
+      - https://react.dev/learn/you-might-not-need-an-effect
+    source: own
+
+  - id: react-effects-007
+    level: middle
+    tags: [useLayoutEffect, measurement]
+    question: |
+      Когда стоит использовать `useLayoutEffect` вместо `useEffect`?
+    options:
+      - text: 'Когда нужно измерить DOM и поправить вёрстку до отрисовки'
+        correct: true
+        why: '`useLayoutEffect` выполняется после изменения DOM, но до того, как браузер нарисует кадр. Обновление состояния в нём применится в том же кадре, и пользователь не увидит промежуточного положения.'
+      - text: 'Когда эффект отправляет запрос на сервер за данными'
+        why: 'Запросы не связаны с вёрсткой. `useLayoutEffect` блокирует отрисовку, и запуск запроса в нём только задержит кадр.'
+      - text: 'Когда эффект должен выполниться на сервере при SSR'
+        why: 'На сервере не выполняется ни один из эффектов. `useLayoutEffect` в SSR вообще бесполезен: на сервере нет DOM.'
+      - text: 'Когда эффект должен выполняться раньше рендера'
+        why: 'Оба эффекта выполняются после рендера и коммита. Разница только в том, до или после отрисовки браузером.'
+    explanation: |
+      `useEffect` обычно выполняется после того, как браузер отрисовал кадр, и не блокирует экран. Если
+      обновление вызвано действием пользователя, например кликом, React может выполнить его и до отрисовки, но
+      рассчитывать на это нельзя. `useLayoutEffect`
+      выполняется синхронно после изменения DOM, до отрисовки. Он нужен, когда эффект читает размеры или
+      положение элементов и сразу меняет вёрстку: позиционирование тултипа, автопрокрутка, синхронизация
+      высоты. С `useEffect` пользователь увидел бы кадр с неправильным положением и рывок. Цена —
+      задержка отрисовки, поэтому по умолчанию используют `useEffect`.
+    links:
+      - https://react.dev/reference/react/useLayoutEffect#measuring-layout-before-the-browser-repaints-the-screen
+    source: own
+
+  - id: react-effects-008
+    level: middle
+    tags: [race-condition, data-fetching, cleanup]
+    question: |
+      Пользователь быстро переключается с профиля 1 на профиль 2. Иногда на экране остаётся профиль 1. Почему?
+    code: |
+      function Profile({ id }) {
+        const [user, setUser] = useState(null);
+
+        useEffect(() => {
+          fetch(`/api/users/${id}`)
+            .then((response) => response.json())
+            .then((data) => setUser(data));
+        }, [id]);
+
+        return <p>{user?.name}</p>;
+      }
+    codeLang: jsx
+    options:
+      - text: 'Ответ на первый запрос пришёл позже второго и перезаписал его'
+        correct: true
+        why: 'Оба запроса выполняются параллельно, и порядок ответов не гарантирован. Без очистки, которая игнорирует устаревший ответ, последним вызовет `setUser` тот, кто медленнее.'
+      - text: 'Эффект не перезапустился: `id` нет в зависимостях'
+        why: '`id` указан в зависимостях, поэтому эффект выполнился для обоих значений. Проблема в порядке ответов.'
+      - text: 'Браузер закэшировал первый ответ и вернул его снова'
+        why: 'URL разные, `/api/users/1` и `/api/users/2`, поэтому ответы из кэша не перепутаются.'
+      - text: '`setUser` из первого рендера обновляет устаревшую копию состояния'
+        why: 'Сеттер стабилен и обновляет то же состояние. Устаревший здесь не сеттер, а ответ, который пришёл не вовремя.'
+    explanation: |
+      Это гонка (race condition). Каждый запуск эффекта начинает свой запрос, а очистка не отменяет прошлый. Если
+      старый ответ придёт последним, он перезапишет актуальный. Исправление — флаг в очистке:
+      `let ignore = false; ...then(d => { if (!ignore) setUser(d) }); return () => { ignore = true }`. Или
+      `AbortController` с `controller.abort()` в очистке, тогда запрос ещё и отменяется по сети. На практике
+      загрузку данных отдают библиотекам (TanStack Query, SWR) или фреймворку: они решают гонки, кэш и
+      повторные запросы.
+    links:
+      - https://react.dev/learn/synchronizing-with-effects#fetching-data
+      - https://react.dev/learn/you-might-not-need-an-effect#fetching-data
+    source: own
+
+  - id: react-effects-009
+    level: junior
+    tags: [cleanup, subscriptions]
+    question: |
+      Зачем эффект возвращает функцию?
+    code: |
+      useEffect(() => {
+        const handleResize = () => setWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+      }, []);
+    codeLang: jsx
+    options:
+      - text: 'Чтобы снять подписку при размонтировании'
+        correct: true
+        why: 'Возвращённую функцию React вызовет при размонтировании и перед повторным запуском эффекта. Без неё обработчик остался бы на `window` после удаления компонента.'
+      - text: 'Чтобы передать результат эффекта в рендер'
+        why: 'Значение из эффекта в рендер не попадает. Возвращать можно только функцию очистки или ничего.'
+      - text: 'Чтобы React вызвал её вместо эффекта при обновлении'
+        why: 'При обновлении React вызывает и очистку, и сам эффект заново. Очистка не заменяет эффект.'
+      - text: 'Чтобы отложить выполнение эффекта до следующего кадра'
+        why: 'Возврат функции не влияет на момент запуска эффекта. Это функция очистки.'
+    explanation: |
+      Эффект синхронизирует компонент с внешней системой: подписки, таймеры, соединения, обработчики на
+      `window`. Всё, что эффект создал, должна убрать его очистка. Иначе после размонтирования останутся
+      «висящие» обработчики, которые вызывают `setState` у несуществующего компонента и держат память. В
+      режиме разработки StrictMode специально запускает эффект, очистку и снова эффект, чтобы забытая
+      очистка проявилась сразу.
+    links:
+      - https://react.dev/learn/synchronizing-with-effects#step-3-add-cleanup-if-needed
+    source: own
+
+  - id: react-effects-010
+    level: senior
+    tags: [useEffectEvent, dependencies]
+    question: |
+      Тема (`theme`) меняется, пока пользователь в комнате. Что произойдёт?
+    code: |
+      function ChatRoom({ roomId, theme }) {
+        const onConnected = useEffectEvent(() => {
+          showNotification('Подключено', theme);
+        });
+
+        useEffect(() => {
+          const connection = createConnection(roomId);
+          connection.on('connected', onConnected);
+          connection.connect();
+          return () => connection.disconnect();
+        }, [roomId]);
+
+        return <h1>{roomId}</h1>;
+      }
+    codeLang: jsx
+    options:
+      - text: 'Соединение останется прежним, уведомление возьмёт новую тему'
+        correct: true
+        why: 'Функция из `useEffectEvent` не реактивна: её не нужно указывать в зависимостях, а при вызове она видит самые свежие пропсы и состояние. Эффект зависит только от `roomId`.'
+      - text: 'Соединение переподключится, чтобы взять новую тему'
+        why: '`theme` читается только внутри `onConnected`, а эту функцию не указывают в зависимостях. Эффект зависит лишь от `roomId`.'
+      - text: 'Соединение останется, а уведомление покажет старую тему'
+        why: 'В отличие от обычного замыкания, функция из `useEffectEvent` при вызове читает последние значения, а не значения рендера, в котором создан эффект.'
+      - text: 'Ошибка линтера: `onConnected` нет в зависимостях'
+        why: 'Наоборот: функции из `useEffectEvent` не указывают в зависимостях, и линтер это знает.'
+    explanation: |
+      Эффект часто смешивает реактивную логику (подключиться к комнате `roomId`) и нереактивную (показать
+      уведомление в текущей теме). Если читать `theme` прямо в эффекте, её придётся указать в зависимостях, и
+      смена темы переподключит чат. `useEffectEvent` (стабилен с React 19.2) выносит нереактивную часть в
+      «событие эффекта»: функцию, которая всегда видит свежие значения, но не делает эффект зависимым от них.
+      Вызывать её можно только из эффектов. Раньше ту же задачу решали рефом с актуальным значением.
+    links:
+      - https://react.dev/reference/react/useEffectEvent
+      - https://react.dev/learn/separating-events-from-effects
+    source: own
+
+  - id: react-effects-011
+    level: middle
+    tags: [derived-state, unnecessary-effect]
+    question: |
+      Что не так с этим кодом?
+    code: |
+      function Form() {
+        const [firstName, setFirstName] = useState('Ann');
+        const [lastName, setLastName] = useState('Lee');
+        const [fullName, setFullName] = useState('');
+
+        useEffect(() => {
+          setFullName(firstName + ' ' + lastName);
+        }, [firstName, lastName]);
+
+        return <p>{fullName}</p>;
+      }
+    codeLang: jsx
+    options:
+      - text: 'Лишний рендер с устаревшим значением, вычислить можно в рендере'
+        correct: true
+        why: 'Сначала React рисует кадр со старым `fullName`, потом эффект обновляет состояние и вызывает второй рендер. Производное значение достаточно посчитать прямо в теле компонента: `const fullName = firstName + " " + lastName`.'
+      - text: 'Бесконечный цикл: эффект меняет состояние, которое вызывает эффект'
+        why: 'Эффект зависит от `firstName` и `lastName`, а меняет `fullName`. Цикла нет, есть один лишний рендер.'
+      - text: 'Эффект не сработает, потому что не возвращает очистку'
+        why: 'Очистка необязательна. Эффект выполнится, проблема в том, что он не нужен.'
+      - text: 'В зависимостях не хватает `fullName`'
+        why: 'Эффект не читает `fullName`, поэтому в зависимостях его быть не должно.'
+    explanation: |
+      Если значение вычисляется из пропсов или состояния, его не нужно хранить в состоянии и синхронизировать
+      эффектом. Такой эффект добавляет второй рендер, кадр с несогласованными данными и место для ошибок.
+      Документация React выделяет это в отдельную статью «You Might Not Need an Effect». Производные значения
+      считают в рендере. Дорогие вычисления оборачивают в `useMemo`. Реакцию на действие пользователя пишут в
+      обработчике события. Эффекты нужны только для синхронизации с внешними системами.
+    links:
+      - https://react.dev/learn/you-might-not-need-an-effect#updating-state-based-on-props-or-state
+    source: own
+
+  - id: react-effects-012
+    level: senior
+    tags: [useInsertionEffect, order, output]
+    question: |
+      Что выведется в консоль при монтировании?
+    code: |
+      function App() {
+        console.log('render');
+        useEffect(() => console.log('effect'));
+        useLayoutEffect(() => console.log('layout'));
+        useInsertionEffect(() => console.log('insertion'));
+        return null;
+      }
+    codeLang: jsx
+    options:
+      - text: '`render`, `insertion`, `layout`, `effect`'
+        correct: true
+        why: 'Порядок определяется видом эффекта, а не порядком объявления. `useInsertionEffect` выполняется первым, до layout-эффектов, затем `useLayoutEffect`, затем обычный `useEffect`.'
+      - text: '`render`, `effect`, `layout`, `insertion`'
+        why: 'Порядок объявления хуков не определяет порядок разных видов эффектов: у каждого вида своя фаза.'
+      - text: '`render`, `layout`, `insertion`, `effect`'
+        why: 'Insertion-эффекты специально выполняются раньше layout-эффектов, чтобы стили уже были в документе, когда layout-эффекты начнут измерять элементы.'
+      - text: '`insertion`, `render`, `layout`, `effect`'
+        why: 'Все эффекты выполняются после рендера: до вызова компонента React не знает, какие эффекты в нём есть.'
+    explanation: |
+      В коммите эффекты идут волнами: insertion-эффекты, затем layout-эффекты (синхронно, до отрисовки), затем,
+      после отрисовки, обычные. `useInsertionEffect` предназначен для авторов CSS-in-JS библиотек: вставить
+      теги `<style>` раньше, чем layout-эффекты станут читать размеры. В нём нельзя обновлять состояние, и рефы
+      ещё не заполнены. В прикладном коде он почти не нужен.
+    links:
+      - https://react.dev/reference/react/useInsertionEffect
+    source: own
+
+  - id: react-effects-013
+    level: middle
+    tags: [class-components, lifecycle, output]
+    question: |
+      Что выведется в консоль при монтировании?
+    code: |
+      class Child extends Component {
+        componentDidMount() { console.log('Child didMount'); }
+        render() { console.log('Child render'); return null; }
+      }
+
+      class Parent extends Component {
+        componentDidMount() { console.log('Parent didMount'); }
+        render() { console.log('Parent render'); return <Child />; }
+      }
+
+      function App() {
+        return <Parent />;
+      }
+    codeLang: jsx
+    options:
+      - text: '`Parent render`, `Child render`, `Child didMount`, `Parent didMount`'
+        correct: true
+        why: 'Рендер идёт сверху вниз: родитель возвращает ребёнка, и только потом React его рендерит. `componentDidMount` вызывается в коммите снизу вверх: родитель считается смонтированным, когда смонтированы все дети.'
+      - text: '`Parent render`, `Parent didMount`, `Child render`, `Child didMount`'
+        why: 'React не коммитит родителя отдельно от детей: сначала рендерится всё дерево, потом всё оно коммитится.'
+      - text: '`Parent render`, `Child render`, `Parent didMount`, `Child didMount`'
+        why: '`componentDidMount` идёт снизу вверх, поэтому метод ребёнка вызывается раньше.'
+      - text: '`Child render`, `Parent render`, `Child didMount`, `Parent didMount`'
+        why: 'Ребёнок не может отрендериться раньше родителя: его элемент создаёт `render` родителя.'
+    explanation: |
+      Классовые компоненты следуют тем же фазам, что и функциональные. В фазе рендера вызываются `render` (и
+      `getDerivedStateFromProps`) сверху вниз. В коммите вызываются `componentDidMount` или
+      `componentDidUpdate` снизу вверх.
+      `componentDidMount` по времени соответствует `useLayoutEffect`: он выполняется синхронно до отрисовки.
+      Классы до сих пор встречаются в старом коде, поэтому их порядок полезно знать.
+    links:
+      - https://react.dev/reference/react/Component#componentdidmount
+    source: own

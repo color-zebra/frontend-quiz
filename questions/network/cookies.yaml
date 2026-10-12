@@ -1,0 +1,244 @@
+# yaml-language-server: $schema=../../schema.json
+topic: network
+subtopic: cookies
+questions:
+  - id: network-cookies-001
+    level: junior
+    tags: [cookies, HttpOnly]
+    question: |
+      Сервер выставил `Set-Cookie: session=abc123; HttpOnly; Secure`. Что увидит скрипт в `document.cookie`?
+    options:
+      - text: 'Строку без cookie `session`'
+        correct: true
+        why: '`HttpOnly` скрывает cookie от JavaScript. Браузер по-прежнему отправляет её с запросами, но прочитать или изменить её из скрипта нельзя.'
+      - text: 'Строку `session=abc123`'
+        why: 'Флаг `HttpOnly` как раз запрещает доступ из `document.cookie`.'
+      - text: 'Строку `session=abc123; HttpOnly; Secure`'
+        why: 'Атрибуты cookie в `document.cookie` не показываются никогда, а сама эта cookie скрыта целиком.'
+      - text: 'Ошибку доступа `SecurityError`'
+        why: 'Ошибки нет: `document.cookie` просто возвращает остальные cookie, без скрытых.'
+    explanation: |
+      `HttpOnly` защищает cookie сессии от кражи через XSS: даже если злоумышленник выполнит скрипт на
+      странице, он не сможет прочитать токен и отправить его к себе. Он сможет делать запросы от имени
+      пользователя, пока тот на странице, но не унесёт сессию. Поэтому идентификаторы сессий хранят в cookie с
+      `HttpOnly`. Данные, которые нужны скрипту, например настройки интерфейса, кладут в обычные cookie или
+      `localStorage`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Cookies#restrict_access_to_cookies
+    source: own
+
+  - id: network-cookies-002
+    level: middle
+    tags: [cookies, SameSite, Lax]
+    question: |
+      На `bank.com` выставлена cookie `Set-Cookie: sid=1; SameSite=Lax; Secure; HttpOnly`. В каком случае она
+      НЕ будет отправлена на `bank.com`?
+    options:
+      - text: 'Форма на `evil.com` отправляет `POST` на `bank.com/transfer`'
+        correct: true
+        why: '`Lax` пропускает cookie в межсайтовых запросах, только если это навигация верхнего уровня безопасным методом. `POST` с чужого сайта cookie не получит.'
+      - text: 'Пользователь переходит по ссылке с `evil.com` на `bank.com`'
+        why: 'Переход по ссылке — навигация верхнего уровня методом `GET`, и `Lax` отправляет cookie. Иначе пользователь приходил бы на сайт разлогиненным.'
+      - text: 'Скрипт на `bank.com` вызывает `fetch("/api/balance")`'
+        why: 'Это запрос того же сайта. Ограничения `SameSite` касаются только межсайтовых запросов.'
+      - text: 'Пользователь вводит `bank.com` в адресную строку'
+        why: 'Прямая навигация не считается межсайтовой, cookie отправляется.'
+    explanation: |
+      `SameSite` управляет отправкой cookie в межсайтовых запросах. `Strict` — только запросы с того же сайта,
+      даже переход по внешней ссылке придёт без cookie. `Lax` — плюс навигации верхнего уровня безопасными
+      методами (ссылки, `GET`-формы). `None` — во всех запросах, по спецификации только с `Secure`. `Lax`
+      закрывает классический CSRF через POST-форму с чужого сайта. Часть браузеров применяет `Lax`, если
+      атрибут не указан, но Chrome в этом режиме ещё две минуты после установки отправляет cookie и при
+      межсайтовой навигации методом `POST`. Поэтому `SameSite` лучше указывать явно.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie#samesitesamesite-value
+    source: own
+
+  - id: network-cookies-003
+    level: middle
+    tags: [cookies, SameSite, Secure]
+    question: |
+      Виджет на `widget.io` встраивается через `iframe` на сайты клиентов и должен получать свою cookie
+      авторизации. Какой набор атрибутов для этого необходим?
+    options:
+      - text: '`SameSite=None; Secure`'
+        correct: true
+        why: 'Запросы из `iframe` на чужой странице — межсайтовые, и cookie уйдёт только при `SameSite=None`. Спецификация разрешает `None` только вместе с `Secure`, и Chrome с Firefox это проверяют.'
+      - text: '`SameSite=Lax; Secure`'
+        why: '`Lax` пропускает межсайтовые запросы только при навигации верхнего уровня, а загрузка `iframe` ею не является.'
+      - text: '`SameSite=None` без `Secure`'
+        why: 'Спецификация требует `Secure` вместе с `SameSite=None`, и Chrome с Firefox такую cookie отклонят.'
+      - text: '`SameSite=Strict; HttpOnly`'
+        why: '`Strict` запрещает отправку в любых межсайтовых запросах, включая запросы из `iframe`.'
+    explanation: |
+      Cookie во встроенных виджетах, платёжных формах и чатах — сторонние (third-party): сайт в адресной
+      строке и сайт cookie разные. Для них нужен `SameSite=None; Secure`. Но даже этого может не хватить:
+      браузеры всё сильнее ограничивают сторонние cookie. Safari блокирует их по умолчанию, Firefox изолирует
+      по сайтам верхнего уровня. Для встраиваемых сценариев есть атрибут `Partitioned` и Storage Access API.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie#none
+      - https://developer.mozilla.org/en-US/docs/Web/Privacy/Guides/Third-party_cookies
+    source: own
+
+  - id: network-cookies-004
+    level: junior
+    tags: [localStorage, sessionStorage]
+    question: |
+      Пользователь открыл сайт в двух вкладках. Чем `sessionStorage` отличается от `localStorage` в этой
+      ситуации?
+    options:
+      - text: '`sessionStorage` у каждой вкладки свой, `localStorage` общий'
+        correct: true
+        why: '`sessionStorage` привязан к вкладке и очищается при её закрытии. `localStorage` общий для всех вкладок одного источника и хранится без срока.'
+      - text: '`sessionStorage` общий, `localStorage` у каждой вкладки свой'
+        why: 'Наоборот: общий для источника — `localStorage`, а `sessionStorage` живёт в рамках вкладки.'
+      - text: '`sessionStorage` отправляется на сервер, `localStorage` нет'
+        why: 'Ни то, ни другое хранилище не отправляется на сервер автоматически.'
+      - text: '`sessionStorage` хранит объекты, `localStorage` только строки'
+        why: 'Оба хранилища хранят только строки. Объекты сохраняют через `JSON.stringify`.'
+    explanation: |
+      Web Storage — простые синхронные хранилища «ключ — строка» объёмом около 5 МБ на источник.
+      `localStorage` живёт, пока его не очистят, и виден всем вкладкам источника. `sessionStorage` живёт до
+      закрытия вкладки, переживает перезагрузку и при этом изолирован от других вкладок. Синхронный API
+      блокирует основной поток, поэтому для больших данных используют асинхронный IndexedDB. Ни одно хранилище
+      не защищено от XSS: любой скрипт на странице прочитает всё.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API
+    source: own
+
+  - id: network-cookies-005
+    level: middle
+    tags: [cookies, Domain]
+    question: |
+      Ответ с `app.example.com` выставляет `Set-Cookie: theme=dark` без атрибута `Domain`. На какие хосты
+      браузер будет отправлять эту cookie?
+    options:
+      - text: 'Только на `app.example.com`'
+        correct: true
+        why: 'Без `Domain` cookie становится host-only: она отправляется только тому хосту, который её выставил, без поддоменов и родительского домена.'
+      - text: 'На `app.example.com` и все его поддомены'
+        why: 'Поддомены получают cookie, только если явно указан `Domain`. Без него cookie привязана к одному хосту.'
+      - text: 'На `example.com` и все его поддомены'
+        why: 'Чтобы поделиться cookie с родительским доменом и соседями, нужно явно указать `Domain=example.com`.'
+      - text: 'На любой сайт, который запросит её через CORS'
+        why: 'Cookie отправляются по правилам домена и `SameSite`, а не по запросу другого сайта.'
+    explanation: |
+      `Domain` расширяет круг получателей, а не сужает его. Без атрибута cookie host-only — это самый строгий
+      вариант. С `Domain=example.com` cookie видна `example.com` и всем поддоменам: так делают общую сессию
+      для `app.` и `admin.`. Выставить cookie для чужого домена или публичного суффикса (`com`, `github.io`)
+      нельзя. Для максимальной изоляции есть префикс `__Host-`: такую cookie браузер примет, только если она
+      `Secure`, без `Domain` и с `Path=/`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie#domaindomain-value
+    source: own
+
+  - id: network-cookies-006
+    level: senior
+    tags: [third-party-cookies, partitioning]
+    question: |
+      Платёжный виджет в `iframe` на сайте магазина выставляет `SameSite=None; Secure; Partitioned`. Что
+      будет, если тот же виджет открыть внутри другого магазина?
+    options:
+      - text: 'Виджет не увидит cookie из первого магазина'
+        correct: true
+        why: '`Partitioned` хранит cookie с ключом «сайт верхнего уровня + сайт cookie». Внутри другого магазина виджет начинает с пустого раздела и не видит cookie из первого.'
+      - text: 'Виджет получит ту же cookie, что и в первом магазине'
+        why: 'Общая cookie во всех встраиваниях — это поведение классических сторонних cookie. Партиционирование их как раз разделяет.'
+      - text: 'Cookie будет отклонена из-за `Partitioned`'
+        why: 'Атрибут принимается вместе с `Secure`. Он не запрещает cookie, а ограничивает её одним сайтом верхнего уровня.'
+      - text: 'Cookie станет доступна и самому магазину'
+        why: 'Раздел принадлежит сайту виджета внутри сайта магазина. Магазин свою копию не видит.'
+    explanation: |
+      Сторонние cookie позволяли следить за пользователем на разных сайтах: один и тот же рекламный домен
+      видел свою cookie везде. Браузеры ограничивают их, но легитимным встраиваемым сервисам (чаты, платежи,
+      карты) нужно хранить состояние. Партиционирование (CHIPS, атрибут `Partitioned`) даёт им cookie, которая
+      живёт отдельно для каждого сайта верхнего уровня. Отслеживание между сайтами становится невозможным, а
+      работа внутри одного сайта сохраняется. Если общая cookie действительно нужна, используют Storage Access
+      API с явного согласия пользователя.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/Privacy/Guides/Privacy_sandbox/Partitioned_cookies
+      - https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API
+    source: own
+
+  - id: network-cookies-007
+    level: middle
+    tags: [jwt, token-storage, xss]
+    question: |
+      Где безопаснее хранить refresh-токен в браузерном приложении?
+    options:
+      - text: 'В cookie с `HttpOnly`, `Secure` и `SameSite`'
+        correct: true
+        why: 'Такую cookie не прочитает скрипт, даже если на странице окажется XSS, а `SameSite` ограничивает её отправку с чужих сайтов.'
+      - text: 'В `localStorage`, чтобы токен пережил перезагрузку'
+        why: '`localStorage` доступен любому скрипту на странице: при XSS токен можно украсть и использовать долго.'
+      - text: 'В `sessionStorage`, чтобы токен жил до закрытия вкладки'
+        why: '`sessionStorage` защищён от XSS не лучше `localStorage`: любой скрипт на странице его прочитает.'
+      - text: 'В глобальной переменной, чтобы он не попадал в хранилища'
+        why: 'Память годится для короткоживущего access-токена, но долгоживущий refresh-токен там уязвим к XSS так же, как в хранилищах, и пропадает при перезагрузке.'
+    explanation: |
+      Хранилища, доступные JavaScript, уязвимы при XSS: внедрённый скрипт прочитает токен и отправит
+      злоумышленнику. `HttpOnly`-cookie это исключает, а риски CSRF снимаются флагом `SameSite`, проверкой
+      `Origin` и CSRF-токенами. Распространённая схема: короткоживущий access-токен в памяти приложения,
+      refresh-токен в `HttpOnly`-cookie, обновление через отдельный эндпоинт. Но главная защита — не допускать
+      XSS: при XSS злоумышленник действует от имени пользователя, пока открыта вкладка.
+    links:
+      - https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html#local-storage
+    source: own
+
+  - id: network-cookies-008
+    level: middle
+    tags: [storage-event, tabs, no-run]
+    question: |
+      Раньше в `localStorage` было `theme = 'light'`. В первой вкладке выполняется
+      `localStorage.setItem('theme', 'dark')`. В каких вкладках сработает событие `storage`?
+    code: |
+      window.addEventListener('storage', (event) => {
+        console.log(event.key, event.newValue);
+      });
+    codeLang: js
+    options:
+      - text: 'Только в других вкладках того же источника'
+        correct: true
+        why: 'Событие `storage` сообщает об изменениях, сделанных в другом документе. Вкладка, которая сама изменила хранилище, событие не получает.'
+      - text: 'Во всех вкладках этого источника, включая первую'
+        why: 'Документ, изменивший хранилище, событие не получает: он и так знает об изменении.'
+      - text: 'Только в первой вкладке, где была сделана запись'
+        why: 'Наоборот: событие приходит только в другие документы того же источника.'
+      - text: 'Во всех вкладках любых сайтов'
+        why: '`localStorage` изолирован по источникам, и события других сайтов не касаются.'
+    explanation: |
+      Событие `storage` — простой способ синхронизировать вкладки: выход из аккаунта, смена темы, обновление
+      корзины. Оно срабатывает в других документах того же источника при изменении `localStorage` (для
+      `sessionStorage` — только в документах той же вкладки, например во вложенных `iframe`). Для более
+      богатого обмена сообщениями между вкладками есть `BroadcastChannel`. Если нужно обновить и текущую
+      вкладку, её обновляют вручную, вместе с вызовом `setItem`. Если записать то же значение, что уже
+      хранится, событие не возникнет нигде.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Window/storage_event
+      - https://developer.mozilla.org/en-US/docs/Web/API/Broadcast_Channel_API
+    source: own
+
+  - id: network-cookies-009
+    level: junior
+    tags: [cookies, localStorage]
+    question: |
+      Чем cookie принципиально отличаются от `localStorage`?
+    options:
+      - text: 'Cookie автоматически отправляются на сервер с запросами'
+        correct: true
+        why: 'Браузер прикладывает подходящие cookie к каждому запросу к их домену. Поэтому через них работают сессии, а большой объём cookie замедляет каждый запрос.'
+      - text: 'Cookie хранят данные дольше, чем `localStorage`'
+        why: 'У `localStorage` нет срока вообще, а cookie живёт до `Expires` или `Max-Age` либо до закрытия браузера.'
+      - text: 'Cookie нельзя прочитать из JavaScript'
+        why: 'Обычные cookie доступны через `document.cookie`. Скрыты только cookie с флагом `HttpOnly`.'
+      - text: 'Cookie хранят больше данных, чем `localStorage`'
+        why: 'Наоборот: cookie ограничены примерно 4 КБ каждая, а `localStorage` — около 5 МБ на источник.'
+    explanation: |
+      Cookie придуманы для сервера: он выставляет их через `Set-Cookie`, а браузер возвращает их в заголовке
+      `Cookie`. Отсюда ограничения по размеру и атрибуты безопасности (`HttpOnly`, `Secure`, `SameSite`,
+      `Domain`, `Path`). `localStorage` придуман для клиента: сервер его не видит, объём больше, API проще.
+      Хранить в cookie то, что серверу не нужно, неэффективно: эти данные будут ехать в каждом запросе,
+      включая запросы за картинками и скриптами того же домена.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Cookies
+    source: own

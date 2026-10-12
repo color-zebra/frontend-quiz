@@ -1,0 +1,27 @@
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(var(--n), 1fr);
+  gap: 4px;
+  padding: 4px;
+  border-radius: calc(var(--radius) - 4px);
+  background: var(--seg-bg);
+}
+
+.seg {
+  min-height: 42px;
+  border: 0;
+  border-radius: calc(var(--radius) - 8px);
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.on {
+  background: var(--seg-on-bg);
+  color: var(--seg-on-text);
+  box-shadow: var(--seg-on-shadow);
+}

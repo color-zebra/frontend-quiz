@@ -1,0 +1,379 @@
+# yaml-language-server: $schema=../../schema.json
+topic: typescript
+subtopic: structural
+questions:
+  - id: typescript-structural-001
+    level: junior
+    tags: [structural-typing]
+    question: |
+      Скомпилируется ли присваивание в последней строке?
+    code: |
+      interface Point {
+        x: number;
+        y: number;
+      }
+
+      class Vector {
+        constructor(public x: number, public y: number) {}
+      }
+
+      const p: Point = new Vector(1, 2);
+    codeLang: ts
+    options:
+      - text: 'Да: совместимость определяется набором свойств'
+        correct: true
+        why: 'У `Vector` есть `x` и `y` нужных типов, и этого достаточно. TypeScript сравнивает форму типов, а не их имена и происхождение.'
+      - text: 'Нет: `Vector` не объявлен как `implements Point`'
+        why: '`implements` только просит компилятор проверить класс заранее. Для совместимости он не нужен: любой объект подходящей формы годится.'
+      - text: 'Нет: класс и интерфейс несовместимы без приведения'
+        why: 'Классы и интерфейсы сравниваются одинаково, по свойствам. Приведение через `as` не требуется.'
+      - text: 'Да: TypeScript не проверяет типы при вызове конструктора'
+        why: 'Проверка есть: у результата `new Vector(1, 2)` тип `Vector`, и он сравнивается с `Point` по свойствам.'
+    explanation: |
+      TypeScript использует структурную типизацию (structural typing): тип A совместим с типом B, если у A есть
+      все требуемые свойства B совместимых типов. Имена типов и иерархия наследования значения не имеют — это
+      отличает его от Java и C#, где типизация номинальная. Отсюда «утиная типизация» на уровне типов: чтобы
+      передать объект в функцию, не нужно наследоваться от интерфейса, достаточно подходящей формы. Обратная
+      сторона — два разных по смыслу типа одинаковой формы взаимозаменяемы, и для различения нужны приёмы
+      вроде branded types.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/type-compatibility.html
+    source: own
+
+  - id: typescript-structural-002
+    level: middle
+    tags: [excess-property-check, freshness]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются?
+    code: |
+      interface Options {
+        timeout?: number;
+      }
+
+      const a: Options = { timeout: 1, retries: 3 }; // A
+
+      const raw = { timeout: 1, retries: 3 };
+      const b: Options = raw;                        // B
+    codeLang: ts
+    options:
+      - text: 'Только A'
+        correct: true
+        why: 'Литерал объекта, сразу присваиваемый типу, проверяется на лишние свойства: `retries` в `Options` нет. Переменная `raw` — уже не «свежий» литерал, и для неё действует обычная структурная проверка.'
+      - text: 'Только B'
+        why: 'Наоборот: проверка лишних свойств срабатывает только для литерала, записанного прямо в месте присваивания.'
+      - text: 'A и B'
+        why: 'Для переменной `raw` лишнее свойство допустимо: структурная совместимость требует только наличия нужных свойств.'
+      - text: 'Ни одна'
+        why: 'Литерал в строке A проверяется строже обычного: лишнее свойство в нём, скорее всего, опечатка, и компилятор сообщает об ошибке.'
+    explanation: |
+      Структурная типизация разрешает лишние свойства, но у этого правила есть исключение — проверка лишних
+      свойств (excess property checking). Она срабатывает только для «свежего» литерала объекта, который сразу
+      присваивается переменной, передаётся аргументом или возвращается из функции с известным типом. Логика
+      такая: раз объект создаётся прямо здесь, лишнее свойство почти наверняка опечатка (`timout` вместо
+      `timeout`). Как только литерал сохранён в переменную, он теряет «свежесть», и проверка не срабатывает.
+      Поэтому вынос объекта в переменную иногда «чинит» ошибку и заодно прячет настоящую опечатку.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/objects.html#excess-property-checks
+    source: own
+
+  - id: typescript-structural-003
+    level: senior
+    tags: [weak-types, compatibility]
+    question: |
+      Что произойдёт при компиляции?
+    code: |
+      interface Options {
+        timeout?: number;
+        retries?: number;
+      }
+
+      const raw = { delay: 100 };
+      const options: Options = raw;
+    codeLang: ts
+    options:
+      - text: 'Ошибка: у `raw` нет ни одного общего свойства с `Options`'
+        correct: true
+        why: 'Тип, у которого все свойства необязательные, считается «слабым». Присвоить ему значение можно, только если есть хотя бы одно общее свойство, иначе это почти наверняка ошибка.'
+      - text: 'Компилируется: `raw` — переменная, лишние свойства у неё разрешены'
+        why: 'Это не проверка лишних свойств, а отдельное правило для слабых типов. Оно действует и для переменных.'
+      - text: 'Компилируется: все свойства `Options` необязательны, подходит любой объект'
+        why: 'Так было до TypeScript 2.4. Теперь значение без единого общего свойства со слабым типом отклоняется.'
+      - text: 'Ошибка: у `raw` не хватает обязательных свойств `timeout` и `retries`'
+        why: 'Свойства `Options` необязательные, отсутствие каждого из них допустимо. Ошибка в том, что нет ни одного совпадающего свойства.'
+    explanation: |
+      Слабый тип (weak type) — объектный тип, у которого все свойства необязательные. Формально ему подходит
+      любой объект, и проверка была бы бесполезна. Поэтому с TypeScript 2.4 действует дополнительное правило:
+      значение, у которого нет ни одного свойства из слабого типа, считается ошибкой (`TS2559: has no properties
+      in common`). Правило работает и для переменных, в отличие от проверки лишних свойств. Типичный случай —
+      объект опций, в который по ошибке передали совсем другой объект.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-4.html#weak-type-detection
+    source: own
+
+  - id: typescript-structural-004
+    level: middle
+    tags: [object-keys, structural-typing]
+    question: |
+      Почему `Object.keys(user)` возвращает `string[]`, а не `(keyof User)[]`?
+    options:
+      - text: 'В объекте может оказаться больше ключей, чем описано в его типе'
+        correct: true
+        why: 'Из-за структурной типизации в переменную типа `User` можно положить объект с дополнительными свойствами. Тип `(keyof User)[]` обещал бы, что лишних ключей нет, а это неправда.'
+      - text: 'Ключи-символы тоже попадают в результат, и `keyof` их не покрывает'
+        why: '`Object.keys` возвращает только собственные перечисляемые строковые ключи, символы в него не попадают.'
+      - text: 'Так сделано ради скорости проверки типов на больших объектах'
+        why: 'Причина не в производительности, а в корректности: точный тип ключей был бы ложным обещанием.'
+      - text: 'Порядок ключей в рантайме может не совпадать с порядком в типе'
+        why: 'Порядок не влияет на тип `(keyof User)[]`: это массив объединения ключей, без фиксированных позиций.'
+    explanation: |
+      Тип объекта в TypeScript описывает минимум: «здесь есть как минимум такие свойства». Значение типа `User`
+      на деле может быть объектом с полями, которых нет в `User`, например экземпляром подкласса или объектом из
+      API. Поэтому `Object.keys`, `for...in` и `Object.entries` возвращают ключи как `string`. Если вы уверены в
+      форме объекта, можно привести тип явно: `Object.keys(user) as (keyof User)[]`. Но это ваша гарантия, а не
+      компилятора, и при лишних ключах код с `user[key]` получит неожиданные значения.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/type-compatibility.html
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys
+    source: own
+
+  - id: typescript-structural-005
+    level: senior
+    tags: [variance, strictFunctionTypes, bivariance]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются в режиме `strict`?
+    code: |
+      interface Animal { name: string }
+      interface Dog extends Animal { bark(): void }
+
+      interface WithMethod { handle(animal: Animal): void }
+      interface WithProperty { handle: (animal: Animal) => void }
+
+      const handleDog = (dog: Dog) => dog.bark();
+
+      const a: WithMethod = { handle: handleDog };   // A
+      const b: WithProperty = { handle: handleDog }; // B
+    codeLang: ts
+    options:
+      - text: 'Только B'
+        correct: true
+        why: 'При `strictFunctionTypes` параметры функциональных типов проверяются контравариантно: обработчик собак нельзя подставить туда, где передают любое животное. Но методы, объявленные синтаксисом `handle(...)`, из этой проверки исключены и сравниваются бивариантно.'
+      - text: 'Только A'
+        why: 'Наоборот: строгая проверка параметров действует для свойства с функциональным типом, а для синтаксиса метода сохранена старая бивариантность.'
+      - text: 'A и B'
+        why: 'Для метода, объявленного как `handle(animal: Animal): void`, TypeScript намеренно оставил бивариантную проверку параметров, поэтому строка A компилируется.'
+      - text: 'Ни одна'
+        why: 'Строка B — ошибка: `handleDog` вызовет `bark` у любого животного, которое ей передадут, а у `Animal` этого метода нет.'
+    explanation: |
+      Функцию с параметром `Dog` небезопасно использовать там, где её вызовут с любым `Animal`: она обратится к
+      `bark`, которого может не быть. Правильное правило для параметров — контравариантность: подставлять можно
+      функции, принимающие более общий тип. Флаг `strictFunctionTypes` (входит в `strict`) включает его для
+      функциональных типов. Для методов оставлена бивариантность: иначе сломались бы `Array<Dog>` как
+      `Array<Animal>` и многие DOM-типы. Поэтому в своих интерфейсах колбэки надёжнее описывать свойством
+      со стрелочным типом: так проверка строже.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-6.html#strict-function-types
+      - https://www.typescriptlang.org/docs/handbook/type-compatibility.html#function-parameter-bivariance
+    source: own
+
+  - id: typescript-structural-006
+    level: middle
+    tags: [function-compatibility, callbacks]
+    question: |
+      `forEach` вызывает колбэк с тремя аргументами: элемент, индекс и массив. Почему можно передать
+      колбэк с одним параметром?
+    code: |
+      [1, 2, 3].forEach((n) => console.log(n));
+    codeLang: ts
+    options:
+      - text: 'Функцию с меньшим числом параметров можно подставить туда, где передают больше'
+        correct: true
+        why: 'Лишние аргументы функция просто проигнорирует, это безопасно. Поэтому функция с меньшим числом параметров совместима с типом, где их больше.'
+      - text: 'У `forEach` есть отдельные перегрузки на один, два и три параметра колбэка'
+        why: 'У `forEach` одна сигнатура, и колбэк в ней всегда описан с тремя параметрами.'
+      - text: 'Параметры `index` и `array` в типе колбэка помечены как необязательные'
+        why: 'В объявлении `forEach` параметры колбэка обязательные. Совместимость обеспечивает правило о числе параметров, а не `?`.'
+      - text: 'TypeScript не проверяет колбэки, переданные во встроенные методы'
+        why: 'Проверяет: колбэк с параметром неподходящего типа, например `(n: string) => ...`, даст ошибку.'
+    explanation: |
+      При сравнении функций TypeScript разрешает источнику иметь меньше параметров, чем у целевого типа. В
+      JavaScript лишние аргументы просто игнорируются, поэтому такая подстановка безопасна, и благодаря ей
+      работают `map`, `forEach` и обработчики событий. Обратное запрещено: функцию, требующую три параметра,
+      нельзя использовать там, где её вызовут с одним. Отсюда совет: не помечать параметры колбэков `?` без
+      необходимости. Необязательный параметр в типе колбэка означает «его могут не передать», а не «его можно
+      не объявлять».
+    links:
+      - https://www.typescriptlang.org/docs/handbook/type-compatibility.html#comparing-two-functions
+      - https://www.typescriptlang.org/docs/handbook/2/functions.html#optional-parameters-in-callbacks
+    source: own
+
+  - id: typescript-structural-007
+    level: middle
+    tags: [readonly, compatibility, output]
+    question: |
+      Что произойдёт?
+    code: |
+      const user: { readonly name: string } = { name: 'Ann' };
+      const copy: { name: string } = user;
+      copy.name = 'Bob';
+      console.log(user.name);
+    codeLang: ts
+    options:
+      - text: 'Скомпилируется и выведет `Bob`'
+        correct: true
+        why: '`readonly` не влияет на совместимость: объект с `readonly`-свойством можно присвоить типу с изменяемым свойством. Обе переменные ссылаются на один объект, и запись через `copy` его меняет.'
+      - text: 'Скомпилируется и выведет `Ann`'
+        why: 'Присваивание объекта не копирует его: `copy` и `user` указывают на один и тот же объект.'
+      - text: 'Ошибка компиляции во второй строке'
+        why: 'Для свойств объектов TypeScript не проверяет `readonly` при присваивании одного типа другому.'
+      - text: 'Ошибка в рантайме при записи `copy.name`'
+        why: '`readonly` существует только при компиляции. В рантайме это обычное свойство, и запись в него проходит.'
+    explanation: |
+      `readonly` у свойства запрещает запись через этот тип, но не делает объект неизменяемым. Совместимость
+      типов модификатор `readonly` у свойств не учитывает: `{ readonly name: string }` и `{ name: string }`
+      взаимно присваиваемы, поэтому изменить объект можно через другую ссылку. Настоящую неизменяемость в
+      рантайме даёт только
+      `Object.freeze`, да и та неглубокая.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/objects.html#readonly-properties
+    source: own
+
+  - id: typescript-structural-008
+    level: middle
+    tags: [branded-types, nominal-typing]
+    question: |
+      Какие вызовы, отмеченные буквами, скомпилируются?
+    code: |
+      type UserId = string & { readonly __brand: 'UserId' };
+      type OrderId = string & { readonly __brand: 'OrderId' };
+
+      function getUser(id: UserId) {}
+
+      const orderId = 'o-1' as OrderId;
+
+      getUser(orderId);           // A
+      getUser('u-1');             // B
+      getUser('u-1' as UserId);   // C
+    codeLang: ts
+    options:
+      - text: 'Только C'
+        correct: true
+        why: 'Обычная строка не содержит свойства `__brand`, а у `OrderId` оно другого литерального типа. Подходит только значение, явно приведённое к `UserId`.'
+      - text: 'B и C'
+        why: '`string` нельзя присвоить `UserId`: в пересечении требуется ещё и свойство `__brand`, которого у строки нет.'
+      - text: 'A, B и C'
+        why: 'В рантайме все три значения — обычные строки, но при компиляции типы различаются по `__brand`, и вызовы A и B отклоняются.'
+      - text: 'A и C'
+        why: 'Свойство `__brand` у `OrderId` имеет тип `"OrderId"`, а у `UserId` — `"UserId"`. Литералы несовместимы, поэтому вызов A не компилируется.'
+    explanation: |
+      Из-за структурной типизации `type UserId = string` ничем не отличается от `string`, и идентификаторы
+      легко перепутать. Приём branded types (брендированные, или номинальные, типы) добавляет к типу
+      фиктивное свойство-метку. В рантайме его нет, но при компиляции типы с разными метками несовместимы.
+      Значение «нужной марки» создают в одном месте: в функции-конструкторе или валидаторе, где выполняется
+      `as UserId`. Так компилятор не даст передать id заказа туда, где ждут id пользователя.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/objects.html#intersection-types
+      - https://www.typescriptlang.org/play/#example/nominal-typing
+    source: own
+
+  - id: typescript-structural-009
+    level: senior
+    tags: [private, nominal-typing, classes]
+    question: |
+      Какая строка, отмеченная буквой, не скомпилируется?
+    code: |
+      class A { private secret = 1 }
+      class B { private secret = 1 }
+      class C { secret = 1 }
+      class D { secret = 1 }
+
+      const ab: A = new B(); // X
+      const cd: C = new D(); // Y
+    codeLang: ts
+    options:
+      - text: 'Только X'
+        correct: true
+        why: 'Если в типе есть `private` или `protected` член, совместимым считается только тип, получивший этот член из того же объявления. У `A` и `B` поля `secret` объявлены отдельно.'
+      - text: 'Только Y'
+        why: 'Классы `C` и `D` с публичным полем совместимы обычным структурным образом, как два одинаковых объекта.'
+      - text: 'X и Y'
+        why: 'Разные классы с одинаковыми публичными членами структурно совместимы, поэтому строка Y компилируется.'
+      - text: 'Ни одна'
+        why: 'Для `private`-членов структурное правило не действует: поля `secret` в `A` и `B` считаются разными, хотя выглядят одинаково.'
+    explanation: |
+      Публичные члены классов сравниваются структурно, как у обычных объектов. Для `private` и `protected`
+      сделано исключение: такой член совместим только с самим собой, то есть с тем же объявлением в том же
+      классе или унаследованным от него. Поэтому класс с приватным полем ведёт себя почти номинально: подсунуть
+      «похожий» объект не выйдет. Это ещё один способ различать одинаковые по форме типы, наряду с branded types.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/type-compatibility.html#private-and-protected-members-in-classes
+    source: own
+
+  - id: typescript-structural-010
+    level: junior
+    tags: [subtyping, compatibility]
+    question: |
+      Что произойдёт при компиляции?
+    code: |
+      interface Animal { name: string }
+      interface Dog extends Animal { bark(): void }
+
+      const dog: Dog = { name: 'Rex', bark() {} };
+      const animal: Animal = dog;
+      animal.bark();
+    codeLang: ts
+    options:
+      - text: 'Ошибка в последней строке'
+        correct: true
+        why: 'Присвоить `Dog` в `Animal` можно: у собаки есть всё, что нужно животному. Но дальше переменная имеет тип `Animal`, а в нём метода `bark` нет.'
+      - text: 'Ошибка в строке с `const animal`'
+        why: '`Dog` расширяет `Animal`, поэтому собаку можно присвоить переменной типа животного.'
+      - text: 'Компилируется: в объекте есть метод `bark`'
+        why: 'Компилятор проверяет обращения по типу переменной, а не по реальному объекту. У типа `Animal` метода `bark` нет.'
+      - text: 'Ошибка в строке с `const dog`'
+        why: 'У литерала есть оба свойства `Dog`: `name` и `bark`. Объявление корректно.'
+    explanation: |
+      Подтип можно присвоить переменной базового типа. Это основа полиморфизма: функция, принимающая `Animal`,
+      работает и с собакой, и с кошкой. Но после присваивания компилятор видит только объявленный тип
+      переменной, и доступ к специфичным членам пропадает, хотя объект в памяти тот же. Вернуть его можно
+      сужением типа: проверкой `'bark' in animal` или пользовательским type guard. Приведение `as Dog` тоже
+      сработает, но без проверки это обещание компилятору, а не гарантия.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/type-compatibility.html
+    source: own
+
+  - id: typescript-structural-011
+    level: senior
+    tags: [array-covariance, unsoundness, output]
+    question: |
+      Что произойдёт?
+    code: |
+      interface Animal { name: string }
+      interface Dog extends Animal { bark(): void }
+      interface Cat extends Animal { meow(): void }
+
+      const dogs: Dog[] = [{ name: 'Rex', bark() {} }];
+      const animals: Animal[] = dogs;
+      animals.push({ name: 'Tom', meow() {} } as Cat);
+
+      dogs[1].bark();
+    codeLang: ts
+    options:
+      - text: 'Скомпилируется, а в рантайме будет `TypeError` на `bark`'
+        correct: true
+        why: 'Массивы в TypeScript ковариантны: `Dog[]` можно присвоить `Animal[]`. Через `animals` в тот же массив кладётся кошка, и `dogs[1]` оказывается объектом без `bark`.'
+      - text: 'Ошибка компиляции на `animals.push`'
+        why: 'Для типа `Animal[]` кошка — допустимый элемент. Компилятор не знает, что за `animals` на деле стоит массив собак.'
+      - text: 'Ошибка компиляции на `const animals: Animal[] = dogs`'
+        why: 'Присвоить `Dog[]` в `Animal[]` разрешено: массивы сравниваются ковариантно, хотя это и небезопасно.'
+      - text: 'Скомпилируется и выполнится без ошибок'
+        why: '`dogs[1]` — кошка, у неё нет метода `bark`, и вызов бросит `TypeError`.'
+    explanation: |
+      Система типов TypeScript намеренно не полностью безопасна (unsound). Один из известных компромиссов —
+      ковариантность изменяемых массивов: `Dog[]` считается подтипом `Animal[]`, хотя через ссылку на
+      `Animal[]` можно записать в массив не собаку. Строго корректным был бы запрет такого присваивания, но он
+      сделал бы неудобным огромное количество кода, который только читает массивы. Защититься можно,
+      принимая в функциях `readonly Animal[]`: в такой массив записать ничего нельзя, и ковариантность
+      становится безопасной.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/type-compatibility.html#a-note-on-soundness
+    source: own

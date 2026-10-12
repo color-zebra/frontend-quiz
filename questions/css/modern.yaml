@@ -1,0 +1,308 @@
+# yaml-language-server: $schema=../../schema.json
+topic: css
+subtopic: modern
+questions:
+  - id: css-modern-001
+    level: junior
+    tags: [custom-properties, var, fallback]
+    question: |
+      Какого цвета будет текст карточки?
+    code: |
+      <style>
+        .theme-dark { --accent: blue; }
+        .card { color: var(--accent, red); }
+      </style>
+      <div class="theme-light">
+        <div class="card">Карточка</div>
+      </div>
+    codeLang: html
+    options:
+      - text: 'Синего'
+        why: 'Переменная объявлена только у `.theme-dark`, а карточка лежит в `.theme-light`. До неё значение не доходит.'
+      - text: 'Красного'
+        correct: true
+        why: 'Custom property наследуется только вниз по дереву от элемента, где объявлена. У карточки `--accent` нет, поэтому срабатывает запасное значение из `var()`.'
+      - text: 'Чёрного, цвета по умолчанию'
+        why: 'Цвет по умолчанию был бы, если бы у `var()` не было запасного значения: тогда свойство стало бы недействительным и унаследовало цвет родителя.'
+      - text: 'Никакого: правило с неизвестной переменной отбрасывается целиком'
+        why: 'Правило не отбрасывается. Ради таких случаев у `var()` и есть второй аргумент — fallback.'
+    explanation: |
+      Custom properties (`--name`) — обычные наследуемые свойства. Значение, объявленное на элементе, видно
+      ему и всем потомкам, но не соседям и не предкам. Поэтому темы делают так: на `:root` объявляют
+      значения по умолчанию, а на контейнере темы переопределяют их — и всё внутри перекрашивается.
+      `var(--name, fallback)` берёт запасное значение, если переменная не определена. Запасное значение
+      может само содержать `var()`: `var(--btn-bg, var(--accent, red))`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties
+    source: own
+
+  - id: css-modern-002
+    level: senior
+    tags: [custom-properties, invalid-at-computed-value-time]
+    question: |
+      Родитель абзаца чёрный. Какого цвета будет абзац?
+    code: |
+      :root { --gap: 20px; }
+
+      p {
+        color: blue;
+        color: var(--gap);
+      }
+    codeLang: css
+    options:
+      - text: 'Синего'
+        why: 'Ловушка: кажется, что недействительное второе объявление отбросится и останется первое. Но браузер узнаёт о недействительности слишком поздно.'
+      - text: 'Чёрного'
+        correct: true
+        why: 'Значение `20px` недопустимо для `color`, но это выясняется только при подстановке переменной. Объявление уже победило в каскаде и становится `unset` — для `color` это наследование от родителя.'
+      - text: 'Прозрачного'
+        why: 'Прозрачный цвет — `transparent`, он не возникает из недопустимого значения. Свойство ведёт себя как `unset`.'
+      - text: 'Цвет станет `20px`, и браузер выведет ошибку в консоль'
+        why: 'Недопустимое значение не применяется, а CSS не пишет ошибок в консоль JavaScript.'
+    explanation: |
+      Обычная опечатка вроде `color: 20px` отбрасывается при разборе CSS, и предыдущее объявление `blue`
+      продолжает действовать. С переменными иначе: при разборе браузер не знает, что окажется в `var()`,
+      поэтому принимает объявление, и оно побеждает в каскаде как последнее. При вычислении значения
+      выясняется, что `20px` — не цвет. Это называется invalid at computed-value time: свойство ведёт
+      себя как `unset`, то есть наследуемое берёт значение родителя, а остальные — начальное. Запасное
+      значение в `var()` здесь тоже не спасло бы: оно срабатывает, только если переменная не определена.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties#invalid_custom_properties
+    source: own
+
+  - id: css-modern-003
+    level: middle
+    tags: [custom-properties, media-queries]
+    question: |
+      Сработает ли такой медиазапрос?
+    code: |
+      :root { --bp-tablet: 768px; }
+
+      @media (min-width: var(--bp-tablet)) {
+        .grid { grid-template-columns: 1fr 1fr; }
+      }
+    codeLang: css
+    options:
+      - text: 'Да, если переменная объявлена на `:root`'
+        why: 'Место объявления не поможет: медиазапросы вообще не поддерживают `var()`.'
+      - text: 'Нет, `var()` нельзя использовать в условиях медиазапросов'
+        correct: true
+        why: 'Custom properties принадлежат элементам, а медиазапрос вычисляется для всего документа, вне каскада. Подставить значение неоткуда.'
+      - text: 'Да, но только в браузерах на Chromium'
+        why: 'Ни один браузер не поддерживает `var()` в условиях медиазапросов: так устроена спецификация.'
+      - text: 'Нет, потому что переменная должна быть в `rem`'
+        why: 'Единица значения не важна, `var()` в условиях медиазапросов не работает в принципе.'
+    explanation: |
+      `var()` подставляет значение custom property конкретного элемента. Медиазапрос не привязан ни к
+      какому элементу, поэтому переменные в его условии не работают. Точки перелома обычно хранят в
+      переменных препроцессора (SCSS) или в JS-конфиге сборки. В спецификации описаны custom media queries
+      (`@custom-media --tablet (min-width: 768px)`), но браузеры их пока не поддерживают без сборщика вроде
+      PostCSS. Внутри медиазапроса, в объявлениях, переменные работают как обычно.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties
+    source: own
+
+  - id: css-modern-004
+    level: senior
+    tags: [property, custom-properties, animation]
+    question: |
+      Почему градиент не вращается плавно, а угол меняется рывком?
+    code: |
+      .box {
+        --angle: 0deg;
+        background: linear-gradient(var(--angle), red, blue);
+        transition: --angle 1s;
+      }
+      .box:hover { --angle: 180deg; }
+    codeLang: css
+    options:
+      - text: 'Свойство `transition` не работает с `background`'
+        why: 'Дело не в `background`: анимироваться должна переменная, а с незарегистрированной это невозможно.'
+      - text: 'Браузер не знает типа `--angle` и не может его интерполировать'
+        correct: true
+        why: 'Незарегистрированная custom property — набор токенов без типа, интерполировать её нельзя. Нужно зарегистрировать её через `@property` с `syntax: "<angle>"`.'
+      - text: 'Переменные нельзя менять в `:hover`, нужен JavaScript'
+        why: 'Менять custom properties в любых селекторах можно, и значение подставится. Проблема только в плавности.'
+      - text: 'Нужно указать единицы `turn` вместо `deg`'
+        why: 'Единицы не важны: интерполировать нельзя любое значение незарегистрированной переменной.'
+    explanation: |
+      Для браузера обычная custom property — строка токенов без типа: он не знает, что `0deg` и `180deg` —
+      углы и между ними есть промежуточные значения. Поэтому перехода нет вовсе: угол меняется сразу
+      при наведении (с `transition-behavior: allow-discrete` был бы скачок в середине длительности). Правило `@property --angle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }`
+      регистрирует переменную с типом. После этого её можно анимировать через `transition` и `@keyframes`,
+      а значения неверного типа отбрасываются. Это открывает анимации градиентов, счётчиков и других
+      «неанимируемых» эффектов.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/@property
+    source: own
+
+  - id: css-modern-005
+    level: middle
+    tags: [nesting, bem]
+    question: |
+      Что получится в нативном CSS (без препроцессора) из такой записи?
+    code: |
+      .card {
+        padding: 16px;
+        &__title { font-weight: bold; }
+      }
+    codeLang: css
+    options:
+      - text: 'Правило для `.card__title`, как в SCSS'
+        why: 'Склейка строк — особенность SCSS. В нативном CSS `&` — ссылка на родительский селектор, а не текст.'
+      - text: 'Правило `&__title` не сработает в нативном CSS'
+        correct: true
+        why: 'В нативной вложенности `&` ведёт себя как `:is(.card)`. Запись `&__title` превращается в бессмыслицу вроде «`.card` и тег `__title`» и ничего не находит.'
+      - text: 'Весь блок `.card` будет проигнорирован как синтаксическая ошибка'
+        why: '`padding` у `.card` применится. Не работает только вложенное правило.'
+      - text: 'Правило для потомков `.card` с классом `__title`'
+        why: 'Для класса нужна точка: `& .__title`. Здесь же точки нет, и это не класс.'
+    explanation: |
+      Нативная вложенность CSS (поддерживается всеми современными браузерами с 2023 года) похожа на SCSS,
+      но `&` в ней — не текстовая подстановка, а ссылка на родительский селектор, как `:is(родитель)`.
+      Работают `&:hover`, `&.active`, `& + &`, `.dark &`, вложенные `.title` без `&`. А БЭМ-склейки
+      `&__title` и `&--primary` — нет: для них по-прежнему нужен препроцессор. Ещё одно отличие:
+      специфичность вложенного правила считается как у `:is()`, то есть по самому специфичному селектору в
+      списке родителя.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_nesting/Using_CSS_nesting
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/Nesting_selector
+    source: own
+
+  - id: css-modern-006
+    level: junior
+    tags: [logical-properties, rtl]
+    question: |
+      Сайт переводят на арабский (письмо справа налево). Какое свойство сохранит отступ иконки «перед
+      текстом» без отдельных стилей для RTL?
+    options:
+      - text: '`margin-inline-start: 8px`'
+        why: '`inline-start` — начало строки, то есть сторона иконки, обращённая от текста. Отступ окажется с внешней стороны, а не между иконкой и текстом.'
+      - text: '`margin-inline-end: 8px`'
+        correct: true
+        why: 'Логические свойства отсчитываются от направления письма: `inline-end` — конец строки, в RTL это левая сторона.'
+      - text: '`margin-right: 8px`'
+        why: 'Физическое направление не меняется вместе с письмом. Для RTL понадобится отдельное правило.'
+      - text: '`margin-block-end: 8px`'
+        why: '`block` — ось блоков (сверху вниз), а не строки. Это отступ снизу.'
+    explanation: |
+      Физические свойства (`left`, `right`, `top`, `bottom`) привязаны к экрану. Логические — к направлению
+      текста: `inline` — ось строки, `block` — ось следования блоков; `start` и `end` — начало и конец.
+      В LTR `margin-inline-start` = `margin-left`, в RTL — `margin-right`. Иконка перед текстом в обоих
+      случаях отделяется отступом на стороне «конца» иконки, то есть `margin-inline-end`. Есть и логические
+      размеры (`inline-size`, `block-size`) и `inset-inline`. Если интерфейс может быть RTL, логические
+      свойства избавляют от зеркальных переопределений.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_logical_properties_and_values
+    source: own
+
+  - id: css-modern-007
+    level: junior
+    tags: [aspect-ratio]
+    question: |
+      Как сделать блок для видео с соотношением сторон 16:9, который тянется по ширине родителя?
+    options:
+      - text: '`width: 100%; height: 56.25%;`'
+        why: 'Процентная высота считается от высоты родителя, а не от ширины, и обычно превращается в `auto`.'
+      - text: '`width: 100%; aspect-ratio: 16 / 9;`'
+        correct: true
+        why: 'При заданной ширине и `height: auto` браузер вычисляет высоту по соотношению сторон.'
+      - text: '`width: 100%; height: calc(100% * 16 / 9);`'
+        why: 'Расчёт снова идёт от высоты родителя, и к тому же пропорция перевёрнута.'
+      - text: '`width: 16vw; height: 9vw;`'
+        why: 'Пропорция сохранится, но размер привяжется к окну браузера, а не к ширине родителя.'
+    explanation: |
+      Свойство `aspect-ratio` задаёт предпочтительное соотношение сторон: если один размер известен, а другой
+      `auto`, второй вычисляется. Раньше то же делали хаком с `padding-top: 56.25%` (проценты padding
+      считаются от ширины) и абсолютно позиционированным содержимым. Если содержимому нужно больше места,
+      блок по умолчанию вырастет, нарушив пропорцию. Чтобы этого избежать, ставят `min-height: 0` или
+      `overflow: hidden`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/aspect-ratio
+    source: own
+
+  - id: css-modern-008
+    level: middle
+    tags: [currentColor]
+    question: |
+      Какого цвета будут рамка и иконка в ссылке при наведении?
+    code: |
+      <style>
+        a { color: blue; border: 1px solid currentColor; }
+        a:hover { color: red; }
+        a svg { fill: currentColor; }
+      </style>
+      <a href="#"><svg>...</svg> Ссылка</a>
+    codeLang: html
+    options:
+      - text: 'Рамка красная, иконка синяя'
+        why: '`fill: currentColor` у иконки тоже вычисляется от текущего `color`. Иконка наследует красный от ссылки.'
+      - text: 'Рамка синяя, иконка красная'
+        why: '`currentColor` в рамке не «запоминает» цвет на момент объявления: он всегда равен текущему значению `color`.'
+      - text: 'И рамка, и иконка красные'
+        correct: true
+        why: '`currentColor` равен вычисленному `color` элемента. При наведении ссылка красная, и рамка с иконкой следуют за ней.'
+      - text: 'И рамка, и иконка синие'
+        why: 'Так было бы с жёстко заданным цветом. С `currentColor` они меняются вместе с текстом.'
+    explanation: |
+      `currentColor` — ключевое слово, равное значению `color` текущего элемента. Его используют везде, где
+      цвет должен следовать за цветом текста: рамки, тени, `fill` и `stroke` у инлайн-SVG, подчёркивания.
+      Для иконок это особенно удобно: достаточно поменять `color` у кнопки — в состоянии hover, disabled,
+      в тёмной теме, — и иконка перекрасится сама. Значение по умолчанию у `border-color` уже равно
+      `currentColor`, поэтому `border: 1px solid` без цвета тоже красится в цвет текста.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/color_value#currentcolor_keyword
+    source: own
+
+  - id: css-modern-009
+    level: middle
+    tags: [custom-properties, javascript, theming]
+    question: |
+      Как из JavaScript поменять основной цвет темы на лету, если он используется в стилях как
+      `var(--accent)`?
+    options:
+      - text: '`document.documentElement.style.setProperty("--accent", "tomato")`'
+        correct: true
+        why: 'Инлайн-стиль на `<html>` переопределяет переменную на корне, она наследуется вниз, и все `var(--accent)` пересчитываются.'
+      - text: '`document.documentElement.style.accent = "tomato"`'
+        why: 'Свойства `style` в camelCase существуют только для стандартных CSS-свойств. Custom properties пишутся через `setProperty` с именем вместе с `--`.'
+      - text: '`document.documentElement.style["--accent"] = "tomato"`'
+        why: 'Присваивание через квадратные скобки для custom properties не работает. Нужен `setProperty("--accent", ...)`.'
+      - text: 'Никак: переменные в CSS вычисляются один раз при загрузке'
+        why: 'Это верно для переменных препроцессора вроде `$accent`. Custom properties живые и пересчитываются при каждом изменении.'
+    explanation: |
+      Custom properties живут в браузере и участвуют в каскаде, поэтому их можно менять в любой момент:
+      через классы (`.dark { --accent: ... }`), медиазапросы (`prefers-color-scheme`) или из JS через
+      `style.setProperty('--accent', value)` и чтение `getComputedStyle(el).getPropertyValue('--accent')`.
+      Изменение на корне перекрасит всю страницу без пересборки стилей. Переменные SCSS (`$accent`) так не
+      умеют: к моменту загрузки в браузер они уже заменены значениями.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleDeclaration/setProperty
+    source: own
+
+  - id: css-modern-010
+    level: middle
+    tags: [css-modules, css-in-js, architecture]
+    question: |
+      Чем CSS Modules принципиально отличаются от рантайм CSS-in-JS (например, styled-components)?
+    options:
+      - text: 'CSS Modules работают при сборке, а CSS-in-JS — в браузере'
+        correct: true
+        why: 'У CSS Modules нет затрат во время работы страницы: это статические файлы. Рантайм CSS-in-JS вычисляет и вставляет стили при рендере, что стоит процессорного времени и усложняет SSR.'
+      - text: 'CSS Modules работают только с React, а CSS-in-JS — с любым фреймворком'
+        why: 'Скорее наоборот: CSS Modules — возможность сборщика (Vite, webpack) и подходят любому фреймворку, а многие CSS-in-JS-библиотеки заточены под React.'
+      - text: 'CSS Modules не поддерживают медиазапросы и псевдоклассы'
+        why: 'Это обычный CSS: медиазапросы, псевдоклассы, анимации работают как всегда. Меняются только имена классов.'
+      - text: 'CSS-in-JS изолирует стили через Shadow DOM, а CSS Modules — через iframe'
+        why: 'Ни то ни другое. Оба подхода изолируют стили генерацией уникальных имён классов.'
+    explanation: |
+      Обе технологии решают проблему глобального CSS — конфликты имён и непредсказуемый каскад. CSS Modules
+      делают это на этапе сборки: `.title` превращается в `.Card_title__x7f3`, а в JS приходит объект с
+      именами. Рантайм CSS-in-JS (styled-components, Emotion) пишет стили в JS, вычисляет их при рендере и
+      вставляет `<style>` в документ — удобно для динамики через пропсы, но добавляет работу при каждом
+      рендере, размер бандла и сложности с серверными компонентами React. Поэтому популярны zero-runtime
+      решения (vanilla-extract, Linaria, Panda) и утилитарный CSS вроде Tailwind.
+    links:
+      - https://github.com/css-modules/css-modules
+      - https://dev.to/srmagura/why-were-breaking-up-wiht-css-in-js-4g9b
+    source: own

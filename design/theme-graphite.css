@@ -1,0 +1,72 @@
+/* B. Графит: нейтральное «матовое стекло» в духе visionOS, почти без цвета, белая кнопка. */
+:root {
+  --page-bg: #0e0f12;
+  --bg: #17181c;
+  --blob1: #4f6b8a;
+  --blob2: #8a6a4f;
+  --blob3: #5b5470;
+  --blob-blur: 90px;
+  --blob-opacity: 0.7;
+
+  --glass-bg: rgba(255, 255, 255, 0.09);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --glass-blur: 40px;
+  --glass-sat: 180%;
+  --glass-shadow: 0 20px 40px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --bar-bg: rgba(30, 31, 36, 0.6);
+
+  --radius: 28px;
+  --chip-radius: 14px;
+  --btn-radius: 999px;
+  --code-radius: 20px;
+
+  --font-body: Inter, system-ui, sans-serif;
+  --font-heading: Inter, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --text: #f5f5f7;
+  --text-2: #d1d1d6;
+  --muted: #98989f;
+  --accent: #f5f5f7;
+  --link: #64d2ff;
+
+  --primary-bg: #f5f5f7;
+  --primary-text: #111114;
+  --primary-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+
+  --chip-bg: rgba(255, 255, 255, 0.07);
+  --chip-border: rgba(255, 255, 255, 0.1);
+  --chip-on-bg: rgba(255, 255, 255, 0.92);
+  --chip-on-border: transparent;
+  --chip-on-text: #111114;
+  --chip-on-glow: none;
+  --chip-on-count: rgba(0, 0, 0, 0.5);
+
+  --seg-bg: rgba(0, 0, 0, 0.22);
+  --seg-on-bg: rgba(255, 255, 255, 0.22);
+  --seg-on-text: #fff;
+  --seg-on-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+
+  --ok: #30d158;
+  --ok-bg: rgba(48, 209, 88, 0.14);
+  --bad: #ff453a;
+  --bad-bg: rgba(255, 69, 58, 0.14);
+  --on-status: #111114;
+  --lvl-junior: #30d158;
+  --lvl-middle: #ffd60a;
+  --lvl-senior: #bf5af2;
+
+  --track: rgba(255, 255, 255, 0.12);
+  --ring-color: #f5f5f7;
+
+  --code-bg: rgba(0, 0, 0, 0.3);
+  --tok-plain: #f2f2f7;
+  --tok-kw: #ff7ab2;
+  --tok-fn: #6bdfff;
+  --tok-num: #d9c97c;
+  --tok-str: #fc6a5d;
+  --tok-cls: #dabaff;
+  --tok-punc: #a3a3a8;
+  --inline-code-bg: rgba(255, 255, 255, 0.13);
+  --inline-code-text: #fff;
+}

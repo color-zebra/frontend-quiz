@@ -1,0 +1,412 @@
+# yaml-language-server: $schema=../../schema.json
+topic: react
+subtopic: state
+questions:
+  - id: react-state-001
+    level: junior
+    tags: [useState, snapshot, output]
+    question: |
+      Что выведется в консоль при первом клике?
+    code: |
+      function App() {
+        const [count, setCount] = useState(0);
+
+        function handleClick() {
+          setCount(count + 1);
+          console.log(count);
+        }
+
+        return <button onClick={handleClick}>{count}</button>;
+      }
+    codeLang: jsx
+    options:
+      - text: '`0`'
+        correct: true
+        why: '`setCount` не меняет переменную `count`: она константа текущего рендера. Новое значение появится только при следующем вызове компонента.'
+      - text: '`1`'
+        why: 'Состояние обновится в следующем рендере. Внутри обработчика `count` остаётся значением из того рендера, в котором обработчик был создан.'
+      - text: '`undefined`'
+        why: '`count` объявлена и равна начальному значению `0`. `setCount` её не стирает.'
+      - text: 'Ничего: рендер прервёт обработчик'
+        why: 'Обработчик выполняется до конца. React применит обновление после его завершения.'
+    explanation: |
+      Состояние в React работает как снимок: при каждом рендере компонент получает значения состояния на этот
+      момент, и все функции, созданные в этом рендере, видят именно их. `setCount` не изменяет переменную, а
+      ставит в очередь запрос «в следующем рендере `count` будет 1». Поэтому сразу после `setCount` старое
+      значение никуда не делось. Если новое значение нужно сразу, его сохраняют в переменную:
+      `const next = count + 1; setCount(next);`.
+    links:
+      - https://react.dev/learn/state-as-a-snapshot
+    source: own
+
+  - id: react-state-002
+    level: middle
+    tags: [batching, updater-function]
+    question: |
+      Какое число покажет кнопка после одного клика?
+    code: |
+      function App() {
+        const [count, setCount] = useState(0);
+
+        function handleClick() {
+          setCount(count + 1);
+          setCount(count + 1);
+          setCount((c) => c + 1);
+        }
+
+        return <button onClick={handleClick}>{count}</button>;
+      }
+    codeLang: jsx
+    options:
+      - text: '`2`'
+        correct: true
+        why: 'Обновления выстраиваются в очередь. Первые два — «заменить на 0 + 1», то есть на 1. Функция-обновление получает результат предыдущих: 1 + 1 = 2.'
+      - text: '`3`'
+        why: 'Первые два вызова используют `count` из снимка, равный 0, и оба ставят 1. Прибавляет к накопленному значению только функция-обновление.'
+      - text: '`1`'
+        why: 'Последний вызов передаёт функцию, и React вызывает её с результатом предыдущих обновлений в очереди, а не с `count` из снимка.'
+      - text: '`0`'
+        why: 'Обновления применяются после завершения обработчика, но применяются: кнопка покажет новое значение после рендера.'
+    explanation: |
+      `setState` ставит обновление в очередь, а React обрабатывает очередь при следующем рендере. Значение
+      `setCount(5)` означает «заменить на 5», и оно вычислено из снимка. Функция `setCount(c => c + 1)` означает
+      «взять текущее значение из очереди и прибавить 1». Поэтому несколько последовательных обновлений,
+      зависящих от прошлого значения, надо писать функциями. Все три вызова попадут в один рендер: React
+      группирует обновления (batching) и рендерит один раз после обработчика.
+    links:
+      - https://react.dev/learn/queueing-a-series-of-state-updates
+    source: own
+
+  - id: react-state-003
+    level: middle
+    tags: [batching, automatic-batching]
+    question: |
+      Сколько раз отрендерится `App` после срабатывания таймера?
+    code: |
+      function App() {
+        const [a, setA] = useState(0);
+        const [b, setB] = useState(0);
+        console.log('render');
+
+        function handleClick() {
+          setTimeout(() => {
+            setA(1);
+            setB(1);
+          }, 0);
+        }
+
+        return <button onClick={handleClick}>run</button>;
+      }
+    codeLang: jsx
+    options:
+      - text: 'Один раз'
+        correct: true
+        why: 'С React 18 автоматический батчинг работает везде: в таймерах, промисах, нативных обработчиках. Два обновления в одной задаче дают один рендер.'
+      - text: 'Ни разу, пока не придёт следующее событие пользователя'
+        why: 'Обновления из таймера обрабатываются сразу, без ожидания событий. Они просто группируются в один рендер.'
+      - text: 'Два раза, потому что таймер работает вне React-события'
+        why: 'Так было в React 17. С `createRoot` группировка не зависит от того, где вызван `setState`.'
+      - text: 'Зависит от того, успеют ли оба обновления в один кадр'
+        why: 'Группировка не привязана к кадрам: обновления из одной задачи объединяются всегда.'
+    explanation: |
+      Batching — группировка нескольких обновлений состояния в один рендер. До React 18 он работал только
+      внутри обработчиков React-событий, а в `setTimeout`, `fetch().then` и нативных событиях каждый
+      `setState` вызывал отдельный рендер. С React 18 и `createRoot` батчинг автоматический: обновления в одной
+      задаче или микрозадаче группируются всегда. Если нужно применить обновление немедленно, например чтобы
+      прочитать DOM, используют `flushSync`.
+    links:
+      - https://react.dev/blog/2022/03/29/react-v18#new-feature-automatic-batching
+    source: own
+
+  - id: react-state-004
+    level: senior
+    tags: [batching, async, snapshot, output]
+    question: |
+      Что выведется в консоль после клика?
+    code: |
+      function App() {
+        const [value, setValue] = useState(0);
+        console.log('render', value);
+
+        async function handleClick() {
+          setValue(1);
+          await null;
+          console.log('after await', value);
+          setValue(2);
+          setValue(3);
+        }
+
+        return <button onClick={handleClick}>run</button>;
+      }
+    codeLang: jsx
+    options:
+      - text: '`render 1`, `after await 0`, `render 3`'
+        correct: true
+        why: 'Обновление до `await` применяется по завершении синхронной части обработчика, и рендер с 1 происходит до продолжения функции. После `await` замыкание по-прежнему видит снимок `value = 0`, а `setValue(2)` и `setValue(3)` группируются в один рендер.'
+      - text: '`after await 0`, `render 3`'
+        why: 'Функция прерывается на `await`, и React не ждёт её завершения: обновление, сделанное до `await`, рендерится сразу.'
+      - text: '`render 1`, `after await 1`, `render 3`'
+        why: 'Функция создана в рендере с `value = 0` и продолжает видеть этот снимок даже после нового рендера.'
+      - text: '`render 1`, `after await 0`, `render 2`, `render 3`'
+        why: 'Обновления после `await` тоже группируются: два вызова подряд в одной микрозадаче дают один рендер.'
+    explanation: |
+      Async-обработчик для React выглядит как синхронная функция, которая вернула промис на первом `await`.
+      Всё, что запрошено до `await`, React применяет сразу после этой синхронной части. Продолжение
+      выполняется позже, в микрозадаче, и его обновления группируются отдельно. Замыкание при этом не
+      обновляется: `value` — константа рендера, в котором создан обработчик. Свежие значения после `await` берут
+      из функции-обновления `setValue(v => ...)` или из рефа.
+    links:
+      - https://react.dev/learn/state-as-a-snapshot
+      - https://react.dev/blog/2022/03/29/react-v18#new-feature-automatic-batching
+    source: own
+
+  - id: react-state-005
+    level: middle
+    tags: [stale-closure, useEffect, setInterval]
+    question: |
+      Какое число будет на экране через 5 секунд после монтирования?
+    code: |
+      function Timer() {
+        const [count, setCount] = useState(0);
+
+        useEffect(() => {
+          const id = setInterval(() => setCount(count + 1), 1000);
+          return () => clearInterval(id);
+        }, []);
+
+        return <p>{count}</p>;
+      }
+    codeLang: jsx
+    options:
+      - text: '`1`'
+        correct: true
+        why: 'Эффект выполнился один раз, и колбэк интервала замкнул `count` из первого рендера, то есть 0. Каждую секунду он ставит `0 + 1`, значение больше не растёт.'
+      - text: '`5`'
+        why: 'Колбэк интервала создан в первом рендере и не видит новые значения `count`. Чтобы счётчик рос, нужна функция-обновление `setCount(c => c + 1)`.'
+      - text: '`0`'
+        why: 'Первое срабатывание интервала поставит 1, и экран обновится. Дальше значение не меняется.'
+      - text: 'Число будет расти, но с задержкой'
+        why: 'Значение «застрянет» на 1: колбэк каждый раз вычисляет одно и то же `0 + 1`.'
+    explanation: |
+      Это «устаревшее замыкание» (stale closure). Функции видят значения из рендера, в котором созданы. Эффект
+      с пустыми зависимостями создаёт интервал один раз, и тот навсегда видит `count = 0`. Есть два решения.
+      Функция-обновление `setCount(c => c + 1)` не нуждается в `count` из замыкания. Можно указать `count` в
+      зависимостях, но тогда интервал будет пересоздаваться каждую секунду. Правило `react-hooks/exhaustive-deps`
+      предупредило бы о пропущенной зависимости.
+    links:
+      - https://react.dev/learn/removing-effect-dependencies#are-you-reading-some-state-to-calculate-the-next-state
+    source: own
+
+  - id: react-state-006
+    level: middle
+    tags: [lazy-initialization, output]
+    question: |
+      Сколько раз в консоли появится `createInitial` за монтирование и один клик?
+    code: |
+      function createInitial() {
+        console.log('createInitial');
+        return 0;
+      }
+
+      function App() {
+        const [a, setA] = useState(createInitial());
+        const [b] = useState(createInitial);
+        return <button onClick={() => setA(a + 1)}>{a + b}</button>;
+      }
+    codeLang: jsx
+    options:
+      - text: '3'
+        correct: true
+        why: 'При монтировании вызываются оба: `createInitial()` явно и `createInitial` как инициализатор. При повторном рендере функция-инициализатор уже не вызывается, а `createInitial()` в аргументе вычисляется снова, и результат просто выбрасывается.'
+      - text: '2'
+        why: 'Выражение `createInitial()` в аргументе вычисляется при каждом рендере, потому что это обычный вызов функции до передачи в `useState`.'
+      - text: '4'
+        why: 'Если передать саму функцию, React вызовет её только при первом рендере. После клика она не вызывается.'
+      - text: '1'
+        why: 'При монтировании нужны оба начальных значения, поэтому вызова уже два.'
+    explanation: |
+      Аргумент `useState` используется только при первом рендере, но вычисляется JavaScript при каждом вызове
+      компонента. Если начальное значение дорого считать (разбор `localStorage`, построение большой структуры),
+      передают функцию-инициализатор: `useState(createInitial)` или `useState(() => parse(raw))`. React вызовет
+      её один раз при монтировании. Та же ленивая инициализация есть у `useReducer` (третий аргумент `init`). В
+      StrictMode в разработке инициализатор вызывается дважды для проверки чистоты.
+    links:
+      - https://react.dev/reference/react/useState#avoiding-recreating-the-initial-state
+    source: own
+
+  - id: react-state-007
+    level: senior
+    tags: [strict-mode, updater-function, purity, output]
+    question: |
+      Приложение запущено в режиме разработки. Что выведется в консоль после клика и что покажет кнопка?
+    code: |
+      function App() {
+        const [count, setCount] = useState(0);
+
+        function handleClick() {
+          setCount((c) => {
+            console.log('updater', c);
+            return c + 1;
+          });
+        }
+
+        return <button onClick={handleClick}>{count}</button>;
+      }
+
+      createRoot(document.getElementById('root')).render(
+        <StrictMode>
+          <App />
+        </StrictMode>,
+      );
+    codeLang: jsx
+    options:
+      - text: '`updater 0` дважды, кнопка покажет `1`'
+        correct: true
+        why: 'StrictMode вызывает функцию-обновление дважды с одним и тем же входом, чтобы найти нечистые обновления. Результат одного из вызовов отбрасывается, поэтому значение увеличится на один.'
+      - text: '`updater 0` один раз, кнопка покажет `1`'
+        why: 'В разработке StrictMode повторяет функции-обновления так же, как рендер компонентов, поэтому вывод будет двойным.'
+      - text: '`updater 0` и `updater 1`, кнопка покажет `2`'
+        why: 'Повторный вызов получает тот же вход, `0`, а не результат первого. Иначе StrictMode менял бы поведение приложения.'
+      - text: '`updater 0` дважды, кнопка покажет `2`'
+        why: 'Используется результат только одного вызова, поэтому счётчик увеличится на один.'
+    explanation: |
+      Функции, которые React вызывает во время рендера, должны быть чистыми: компонент, инициализатор
+      `useState`, функция-обновление, reducer, функция в `useMemo`. StrictMode в разработке вызывает их дважды и
+      использует один результат. Если функция чистая, повтор не виден. Если внутри есть побочный эффект,
+      например `items.push(x)` вместо `[...items, x]` или запрос, ошибка проявится сразу. В production
+      повторных вызовов нет. В браузере React DevTools может приглушать или скрывать вывод второго вызова,
+      поэтому в консоли его иногда не видно.
+    links:
+      - https://react.dev/reference/react/StrictMode#fixing-bugs-found-by-double-rendering-in-development
+    source: own
+
+  - id: react-state-008
+    level: senior
+    tags: [flushSync, batching, output]
+    question: |
+      Что выведется в консоль после клика?
+    code: |
+      function App() {
+        const [n, setN] = useState(0);
+        const buttonRef = useRef(null);
+        console.log('render', n);
+
+        function handleClick() {
+          setN(1);
+          console.log('dom before', buttonRef.current.textContent);
+          flushSync(() => setN(2));
+          console.log('dom after', buttonRef.current.textContent);
+        }
+
+        return <button ref={buttonRef} onClick={handleClick}>{n}</button>;
+      }
+    codeLang: jsx
+    options:
+      - text: '`dom before 0`, `render 2`, `dom after 2`'
+        correct: true
+        why: '`setN(1)` только ставит обновление в очередь, DOM ещё старый. `flushSync` синхронно обрабатывает всю очередь, включая `setN(1)`, и делает один рендер с итоговым значением 2.'
+      - text: '`render 1`, `dom before 1`, `render 2`, `dom after 2`'
+        why: '`setN(1)` не рендерит сразу: обновление ждёт конца обработчика. До `flushSync` DOM не меняется.'
+      - text: '`dom before 0`, `render 1`, `render 2`, `dom after 2`'
+        why: '`flushSync` применяет все ожидающие обновления одним рендером, а не по отдельности.'
+      - text: '`dom before 0`, `render 2`, `dom after 0`'
+        why: 'К моменту возврата из `flushSync` React уже закоммитил изменения в DOM, поэтому текст кнопки — `2`.'
+    explanation: |
+      `flushSync` заставляет React синхронно применить обновления и обновить DOM до возврата. Он обрабатывает не
+      только обновление внутри колбэка, но и всё, что уже стоит в очереди. Нужен он редко: когда сразу после
+      обновления надо прочитать или изменить DOM, например прокрутить список к только что добавленному
+      элементу или поставить фокус. Использование `flushSync` ломает батчинг и может замедлить приложение,
+      поэтому документация называет его крайней мерой.
+    links:
+      - https://react.dev/reference/react-dom/flushSync
+    source: own
+
+  - id: react-state-009
+    level: junior
+    tags: [state-vs-variable]
+    question: |
+      Почему кнопка всегда показывает `0`, хотя `clicks` увеличивается?
+    code: |
+      function App() {
+        let clicks = 0;
+        return <button onClick={() => (clicks += 1)}>{clicks}</button>;
+      }
+    codeLang: jsx
+    options:
+      - text: 'Изменение переменной не сообщает React, что нужен рендер'
+        correct: true
+        why: 'React рендерит компонент заново только после обновления состояния (`setState`, `dispatch`), изменения контекста или рендера родителя. Обычная переменная меняется молча, а при следующем рендере всё равно создастся заново со значением 0.'
+      - text: 'Переменные внутри компонента доступны только для чтения'
+        why: 'Это обычная переменная JavaScript, её можно менять. Проблема в том, что React об этом не узнаёт.'
+      - text: 'React обновляет экран только по таймеру, раз в кадр'
+        why: 'React обновляет экран в ответ на обновления состояния, а не по таймеру. Здесь обновлений нет.'
+      - text: 'Обработчики событий выполняются в отдельной копии компонента'
+        why: 'Обработчик работает с той же переменной `clicks` через замыкание. Но изменение не запускает рендер.'
+    explanation: |
+      Локальная переменная живёт один вызов функции-компонента. При каждом рендере она создаётся заново, а её
+      изменение React не замечает. Состояние (`useState`) решает обе проблемы: React хранит значение между
+      рендерами и при вызове сеттера запускает новый рендер. Если значение нужно сохранять, но рендер не нужен
+      (id таймера, предыдущее значение), используют `useRef`.
+    links:
+      - https://react.dev/learn/state-a-components-memory
+    source: own
+
+  - id: react-state-010
+    level: junior
+    tags: [immutability, arrays]
+    question: |
+      Какой обработчик правильно добавляет элемент в список, хранящийся в состоянии?
+    options:
+      - text: '`setItems([...items, newItem])`'
+        correct: true
+        why: 'Создаётся новый массив. React сравнивает старое и новое значение по ссылке (`Object.is`), видит другой массив и запускает рендер.'
+      - text: '`items.push(newItem); setItems(items)`'
+        why: 'Массив изменён на месте, но ссылка та же. React сравнит её с текущей, решит, что ничего не изменилось, и рендер не произойдёт.'
+      - text: '`setItems(items.push(newItem))`'
+        why: '`push` возвращает новую длину массива, поэтому в состояние запишется число, а не список.'
+      - text: '`items[items.length] = newItem`'
+        why: 'Это прямое изменение массива без вызова сеттера: React ничего не узнает, экран не обновится.'
+    explanation: |
+      React решает, изменилось ли состояние, сравнивая ссылки через `Object.is`, а не содержимое. Поэтому
+      состояние нужно обновлять неизменяемо (immutably): создавать новые массивы и объекты. Добавление —
+      `[...items, x]`, удаление — `items.filter(...)`, замена — `items.map(...)`, изменение поля —
+      `{ ...user, name }`. Новые методы `toSorted`, `toReversed`, `with` тоже возвращают копию. Для глубоко
+      вложенных структур удобна библиотека Immer: внутри она позволяет «мутировать» черновик, а на выходе
+      даёт новый объект.
+    links:
+      - https://react.dev/learn/updating-arrays-in-state
+    source: own
+
+  - id: react-state-011
+    level: junior
+    tags: [useState, objects, merge, output]
+    question: |
+      Что будет на экране после клика?
+    code: |
+      function App() {
+        const [user, setUser] = useState({ name: 'Ann', age: 30 });
+        return (
+          <button onClick={() => setUser({ name: 'Bob' })}>
+            {user.name} {String(user.age)}
+          </button>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`Bob undefined`'
+        correct: true
+        why: 'Сеттер `useState` заменяет значение целиком. Новый объект содержит только `name`, а поле `age` пропало.'
+      - text: '`Bob 30`'
+        why: 'Так работал `this.setState` в классовых компонентах: он сливал объекты. Сеттер хука ничего не сливает.'
+      - text: '`Ann 30`'
+        why: 'Новый объект — новая ссылка, React видит изменение и рендерит компонент.'
+      - text: '`Bob null`'
+        why: 'Отсутствующее поле объекта читается как `undefined`, а не `null`.'
+    explanation: |
+      В отличие от `this.setState`, сеттер из `useState` не сливает объекты, а заменяет значение целиком. Чтобы
+      изменить одно поле, копируют остальные: `setUser({ ...user, name: 'Bob' })` или функцией-обновлением
+      `setUser(u => ({ ...u, name: 'Bob' }))`. Если в объекте много независимых полей, их часто удобнее
+      держать в отдельных `useState` или в `useReducer`.
+    links:
+      - https://react.dev/learn/updating-objects-in-state
+    source: own

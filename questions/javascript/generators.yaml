@@ -1,0 +1,332 @@
+# yaml-language-server: $schema=../../schema.json
+topic: javascript
+subtopic: generators
+questions:
+  - id: javascript-generators-001
+    level: middle
+    tags: [generator, next, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function* counter() {
+        console.log('start');
+        yield 1;
+        yield 2;
+        return 3;
+      }
+
+      const it = counter();
+      console.log('created');
+      console.log(it.next(), it.next(), it.next(), it.next());
+    codeLang: js
+    options:
+      - text: '`start`, `created`, затем четыре объекта'
+        why: 'Вызов генератора не выполняет его тело, а только создаёт итератор. `start` появится при первом `next()`.'
+      - text: '`created`, `start`, затем `{ value: 1, done: false }`, `{ value: 2, done: false }`, `{ value: 3, done: true }`, `{ value: undefined, done: true }`'
+        correct: true
+        why: 'Тело генератора начинает выполняться при первом `next()` и останавливается на каждом `yield`. `return` даёт последнее значение с `done: true`, дальше — `undefined`.'
+      - text: '`created`, `start`, затем `{ value: 1, done: false }`, `{ value: 2, done: false }`, `{ value: 3, done: false }`, `{ value: undefined, done: true }`'
+        why: '`return` завершает генератор, поэтому его значение приходит уже с `done: true`.'
+      - text: '`created`, `start`, затем `1`, `2`, `3`, `undefined`'
+        why: '`next()` возвращает объект `{ value, done }`, а не само значение.'
+    explanation: |
+      Функция-генератор (`function*`) при вызове ничего не выполняет, а возвращает итератор. Каждый `next()`
+      продолжает выполнение до следующего `yield` и возвращает `{ value, done: false }`. Когда генератор
+      завершается (`return` или конец функции), приходит `{ value: результат return, done: true }`, а затем
+      всегда `{ value: undefined, done: true }`. Состояние функции — локальные переменные, место остановки —
+      сохраняется между вызовами. Это основа ленивых последовательностей и итераторов.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function*
+    source: own
+
+  - id: javascript-generators-002
+    level: senior
+    tags: [generator, next-argument, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function* dialog() {
+        const name = yield 'Как вас зовут?';
+        const age = yield `Привет, ${name}! Сколько вам лет?`;
+        return `${name}, ${age}`;
+      }
+
+      const it = dialog();
+      console.log(it.next('игнор').value);
+      console.log(it.next('Аня').value);
+      console.log(it.next(30).value);
+    codeLang: js
+    options:
+      - text: '`Как вас зовут?`, `Привет, игнор! Сколько вам лет?`, `игнор, Аня`'
+        why: 'Аргумент первого `next()` некуда передать: генератор ещё не дошёл ни до одного `yield`. Он отбрасывается.'
+      - text: '`Как вас зовут?`, `Привет, Аня! Сколько вам лет?`, `Аня, 30`'
+        correct: true
+        why: 'Значение, переданное в `next(x)`, становится результатом того `yield`, на котором генератор стоял. Первый `next` только запускает генератор, его аргумент теряется.'
+      - text: '`Как вас зовут?`, `Привет, undefined! Сколько вам лет?`, `undefined, 30`'
+        why: 'Второй `next("Аня")` передаёт строку в первый `yield`, поэтому `name` получает значение.'
+      - text: '`игнор`, `Аня`, `30`'
+        why: '`value` — это то, что генератор отдаёт через `yield`, а не то, что передали в `next`.'
+    explanation: |
+      `yield` работает в обе стороны: отдаёт значение наружу и принимает значение снаружи. Генератор
+      останавливается на `yield`, и следующий вызов `next(x)` возобновляет его так, будто выражение `yield ...`
+      вернуло `x`. Первый `next()` лишь доводит генератор до первого `yield`, поэтому его аргумент некуда
+      деть. На этой двусторонней связи построены корутины и библиотеки вроде redux-saga, а исторически —
+      `async/await`, который можно реализовать на генераторах и промисах.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator/next
+    source: own
+
+  - id: javascript-generators-003
+    level: middle
+    tags: [iterable-protocol, symbol-iterator, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const range = {
+        from: 1,
+        to: 4,
+        *[Symbol.iterator]() {
+          for (let n = this.from; n <= this.to; n++) yield n;
+        },
+      };
+
+      console.log([...range], Math.max(...range));
+    codeLang: js
+    options:
+      - text: '`[ 1, 2, 3, 4 ] 4`'
+        correct: true
+        why: 'Объект с методом `Symbol.iterator` становится итерируемым. Spread, `for...of`, `Array.from` и деструктуризация вызывают этот метод и получают значения.'
+      - text: '`TypeError`: range is not iterable'
+        why: 'Обычные объекты не итерируемы, но этот реализует `Symbol.iterator` — а это и есть протокол итерируемости.'
+      - text: '`[ 1, 4 ] 4`'
+        why: 'Spread берёт значения из итератора, а не свойства `from` и `to`.'
+      - text: '`[ 1, 2, 3, 4 ] NaN`'
+        why: 'Spread передаёт `Math.max` отдельные числа 1–4, максимум — 4.'
+    explanation: |
+      Протокол итерируемости: объект итерируем, если у него есть метод `[Symbol.iterator]()`, возвращающий
+      итератор — объект с методом `next()`, который возвращает `{ value, done }`. Генератор возвращает именно
+      итератор, поэтому `*[Symbol.iterator]()` — самый короткий способ сделать объект итерируемым. Итерируемы
+      массивы, строки, `Map`, `Set`, `arguments`, `NodeList`. С итерируемыми работают `for...of`, spread,
+      деструктуризация, `Array.from`, `Promise.all` и конструкторы `Map` и `Set`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols
+    source: own
+
+  - id: javascript-generators-004
+    level: middle
+    tags: [lazy, infinite, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function* naturals() {
+        let n = 1;
+        while (true) yield n++;
+      }
+
+      function* take(iterable, count) {
+        for (const value of iterable) {
+          if (count-- <= 0) return;
+          yield value;
+        }
+      }
+
+      console.log([...take(naturals(), 3)]);
+    codeLang: js
+    options:
+      - text: 'Программа зависнет: `while (true)` никогда не закончится'
+        why: 'Генератор ленивый: следующее значение вычисляется, только когда его запросят. `take` перестаёт запрашивать после трёх значений.'
+      - text: '`[ 1, 2, 3 ]`'
+        correct: true
+        why: '`naturals` выдаёт значения по одному по требованию. `take` берёт три и завершается, бесконечный цикл дальше не продолжается.'
+      - text: '`[ 0, 1, 2 ]`'
+        why: '`n` начинается с 1, а `n++` отдаёт текущее значение и только потом увеличивает.'
+      - text: '`[ 1, 2, 3, 4 ]`'
+        why: 'На четвёртой итерации `count` уже 0, и `take` завершается до `yield`.'
+    explanation: |
+      Генераторы ленивые: они вычисляют следующее значение только по запросу `next()`. Поэтому бесконечная
+      последовательность безопасна, пока потребитель берёт ограниченное число элементов. Так строят конвейеры
+      обработки данных без промежуточных массивов: `take(filter(map(source)))`, где каждый элемент проходит всю
+      цепочку по одному. С 2025 года у итераторов есть встроенные помощники: `naturals().take(3).toArray()`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Iterator/take
+    source: own
+
+  - id: javascript-generators-005
+    level: senior
+    tags: [return-value, spread, for-of, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function* steps() {
+        yield 'a';
+        yield 'b';
+        return 'done';
+      }
+
+      const collected = [];
+      for (const step of steps()) collected.push(step);
+
+      console.log([...steps()], collected);
+    codeLang: js
+    options:
+      - text: '`[ "a", "b", "done" ] [ "a", "b", "done" ]`'
+        why: 'Значение `return` приходит с `done: true`, а `for...of` и spread прекращают обход, как только видят `done: true`, и это значение не берут.'
+      - text: '`[ "a", "b" ] [ "a", "b" ]`'
+        correct: true
+        why: 'Spread и `for...of` используют только значения с `done: false`. Результат `return` виден лишь при ручном вызове `next()`.'
+      - text: '`[ "a", "b" ] [ "a", "b", "done" ]`'
+        why: '`for...of` и spread обрабатывают завершение одинаково: значение с `done: true` не используется.'
+      - text: '`[] []`'
+        why: 'Оба способа получают значения из `yield`, это два элемента.'
+    explanation: |
+      Итератор сообщает о конце значением `{ done: true }`. Встроенные механизмы итерации — `for...of`, spread,
+      `Array.from`, деструктуризация — останавливаются на нём и не используют `value` финального шага. Поэтому
+      значение `return` в генераторе теряется при обычном обходе. Его можно получить вручную через `next()` или
+      через `yield*`: выражение `const result = yield* steps()` вернёт `'done'` во внешнем генераторе. Если данные
+      нужны потребителю, их отдают через `yield`, а не через `return`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/yield*
+    source: own
+
+  - id: javascript-generators-006
+    level: senior
+    tags: [early-exit, finally, return, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function* readLines() {
+        try {
+          yield 'line 1';
+          yield 'line 2';
+          yield 'line 3';
+        } finally {
+          console.log('файл закрыт');
+        }
+      }
+
+      for (const line of readLines()) {
+        console.log(line);
+        if (line === 'line 2') break;
+      }
+    codeLang: js
+    options:
+      - text: '`line 1`, `line 2`'
+        why: 'При досрочном выходе `for...of` вызывает у итератора метод `return()`, и генератор завершается через `finally`.'
+      - text: '`line 1`, `line 2`, `файл закрыт`'
+        correct: true
+        why: '`break` заставляет `for...of` вызвать `iterator.return()`. Генератор завершается в точке `yield`, и выполняется его блок `finally`.'
+      - text: '`line 1`, `line 2`, `line 3`, `файл закрыт`'
+        why: '`break` прерывает обход, третья строка не запрашивается и не выводится.'
+      - text: '`файл закрыт`, `line 1`, `line 2`'
+        why: '`finally` выполняется при завершении генератора, а не при его создании.'
+    explanation: |
+      Если обход прерывается досрочно (`break`, `return`, исключение внутри `for...of`, деструктуризация,
+      взявшая не всё), движок вызывает у итератора метод `return()`. У генератора это завершает выполнение так,
+      будто в месте остановки стоял `return`: срабатывают блоки `finally`. Благодаря этому генераторы безопасно
+      освобождают ресурсы — закрывают файлы, соединения, подписки. Тот же механизм работает для асинхронных
+      генераторов в `for await`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator/return
+    source: own
+
+  - id: javascript-generators-007
+    level: middle
+    tags: [iterator, single-use, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function* colors() {
+        yield 'red';
+        yield 'green';
+      }
+
+      const it = colors();
+      console.log([...it], [...it]);
+    codeLang: js
+    options:
+      - text: '`[ "red", "green" ] [ "red", "green" ]`'
+        why: 'Генератор-объект — одноразовый итератор: после первого обхода он завершён, и повторный обход ничего не даёт.'
+      - text: '`[ "red", "green" ] []`'
+        correct: true
+        why: 'Первый spread дошёл до конца итератора. Второй вызывает `next()` у уже завершённого генератора и сразу получает `done: true`.'
+      - text: '`[] [ "red", "green" ]`'
+        why: 'Первый обход получает значения сразу, генератор не нужно «прогревать».'
+      - text: '`TypeError` при втором обходе'
+        why: 'Завершённый генератор не бросает ошибку, он просто всегда возвращает `{ done: true }`.'
+    explanation: |
+      Итерируемый объект и итератор — разные вещи. Массив итерируем многократно: каждый `for...of` получает
+      новый итератор. Генератор-объект — сам себе итератор (`it[Symbol.iterator]() === it`), и его можно пройти
+      только один раз. Это частая ловушка: функция получает «список» в виде генератора, проходит его для
+      проверки, а потом обнаруживает, что данные кончились. Решения: передавать функцию-генератор и вызывать её
+      заново, сохранить значения в массив или сделать объект с `*[Symbol.iterator]()`, который при каждом обходе
+      создаёт свежий генератор.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator
+    source: own
+
+  - id: javascript-generators-008
+    level: middle
+    tags: [async-generator, for-await, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+      async function* pages() {
+        for (let page = 1; page <= 3; page++) {
+          await sleep(10);
+          yield `страница ${page}`;
+        }
+      }
+
+      (async () => {
+        for await (const page of pages()) console.log(page);
+        console.log('готово');
+      })();
+      console.log('синхронный код');
+    codeLang: js
+    options:
+      - text: '`страница 1`, `страница 2`, `страница 3`, `готово`, `синхронный код`'
+        why: 'Асинхронная функция приостанавливается на первом `await`, и синхронный код снаружи успевает выполниться раньше.'
+      - text: '`синхронный код`, `страница 1`, `страница 2`, `страница 3`, `готово`'
+        correct: true
+        why: 'Асинхронный генератор отдаёт значения по мере готовности, а `for await` ждёт каждое. Синхронный код выполняется до первой страницы.'
+      - text: '`синхронный код`, `готово`, `страница 1`, `страница 2`, `страница 3`'
+        why: '`for await` дожидается всех значений генератора, и только потом выполняется следующая строка.'
+      - text: '`синхронный код`, затем три промиса и `готово`'
+        why: '`for await` разворачивает промисы: в переменную цикла приходят уже готовые значения.'
+    explanation: |
+      Асинхронный генератор (`async function*`) сочетает `await` и `yield`: каждое значение может требовать
+      асинхронной работы. Его итератор возвращает промисы `{ value, done }`, а цикл `for await...of` ждёт каждый
+      из них по очереди. Так удобно обрабатывать постраничную загрузку, потоки данных (`ReadableStream`
+      асинхронно итерируем), события. Значения приходят по одному и по мере готовности, без загрузки всего
+      набора в память.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for-await...of
+    source: own
+
+  - id: javascript-generators-009
+    level: junior
+    tags: [iterator, for-of]
+    question: |
+      Что нужно объекту, чтобы его можно было перебрать циклом `for...of`?
+    options:
+      - text: 'Метод `[Symbol.iterator]()`, возвращающий итератор'
+        correct: true
+        why: '`for...of` вызывает `obj[Symbol.iterator]()` и затем `next()`, пока не получит `{ done: true }`. Так устроены массивы, строки, `Map` и `Set`.'
+      - text: 'Свойство `length` и числовые ключи, как у массива'
+        why: 'Это признаки массивоподобного объекта. `for...of` их не использует, такой объект нужно превратить в массив через `Array.from`.'
+      - text: 'Метод `forEach`, который `for...of` вызывает внутри'
+        why: '`forEach` — обычный метод массивов. Цикл `for...of` работает через протокол итерации, а не через `forEach`.'
+      - text: 'Ничего: `for...of` перебирает любые объекты по ключам'
+        why: 'Обычный объект не итерируем, `for...of` бросит `TypeError`. По ключам объекта ходит `for...in`.'
+    explanation: |
+      `for...of` работает по протоколу итерации. Объект итерируем, если у него есть метод `[Symbol.iterator]()`,
+      возвращающий итератор, — объект с методом `next()`, который отдаёт `{ value, done }`. Массивы, строки,
+      `Map`, `Set`, `NodeList` итерируемы из коробки, а обычные объекты — нет: для них берут `Object.keys`,
+      `Object.values` или `Object.entries`. Самый простой способ сделать свой объект итерируемым —
+      генератор: `*[Symbol.iterator]() { yield ... }`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols
+    source: own
+

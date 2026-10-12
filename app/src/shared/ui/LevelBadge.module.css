@@ -1,0 +1,29 @@
+.level {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--lvl);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.level::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.junior {
+  --lvl: var(--lvl-junior);
+}
+
+.middle {
+  --lvl: var(--lvl-middle);
+}
+
+.senior {
+  --lvl: var(--lvl-senior);
+}

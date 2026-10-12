@@ -1,0 +1,25 @@
+.md code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--inline-code-bg);
+  color: var(--inline-code-text);
+  font-size: 0.88em;
+  overflow-wrap: anywhere;
+}
+
+.md strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.md a {
+  color: var(--link);
+}
+
+.block p {
+  margin: 0;
+}
+
+.block p + p {
+  margin-top: 0.7em;
+}

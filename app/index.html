@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru" data-theme="aurora">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b0920" />
+    <meta name="color-scheme" content="dark" />
+    <title>Frontend Quiz</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <script>
+      // Ставим сохранённую тему до загрузки приложения, иначе при запуске мелькнёт тема по умолчанию.
+      // Цвета строки состояния должны совпадать с THEMES в src/theme/themes.ts.
+      (function () {
+        var colors = { aurora: "#0b0920", graphite: "#17181c", terminal: "#040607", sunset: "#140a1f" };
+        try {
+          var theme = localStorage.getItem("fq.theme");
+          if (theme && colors[theme]) {
+            document.documentElement.dataset.theme = theme;
+            document.querySelector('meta[name="theme-color"]').content = colors[theme];
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

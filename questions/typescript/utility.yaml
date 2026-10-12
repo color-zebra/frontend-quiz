@@ -1,0 +1,333 @@
+# yaml-language-server: $schema=../../schema.json
+topic: typescript
+subtopic: utility
+questions:
+  - id: typescript-utility-001
+    level: junior
+    tags: [Partial]
+    question: |
+      Какие вызовы, отмеченные буквами, не скомпилируются?
+    code: |
+      interface User {
+        id: number;
+        name: string;
+        email: string;
+      }
+
+      function updateUser(id: number, patch: Partial<User>) {}
+
+      updateUser(1, { name: 'Ann' }); // A
+      updateUser(1, {});              // B
+      updateUser(1, { name: 42 });    // C
+    codeLang: ts
+    options:
+      - text: 'Только C'
+        correct: true
+        why: '`Partial` делает все свойства необязательными, поэтому подходят и одно поле, и пустой объект. Но типы свойств сохраняются: `name` по-прежнему строка.'
+      - text: 'B и C'
+        why: 'Все свойства `Partial<User>` необязательные, и пустой объект им соответствует.'
+      - text: 'Только B'
+        why: 'Пустой объект — допустимое значение `Partial<User>`. Ошибка в C: число нельзя записать в строковое поле.'
+      - text: 'Ни один'
+        why: '`Partial` меняет только обязательность свойств, а не их типы. `{ name: 42 }` не подходит.'
+    explanation: |
+      `Partial<T>` строит тип с теми же свойствами, что у `T`, но все они необязательные: это mapped-тип
+      `{ [K in keyof T]?: T[K] }`. Это стандартный тип для объекта изменений (patch), фильтров и опций со
+      значениями по умолчанию. Типы свойств сохраняются, и лишние поля в литерале тоже отклоняются.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/utility-types.html#partialtype
+    source: own
+  - id: typescript-utility-002
+    level: junior
+    tags: [Omit, Pick, modifiers]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются?
+    code: |
+      interface User {
+        id: number;
+        name?: string;
+        email: string;
+      }
+
+      type Preview = Omit<User, 'email'>;
+
+      const a: Preview = { id: 1, name: 'Ann' }; // A
+      const b: Preview = { id: 1 };              // B
+      const c: Preview = { name: 'Ann' };        // C
+    codeLang: ts
+    options:
+      - text: 'Только C'
+        correct: true
+        why: '`Omit` убирает только `email`, а остальные свойства копирует вместе с модификаторами. `name` осталось необязательным, а обязательный `id` в объекте C не указан.'
+      - text: 'B и C'
+        why: 'Модификатор `?` у `name` сохраняется в `Preview`, поэтому объект без `name` подходит.'
+      - text: 'Только B'
+        why: '`Omit` не делает свойства обязательными. Ошибка в C: там нет `id`.'
+      - text: 'Ни одна'
+        why: '`id` в `Preview` остаётся обязательным, и объект C без него не проходит проверку.'
+    explanation: |
+      `Pick<T, K>` оставляет в типе только перечисленные ключи, `Omit<T, K>` — все, кроме перечисленных.
+      Модификаторы свойств (`?`, `readonly`) при этом сохраняются. Разница в проверке ключей: у `Pick` ключи
+      ограничены `keyof T`, и опечатка будет ошибкой, а `Omit` принимает любые строки, поэтому опечатка в ключе
+      молча ничего не уберёт. Это частый источник незаметных ошибок при рефакторинге: поле переименовали, а
+      `Omit` продолжает «убирать» старое имя.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/utility-types.html#picktype-keys
+      - https://www.typescriptlang.org/docs/handbook/utility-types.html#omittype-keys
+    source: own
+  - id: typescript-utility-003
+    level: junior
+    tags: [Record]
+    question: |
+      Что произойдёт при компиляции?
+    code: |
+      type Theme = 'light' | 'dark';
+
+      const background: Record<Theme, string> = {
+        light: '#ffffff',
+      };
+    codeLang: ts
+    options:
+      - text: 'Ошибка: не хватает ключа `dark`'
+        correct: true
+        why: '`Record` с объединением литералов в качестве ключей требует каждый ключ: это тип `{ light: string; dark: string }`.'
+      - text: 'Компилируется: `Record` не требует всех ключей'
+        why: 'Не требует только `Record<string, T>`, где ключей бесконечно много. С конечным объединением литералов все ключи обязательны.'
+      - text: 'Компилируется, а `background.dark` равен `undefined`'
+        why: 'Компилятор не даст создать объект без ключа `dark`. Именно в этом польза `Record` с литеральными ключами.'
+      - text: 'Ошибка: ключи `Record` должны быть строками, а не типом'
+        why: 'Первый параметр `Record` — тип ключей. Объединение строковых литералов допустимо и часто используется.'
+    explanation: |
+      `Record<K, V>` — mapped-тип `{ [P in K]: V }`. С `string` в качестве `K` получается словарь с
+      произвольными ключами. С объединением литералов получается объект, где каждый ключ обязателен. Это
+      удобно для таблиц соответствия: цвета тем, подписи статусов, иконки типов. Добавили новый вариант в
+      объединение — компилятор покажет все таблицы, где он не описан. Если часть ключей может отсутствовать,
+      пишут `Partial<Record<Theme, string>>`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type
+    source: own
+
+  - id: typescript-utility-004
+    level: middle
+    tags: [ReturnType, generics]
+    question: |
+      Чему равен тип `Wrapped`?
+    code: |
+      function wrap<T>(value: T) {
+        return { value };
+      }
+
+      type Wrapped = ReturnType<typeof wrap>;
+    codeLang: ts
+    options:
+      - text: '`{ value: unknown }`'
+        correct: true
+        why: '`typeof wrap` — дженерик-сигнатура, и `ReturnType` не может подставить в неё конкретный тип. При выводе `T` заменяется своим ограничением, по умолчанию `unknown`.'
+      - text: '`{ value: T }`'
+        why: '`T` существует только внутри сигнатуры функции. Вне её в результате утилиты свободного `T` быть не может.'
+      - text: '`{ value: any }`'
+        why: 'Неуточнённый параметр типа заменяется ограничением, а у `T` без `extends` это `unknown`, не `any`.'
+      - text: 'Ошибка: `ReturnType` не принимает дженерик-функции'
+        why: 'Принимает, но получает результат для «самого общего» `T`, то есть для его ограничения.'
+    explanation: |
+      `ReturnType<typeof fn>` вычисляет тип результата без вызова функции. У дженерик-функции результат
+      зависит от `T`, а утилита не знает, с каким типом её вызовут, поэтому подставляет ограничение. С
+      `<T extends string>` получилось бы `{ value: string }`. Чтобы получить тип для конкретного аргумента,
+      с TypeScript 4.7 используют instantiation expression: `ReturnType<typeof wrap<number>>` даёт
+      `{ value: number }`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/utility-types.html#returntypetype
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-7.html#instantiation-expressions
+    source: own
+  - id: typescript-utility-005
+    level: middle
+    tags: [Exclude, Extract]
+    question: |
+      Чему равны `A` и `B`?
+    code: |
+      type Status = 'idle' | 'loading' | 'success' | 'error';
+
+      type A = Exclude<Status, 'idle'>;
+      type B = Extract<Status, 'idle' | 'done'>;
+    codeLang: ts
+    options:
+      - text: '`A = "loading" | "success" | "error"`, `B = "idle"`'
+        correct: true
+        why: '`Exclude` убирает из объединения члены, подходящие под второй тип. `Extract` оставляет только подходящие: из `"idle" | "done"` в `Status` есть лишь `"idle"`.'
+      - text: '`A = "loading" | "success" | "error"`, `B = "idle" | "done"`'
+        why: '`Extract` не добавляет новых членов, он фильтрует первый тип. `"done"` в `Status` нет.'
+      - text: '`A = "idle"`, `B = "idle"`'
+        why: 'Это результат `Extract<Status, "idle">`. `Exclude`, наоборот, убирает `"idle"` и оставляет остальное.'
+      - text: '`A = "loading" | "success" | "error"`, `B = never`'
+        why: '`never` получился бы, если бы ни один член `Status` не подходил. `"idle"` подходит.'
+    explanation: |
+      `Exclude<T, U>` и `Extract<T, U>` работают с объединениями и устроены как условные типы:
+      `T extends U ? never : T` и `T extends U ? T : never`. Условный тип над объединением распределяется по
+      каждому члену, а ветка `never` выкидывает член из результата. Не путайте с `Omit` и `Pick`: те работают с
+      ключами объектного типа, а `Exclude` и `Extract` — с членами объединения. Из `Exclude` и `Pick` собран
+      сам `Omit`: `Pick<T, Exclude<keyof T, K>>`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/utility-types.html#excludeuniontype-excludedmembers
+      - https://www.typescriptlang.org/docs/handbook/utility-types.html#extracttype-union
+    source: own
+
+  - id: typescript-utility-006
+    level: senior
+    tags: [Omit, union, distributive]
+    question: |
+      Чему равен тип `WithoutId`?
+    code: |
+      type Shape =
+        | { kind: 'circle'; radius: number; id: string }
+        | { kind: 'square'; size: number; id: string };
+
+      type WithoutId = Omit<Shape, 'id'>;
+    codeLang: ts
+    options:
+      - text: '`{ kind: "circle" | "square" }`'
+        correct: true
+        why: '`Omit` берёт `keyof Shape`, а у объединения это только общие ключи: `kind` и `id`. После удаления `id` остаётся `kind`, а `radius` и `size` теряются вместе с разметкой вариантов.'
+      - text: '`{ kind: "circle"; radius: number } | { kind: "square"; size: number }`'
+        why: 'Так было бы, если бы `Omit` применялся к каждому члену объединения отдельно. Встроенный `Omit` не распределяется по объединению.'
+      - text: '`{ kind: "circle" | "square"; radius: number; size: number }`'
+        why: '`keyof` объединения содержит только ключи, общие для всех вариантов. `radius` и `size` есть лишь в одном из них.'
+      - text: '`never`'
+        why: '`Omit` над объединением не даёт `never`: общий ключ `kind` остаётся, и результат — объект с ним.'
+    explanation: |
+      `Omit<T, K>` устроен как `Pick<T, Exclude<keyof T, K>>`. Для объединения `keyof (A | B)` — это ключи,
+      которые есть во всех вариантах. Поэтому `Omit` над размеченным объединением сплющивает его в один объект
+      с общими полями, и сужение по `kind` после этого не работает. Решение — распределительная версия на
+      условном типе, которая применяет `Omit` к каждому члену:
+      `type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never`. Та же проблема
+      есть у `Pick`. Она часто всплывает при типизации пропсов React-компонентов, которые оборачивают другие.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#distributive-conditional-types
+      - https://www.typescriptlang.org/docs/handbook/utility-types.html#omittype-keys
+    source: own
+
+  - id: typescript-utility-007
+    level: middle
+    tags: [Awaited, ReturnType, async]
+    question: |
+      Чему равен тип `Loaded`?
+    code: |
+      async function loadUser(id: number) {
+        return { id, name: 'Ann' };
+      }
+
+      type Loaded = Awaited<ReturnType<typeof loadUser>>;
+    codeLang: ts
+    options:
+      - text: '`{ id: number; name: string }`'
+        correct: true
+        why: 'Async-функция возвращает `Promise<{ id: number; name: string }>`. `Awaited` разворачивает промис и даёт тип значения, которое получит `await`.'
+      - text: '`Promise<{ id: number; name: string }>`'
+        why: 'Это `ReturnType<typeof loadUser>`. `Awaited` снимает обёртку `Promise`.'
+      - text: '`Promise<unknown>`'
+        why: 'Тип результата async-функции выводится из `return` и известен точно.'
+      - text: '`void`'
+        why: 'Функция возвращает объект, а async оборачивает его в промис. `void` получился бы без `return`.'
+    explanation: |
+      `ReturnType` у async-функции даёт `Promise<T>`, потому что async-функция всегда возвращает промис.
+      `Awaited<T>` (TypeScript 4.5) повторяет поведение `await`: рекурсивно разворачивает промисы и
+      thenable-объекты, `Awaited<Promise<Promise<number>>>` — это `number`. До появления `Awaited` писали свой
+      условный тип с `infer`: `T extends Promise<infer U> ? U : T`. Он не разворачивал вложенные промисы. Так же
+      типизированы `Promise.all` и `Promise.allSettled`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/utility-types.html#awaitedtype
+    source: own
+
+  - id: typescript-utility-008
+    level: middle
+    tags: [Partial, nested-objects]
+    question: |
+      Что произойдёт при компиляции?
+    code: |
+      interface Settings {
+        theme: { color: string; size: number };
+        lang: string;
+      }
+
+      const patch: Partial<Settings> = { theme: { color: 'red' } };
+    codeLang: ts
+    options:
+      - text: 'Ошибка: в `theme` не хватает `size`'
+        correct: true
+        why: '`Partial` неглубокий: он делает необязательным само свойство `theme`, но если оно указано, его значение должно быть полным `{ color: string; size: number }`.'
+      - text: 'Компилируется: `Partial` действует и на вложенные поля'
+        why: '`Partial` проходит только по свойствам первого уровня. Для вложенных объектов нужен рекурсивный `DeepPartial`.'
+      - text: 'Ошибка: не хватает свойства `lang`'
+        why: 'В `Partial<Settings>` свойство `lang` необязательно. Ошибка внутри `theme`.'
+      - text: 'Компилируется: `size` станет `undefined`'
+        why: 'Вложенный тип `theme` не изменился, `size` в нём обязателен, и компилятор требует его указать.'
+    explanation: |
+      Встроенные утилиты `Partial`, `Required`, `Readonly` неглубокие: модификатор применяется только к
+      свойствам первого уровня. Для вложенных структур пишут рекурсивные типы:
+      `type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K] }`. У такой
+      версии свои тонкости: массивы и функции тоже `object`, и их обычно обрабатывают отдельно. Для настроек с
+      глубоким слиянием выбирают `DeepPartial` или функции слияния из библиотек.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/utility-types.html#partialtype
+    source: own
+
+  - id: typescript-utility-009
+    level: junior
+    tags: [NonNullable]
+    question: |
+      Чему равен тип `Name`?
+    code: |
+      type MaybeName = string | null | undefined;
+      type Name = NonNullable<MaybeName>;
+    codeLang: ts
+    options:
+      - text: '`string`'
+        correct: true
+        why: '`NonNullable` убирает из типа `null` и `undefined`, от объединения остаётся `string`.'
+      - text: '`string | undefined`'
+        why: '`NonNullable` убирает и `null`, и `undefined`, а не только `null`.'
+      - text: '`string | null`'
+        why: '`undefined` тоже убирается: оба «пустых» значения исключаются.'
+      - text: '`never`'
+        why: '`never` получился бы, только если бы в объединении не было ничего, кроме `null` и `undefined`.'
+    explanation: |
+      `NonNullable<T>` исключает из типа `null` и `undefined`. Сейчас он определён как `T & {}`: пересечение с
+      `{}` («любое значение, кроме `null` и `undefined`») отбрасывает пустые члены. Утилита пригождается в
+      дженериках и assertion-функциях: `asserts value is NonNullable<T>`. Для обычных переменных достаточно
+      сужения проверкой `if (name != null)`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/utility-types.html#nonnullabletype
+    source: own
+
+  - id: typescript-utility-010
+    level: senior
+    tags: [Parameters, overloads]
+    question: |
+      Чему равен тип `P`?
+    code: |
+      function format(value: string): string;
+      function format(value: number, digits: number): string;
+      function format(value: string | number, digits?: number) {
+        return typeof value === 'number' ? value.toFixed(digits) : value;
+      }
+
+      type P = Parameters<typeof format>;
+    codeLang: ts
+    options:
+      - text: '`[value: number, digits: number]`'
+        correct: true
+        why: 'При выводе из типа с несколькими сигнатурами вызова условный тип с `infer` берёт последнюю из них. Последняя перегрузка — `(value: number, digits: number)`.'
+      - text: '`[value: string]`'
+        why: 'Первая перегрузка не используется: при выводе `infer` из перегруженной функции берётся последняя сигнатура.'
+      - text: '`[value: string | number, digits?: number]`'
+        why: 'Это сигнатура реализации, а она снаружи не видна. `typeof format` содержит только перегрузки.'
+      - text: '`[value: string] | [value: number, digits: number]`'
+        why: '`Parameters` не объединяет перегрузки: условный тип с `infer` сопоставляется с одной сигнатурой, последней.'
+    explanation: |
+      `Parameters`, `ReturnType` и подобные утилиты устроены как условные типы с `infer`. Когда тип содержит
+      несколько сигнатур вызова, а это и есть перегрузки, вывод идёт только по последней из них. Обычно это самая
+      общая перегрузка, но не всегда, и тогда результат неожиданный. Если нужны все варианты, перегрузки
+      перебирают вручную вспомогательным типом или заменяют их одной сигнатурой с объединением или
+      условным типом.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#inferring-within-conditional-types
+    source: own

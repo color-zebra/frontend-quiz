@@ -1,0 +1,373 @@
+# yaml-language-server: $schema=../../schema.json
+topic: css
+subtopic: box-model
+questions:
+  - id: css-box-model-001
+    level: junior
+    tags: [box-sizing, content-box]
+    question: |
+      Какой будет ширина блока от рамки до рамки, если `box-sizing` не менялся?
+    code: |
+      .card {
+        width: 200px;
+        padding: 20px;
+        border: 5px solid;
+        margin: 10px;
+      }
+    codeLang: css
+    options:
+      - text: '200px'
+        why: 'Так было бы при `box-sizing: border-box`. По умолчанию `width` задаёт только ширину содержимого.'
+      - text: '250px'
+        correct: true
+        why: '200 (содержимое) + 2 × 20 (padding) + 2 × 5 (border) = 250. Margin в ширину блока не входит, он задаёт расстояние до соседей.'
+      - text: '270px'
+        why: 'Сюда ошибочно добавлен margin. Он находится снаружи рамки и не входит в размер блока, хотя занимает место в потоке.'
+      - text: '240px'
+        why: 'Забыта рамка: border добавляется к ширине при `content-box` так же, как padding.'
+    explanation: |
+      Блок состоит из слоёв: содержимое → padding → border → margin. При значении по умолчанию
+      `box-sizing: content-box` свойство `width` задаёт только содержимое, а padding и border добавляются
+      сверху. Видимая ширина блока — от рамки до рамки. Margin — внешнее расстояние: в размер блока он не
+      входит, но место в потоке занимает. Из-за этой арифметики почти все проекты начинают с
+      `*, *::before, *::after { box-sizing: border-box; }`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Styling_basics/Box_model
+    source: own
+
+  - id: css-box-model-002
+    level: junior
+    tags: [box-sizing, border-box]
+    question: |
+      Какой будет ширина области содержимого?
+    code: |
+      .card {
+        box-sizing: border-box;
+        width: 200px;
+        padding: 20px;
+        border: 5px solid;
+      }
+    codeLang: css
+    options:
+      - text: '200px'
+        why: 'При `border-box` 200px — это ширина вместе с padding и border. На содержимое остаётся меньше.'
+      - text: '150px'
+        correct: true
+        why: '200 − 2 × 20 − 2 × 5 = 150. При `border-box` padding и border «съедают» место у содержимого.'
+      - text: '160px'
+        why: 'Вычтен только padding. Рамка при `border-box` тоже входит в заданные 200px.'
+      - text: '250px'
+        why: 'Так вышла бы полная ширина блока при `content-box`, а здесь задан `border-box`.'
+    explanation: |
+      `box-sizing: border-box` меняет смысл `width` и `height`: теперь это размер блока вместе с padding и
+      border. Это удобнее для вёрстки: блок шириной 50% с любыми внутренними отступами всё равно займёт
+      ровно половину. Содержимому достаётся то, что осталось. Если padding и border больше заданной
+      ширины, содержимое сожмётся до нуля, но блок станет шире: меньше суммы padding и border он быть
+      не может.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/box-sizing
+    source: own
+
+  - id: css-box-model-003
+    level: middle
+    tags: [margin-collapse]
+    question: |
+      Какое расстояние будет между двумя абзацами?
+    code: |
+      .first { margin-bottom: 30px; }
+      .second { margin-top: 20px; }
+    codeLang: css
+    options:
+      - text: '50px'
+        why: 'Вертикальные margin соседних блоков в обычном потоке не складываются, а схлопываются.'
+      - text: '30px'
+        correct: true
+        why: 'Это схлопывание (margin collapsing): из двух соприкасающихся вертикальных отступов остаётся больший.'
+      - text: '20px'
+        why: 'Отступ следующего элемента не главнее предыдущего: порядок не важен, при схлопывании берётся максимум.'
+      - text: '25px'
+        why: 'Это среднее, но среднее при схлопывании не вычисляется. Для положительных отступов берётся максимум.'
+    explanation: |
+      В обычном блочном потоке соприкасающиеся вертикальные margin схлопываются в один, равный большему
+      из них. Если один отступ отрицательный, они складываются (30 + (−10) = 20). Если оба отрицательные,
+      берётся наименьший. Горизонтальные margin никогда не схлопываются. Схлопывания нет у flex- и
+      grid-элементов, у абсолютно позиционированных и плавающих элементов, а также если между отступами
+      есть padding, border или контент.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_box_model/Mastering_margin_collapsing
+    source: own
+
+  - id: css-box-model-004
+    level: middle
+    tags: [margin-collapse, parent-child, flow-root]
+    question: |
+      У заголовка внутри карточки задан `margin-top: 24px`. Вместо отступа внутри карточки вся карточка
+      сдвинулась вниз, а заголовок прилип к её верхнему краю. Почему?
+    code: |
+      <div class="card">
+        <h2 class="title">Заголовок</h2>
+      </div>
+
+      <style>
+        .card { background: #eee; }
+        .title { margin-top: 24px; }
+      </style>
+    codeLang: html
+    options:
+      - text: 'У `h2` margin всегда отсчитывается от `body`, а не от родителя'
+        why: 'Margin отсчитывается от соседа или родителя. Здесь он «вышел» из родителя из-за схлопывания.'
+      - text: 'Margin заголовка схлопнулся с margin карточки и вышел наружу'
+        correct: true
+        why: 'У карточки нет `padding-top`, `border-top`, и она не создаёт BFC. Между верхними отступами родителя и первого потомка ничего нет, поэтому они схлопываются, и итоговый отступ оказывается снаружи родителя.'
+      - text: 'Фон карточки не распространяется на область margin потомков, поэтому так только кажется'
+        why: 'Сдвиг реальный: карточка действительно опустилась, и над её фоном появилась пустая полоса.'
+      - text: 'Это баг браузера, который чинится через `position: relative`'
+        why: 'Это поведение по спецификации, и `position: relative` его не меняет.'
+    explanation: |
+      Схлопываются не только margin соседей, но и родителя с первым или последним потомком, если между
+      ними нет ничего: ни padding, ни border, ни строчного контента, а родитель не создаёт новый блочный
+      контекст форматирования (BFC). Тогда отступ заголовка «протекает» наружу. Лечится любым из способов:
+      `padding-top` или `border-top` у карточки, `display: flow-root` (создаёт BFC без побочных эффектов),
+      или `display: flex` либо `grid` у карточки — во flex и grid отступы не схлопываются.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_box_model/Mastering_margin_collapsing
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_display/Block_formatting_context
+    source: own
+
+  - id: css-box-model-005
+    level: middle
+    tags: [margin-collapse, flexbox]
+    question: |
+      Какое расстояние будет между элементами?
+    code: |
+      .list { display: flex; flex-direction: column; }
+      .item { margin: 20px 0; }
+    codeLang: css
+    options:
+      - text: '20px'
+        why: 'Во flex-контейнере margin элементов не схлопываются, даже в колонке, и даже `flex-direction: column` не превращает контейнер в обычный блок.'
+      - text: '40px'
+        correct: true
+        why: 'Схлопывание — особенность блочного потока. Flex-элементы раскладываются по своим правилам, и отступы суммируются.'
+      - text: '0'
+        why: 'Margin у flex-элементов работают, а `margin: auto` там ещё и распределяет свободное место. Нулевого расстояния не будет.'
+      - text: '60px'
+        why: 'Между элементами действуют только нижний margin первого и верхний margin второго: 20 + 20 = 40. Отступы у краёв контейнера в это расстояние не входят.'
+    explanation: |
+      Схлопывание margin есть только в блочном контексте форматирования. Flex- и grid-контейнеры создают
+      свой контекст, где отступы элементов просто складываются. Поэтому при переводе списка с блоков на
+      `display: flex; flex-direction: column` расстояния неожиданно удваиваются. Внутри flex и grid
+      промежутки удобнее задавать свойством `gap`: оно даёт отступ только между элементами, без краёв.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_box_model/Mastering_margin_collapsing
+    source: own
+
+  - id: css-box-model-006
+    level: middle
+    tags: [percentages, padding]
+    question: |
+      Родитель шириной 400px и высотой 100px. Какой будет верхний внутренний отступ потомка?
+    code: |
+      .child { padding-top: 50%; }
+    codeLang: css
+    options:
+      - text: '50px'
+        why: 'Это половина высоты родителя, но вертикальные отступы в процентах считаются не от высоты, а от ширины.'
+      - text: '200px'
+        correct: true
+        why: 'Проценты у padding и margin по всем четырём сторонам считаются от ширины содержащего блока.'
+      - text: '0'
+        why: 'Проценты у padding работают, причём этим поведением раньше делали блоки с заданным соотношением сторон. Нуля не будет.'
+      - text: '100px'
+        why: '100px — это вся высота родителя, но процент берётся от ширины содержащего блока, и 50% от 400px — не 100.'
+    explanation: |
+      Проценты у padding и margin, включая вертикальные, считаются от ширины содержащего блока. Так сделано,
+      чтобы избежать циклической зависимости: высота родителя часто зависит от высоты потомков, и отступ
+      от высоты мог бы бесконечно увеличивать сам себя. До появления свойства `aspect-ratio` на этом строился
+      трюк для резиновых видео: `height: 0; padding-top: 56.25%` давал блок с соотношением 16:9.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/padding#values
+    source: own
+
+  - id: css-box-model-007
+    level: junior
+    tags: [inline, margin, padding]
+    question: |
+      Что произойдёт, если строчному элементу `<span>` в середине абзаца задать эти стили?
+    code: |
+      span {
+        width: 200px;
+        height: 50px;
+        margin: 20px;
+        padding: 10px;
+        background: yellow;
+      }
+    codeLang: css
+    options:
+      - text: 'Span станет блоком 200×50 с отступами со всех сторон'
+        why: 'Размеры не применяются к строчным элементам, пока не поменять `display`.'
+      - text: 'Размеры проигнорируются, вертикальные отступы не сдвинут соседние строки'
+        correct: true
+        why: 'У строчного элемента нет своей коробки нужного размера: вертикальный padding рисуется фоном поверх соседних строк, а вертикальный margin вообще ни на что не влияет.'
+      - text: 'Применится всё, кроме `background`: у строчных элементов нет фона'
+        why: 'Фон у строчных элементов работает, он закрашивает строку текста и padding.'
+      - text: 'Стили применятся только после добавления `position: relative`'
+        why: '`position` не меняет тип отображения элемента. Нужен `display: inline-block` или `block`.'
+    explanation: |
+      Строчные элементы (`span`, `a`, `em`) участвуют в формировании строк текста. Их высоту определяет
+      шрифт и `line-height`, а ширину — содержимое, поэтому `width` и `height` игнорируются. Горизонтальные
+      padding и margin раздвигают соседний текст в строке. Вертикальный padding рисуется вместе с фоном,
+      но высоту строки не меняет и может наползти на соседние строки, а вертикальный margin не действует вовсе.
+      Нужна «коробка» в строке — используют `display: inline-block`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_display/Block_and_inline_layout_in_normal_flow
+    source: own
+
+  - id: css-box-model-008
+    level: middle
+    tags: [bfc, flow-root, float]
+    question: |
+      Что делает `display: flow-root`?
+    options:
+      - text: 'Делает элемент содержащим блоком для абсолютных потомков'
+        why: 'Содержащий блок для absolute создают `position`, `transform` и подобные свойства, а `flow-root` создаёт только BFC.'
+      - text: 'Создаёт новый блочный контекст форматирования (BFC)'
+        correct: true
+        why: 'Блок с BFC вмещает внутренние float, не схлопывает margin с потомками и не залезает под соседние float. `flow-root` создаёт BFC без побочных эффектов вроде обрезки у `overflow: hidden`.'
+      - text: 'Превращает элемент во flex-контейнер с колонками'
+        why: 'Это обычный блок, только с собственным контекстом форматирования. Раскладка потомков не меняется.'
+      - text: 'Выводит элемент из потока, как `position: absolute`'
+        why: '`flow-root` оставляет элемент в потоке, он ведёт себя как обычный блок.'
+    explanation: |
+      Блочный контекст форматирования (BFC) — изолированная область, где блоки раскладываются по своим
+      правилам. Внутри BFC float-ы учитываются при расчёте высоты, отступы потомков не схлопываются с
+      отступами контейнера, а сам контейнер не заходит под внешние float. Раньше BFC создавали побочными
+      путями: `overflow: hidden` (обрезает тени и выпадающие меню), `display: inline-block`, `float`. Свойство
+      `display: flow-root` создаёт BFC специально для этого. Flex- и grid-контейнеры создают свои контексты
+      форматирования с похожими эффектами.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_display/Block_formatting_context
+    source: own
+
+  - id: css-box-model-009
+    level: middle
+    tags: [percentages, height]
+    question: |
+      Почему у `.child` нулевая высота?
+    code: |
+      <div class="parent">
+        <div class="child"></div>
+      </div>
+
+      <style>
+        .parent { min-height: 300px; }
+        .child { height: 100%; background: red; }
+      </style>
+    codeLang: html
+    options:
+      - text: '`height: 100%` работает только у `body`'
+        why: 'Процентная высота работает у любого элемента, если у его родителя высота определена.'
+      - text: 'У родителя нет определённой высоты, а `min-height` её не задаёт'
+        correct: true
+        why: 'Процент высоты требует определённой (definite) высоты у содержащего блока. `min-height` её не делает определённой.'
+      - text: 'Процентную высоту нужно задавать через `max-height`'
+        why: '`max-height` ограничивает сверху и тоже считает проценты от высоты родителя. Проблема та же.'
+      - text: 'Блок пустой, а пустые блоки не отображаются'
+        why: 'Пустой блок отображается, если у него есть высота. Например, с `height: 100px` красный прямоугольник был бы виден.'
+    explanation: |
+      Проценты высоты считаются от высоты содержащего блока, но только если она определена: задана в
+      единицах, растянута через flex или grid, или сама задана в процентах от определённой высоты. Если
+      высота родителя зависит от содержимого (`auto`), получился бы круг: родитель ждёт ребёнка, ребёнок —
+      родителя. Поэтому процент превращается в `auto`. Способы решения: сделать родителя flex- или
+      grid-контейнером и убрать у потомка `height: 100%` (тогда он растянется сам через `stretch`), задать родителю `height`, использовать единицы `vh`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/height#percentage
+    source: own
+
+  - id: css-box-model-010
+    level: junior
+    tags: [outline, border]
+    question: |
+      Чем `outline` отличается от `border`?
+    options:
+      - text: '`outline` не влияет на раскладку, а `border` влияет'
+        correct: true
+        why: '`outline` рисуется поверх, вокруг рамки, и никого не двигает. Поэтому его используют для индикатора фокуса.'
+      - text: '`outline` нельзя скруглить и раскрасить'
+        why: 'Цвет и стиль у `outline` задаются, а современные браузеры скругляют его вместе с `border-radius`.'
+      - text: 'Это синонимы, `outline` — устаревшее название'
+        why: 'Это разные свойства с разным назначением, оба актуальны.'
+      - text: '`outline` можно задать отдельно для каждой стороны'
+        why: 'Наоборот: у `outline` нет отдельных сторон, а у `border` есть `border-top`, `border-left` и так далее.'
+    explanation: |
+      `border` — часть блочной модели: он увеличивает размер блока (при `content-box`) и сдвигает соседей.
+      `outline` — обводка, которая рисуется снаружи рамки и не участвует в раскладке, поэтому появление
+      outline при фокусе ничего не сдвигает. Через `outline-offset` обводку можно отодвинуть от рамки.
+      Убирать outline у фокуса без замены — антипаттерн доступности: пользователь клавиатуры перестаёт
+      видеть, где он находится. Правильнее стилизовать `:focus-visible`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/outline
+    source: own
+
+  - id: css-box-model-011
+    level: senior
+    tags: [margin-collapse, empty-block]
+    question: |
+      Какое расстояние будет между двумя абзацами?
+    code: |
+      <p style="margin-bottom: 20px">Первый</p>
+      <div style="margin: 30px 0"></div>
+      <p style="margin-top: 20px">Второй</p>
+    codeLang: html
+    options:
+      - text: '30px'
+        correct: true
+        why: 'У пустого блока без высоты, padding и border верхний и нижний margin соприкасаются и схлопываются сквозь него. Вместе с отступами абзацев остаётся один отступ — максимум из 20, 30, 30 и 20.'
+      - text: '60px'
+        why: 'Так было бы, если бы отступы пустого блока складывались. Но у пустого блока верхний и нижний margin схлопываются между собой.'
+      - text: '100px'
+        why: 'Это простая сумма всех отступов. В блочном потоке соприкасающиеся вертикальные отступы схлопываются, а не суммируются.'
+      - text: '70px'
+        why: '20 + 30 + 20: верхний и нижний отступы пустого блока схлопнулись между собой, а с отступами абзацев — нет. На деле в одно схлопывание входят все четыре отступа.'
+    explanation: |
+      Схлопывание margin работает не только между соседями и между родителем и потомком, но и сквозь пустой
+      блок. Если у блока нет высоты, min-height, padding, border и строчного контента, его верхний и нижний
+      отступы соприкасаются и схлопываются друг с другом, а затем и с отступами соседей. Получается один
+      отступ, равный наибольшему. Так пустые параграфы и обёртки «исчезают» из вёрстки. Стоит добавить пустому
+      блоку `padding: 1px` или `display: flow-root`, и схлопывание сквозь него прекратится.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_box_model/Mastering_margin_collapsing#empty_blocks
+    source: own
+
+  - id: css-box-model-012
+    level: junior
+    tags: [float, clearfix]
+    question: |
+      В карточке картинка с `float: left` и короткий текст. Рамка карточки закончилась под текстом, а картинка
+      вылезла вниз за её пределы. Почему?
+    code: |
+      <div class="card" style="border: 1px solid">
+        <img src="photo.jpg" style="float: left; height: 200px" alt="">
+        <p>Короткий текст</p>
+      </div>
+    codeLang: html
+    options:
+      - text: 'Плавающий элемент выпадает из потока, и родитель не учитывает его высоту'
+        correct: true
+        why: 'Высота обычного блока считается по элементам в потоке. Float обтекается текстом, но в высоту родителя не входит. Лечится `display: flow-root` у карточки или clearfix.'
+      - text: 'Картинка выше 100px, а float не работает с высокими элементами'
+        why: 'Ограничений по высоте у float нет. Дело в том, как родитель считает свою высоту.'
+      - text: 'Нужно задать картинке `display: block`, без этого float игнорируется'
+        why: '`float` сам превращает элемент в блочный. `display: block` ничего не изменит.'
+      - text: 'Рамка рисуется только вокруг текстового содержимого блока'
+        why: 'Рамка рисуется по границе блока. Блок просто получился ниже картинки, потому что её не учитывает.'
+    explanation: |
+      Float изобрели для обтекания текстом: элемент прижимается к краю, а строки обходят его. При этом
+      плавающий элемент выходит из нормального потока, и родитель с `height: auto` считает высоту только по
+      тем, кто в потоке. Классическое решение — clearfix: псевдоэлемент `::after` с `content: ""; display: table;
+      clear: both` в конце родителя. Современное — `display: flow-root`, который создаёт BFC, а BFC включает
+      float-ы в расчёт высоты. Для раскладки колонок float давно заменён flexbox и grid.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/float
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_display/Block_formatting_context
+    source: own

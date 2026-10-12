@@ -1,0 +1,266 @@
+# yaml-language-server: $schema=../../schema.json
+topic: nextjs
+subtopic: routing
+questions:
+  - id: nextjs-routing-001
+    level: junior
+    tags: [app-router, page]
+    question: |
+      Какой файл в App Router сделает адрес `/dashboard/settings` доступным?
+    options:
+      - text: '`app/dashboard/settings/page.tsx`'
+        correct: true
+        why: 'В App Router маршрут задают папки, а публичным его делает файл `page` внутри папки сегмента.'
+      - text: '`app/dashboard/settings.tsx`'
+        why: 'Отдельный файл с именем сегмента маршрутом не станет: в App Router нужен файл `page` внутри папки `settings`.'
+      - text: '`app/dashboard/settings/index.tsx`'
+        why: '`index` — соглашение Pages Router. В App Router файл страницы называется `page`.'
+      - text: '`app/dashboard/settings/route.tsx`'
+        why: '`route` создаёт обработчик HTTP-запросов (API), а не страницу.'
+    explanation: |
+      В App Router структура папок внутри `app` повторяет структуру URL, а специальные файлы определяют, что
+      происходит на этом адресе: `page` — страница, `layout` — общий каркас для вложенных страниц, `loading` —
+      состояние загрузки, `error` — граница ошибок, `route` — обработчик API. Папка без `page` или `route` в
+      адрес не превращается. Поэтому рядом со страницами можно спокойно хранить компоненты, стили и тесты: они
+      не станут маршрутами.
+    links:
+      - https://nextjs.org/docs/app/getting-started/project-structure
+      - https://nextjs.org/docs/app/api-reference/file-conventions/page
+    source: own
+
+  - id: nextjs-routing-002
+    level: junior
+    tags: [route-groups]
+    question: |
+      По какому адресу откроется страница `app/(marketing)/about/page.tsx`?
+    options:
+      - text: '`/about`'
+        correct: true
+        why: 'Папка в круглых скобках — группа маршрутов (route group). Она нужна для организации файлов и отдельных layout и в URL не попадает.'
+      - text: '`/(marketing)/about`'
+        why: 'Скобки помечают папку как группу, и её имя исключается из адреса.'
+      - text: '`/marketing/about`'
+        why: 'Имя группы не превращается в сегмент адреса ни со скобками, ни без них.'
+      - text: 'Ни по какому: скобки в имени папки запрещены'
+        why: 'Скобки — специальный синтаксис App Router для групп маршрутов, он разрешён и часто используется.'
+    explanation: |
+      Группы маршрутов (route groups) позволяют группировать страницы, не меняя URL. Типичные применения:
+      разные layout для частей сайта (`(marketing)` с промо-шапкой и `(app)` с панелью навигации), несколько
+      корневых layout, организация кода по командам. Две группы не должны давать один и тот же адрес:
+      `(a)/about` и `(b)/about` вызовут ошибку. Похожий приём — приватные папки с подчёркиванием
+      (`_components`): они вообще не участвуют в роутинге.
+    links:
+      - https://nextjs.org/docs/app/api-reference/file-conventions/route-groups
+    source: own
+
+  - id: nextjs-routing-003
+    level: middle
+    tags: [layout, template, state]
+    question: |
+      В `app/shop/layout.tsx` и `app/shop/template.tsx` есть по клиентскому счётчику. Пользователь накликал
+      оба до 5 и перешёл с `/shop/a` на `/shop/b` по `<Link>`. Что покажут счётчики?
+    options:
+      - text: 'В layout — `5`, в template — `0`'
+        correct: true
+        why: 'Layout сохраняется между страницами своего сегмента, и его состояние живёт. Template получает уникальный ключ и пересоздаётся при смене вложенного маршрута, поэтому его состояние сбрасывается.'
+      - text: 'В обоих — `5`'
+        why: 'Template отличается от layout именно тем, что пересоздаётся при навигации.'
+      - text: 'В обоих — `0`'
+        why: 'Layout не пересоздаётся при переходе между вложенными страницами: в этом его смысл.'
+      - text: 'В layout — `0`, в template — `5`'
+        why: 'Наоборот: сохраняется layout, а template монтируется заново.'
+    explanation: |
+      Layout оборачивает вложенные страницы и остаётся смонтированным при переходах внутри своего сегмента:
+      сохраняются состояние, позиция прокрутки, открытые меню. Template выглядит так же, но получает
+      уникальный `key` и монтируется заново при смене сегмента: эффекты перезапускаются, клиентское состояние
+      сбрасывается. Template нужен, когда при каждом переходе нужно что-то запускать заново: анимацию
+      появления, логирование просмотра, сброс формы.
+    links:
+      - https://nextjs.org/docs/app/api-reference/file-conventions/template
+      - https://nextjs.org/docs/app/api-reference/file-conventions/layout
+    source: own
+
+  - id: nextjs-routing-004
+    level: middle
+    tags: [dynamic-routes, catch-all]
+    question: |
+      Какие адреса обработает страница `app/docs/[...slug]/page.tsx`?
+    options:
+      - text: '`/docs/a` и `/docs/a/b`, но не `/docs`'
+        correct: true
+        why: 'Catch-all сегмент `[...slug]` требует хотя бы одного сегмента после `/docs` и собирает все в массив: `["a"]`, `["a", "b"]`. Для `/docs` нужен необязательный вариант `[[...slug]]`.'
+      - text: '`/docs`, `/docs/a` и `/docs/a/b`'
+        why: 'Адрес без сегментов ловит только optional catch-all `[[...slug]]` в двойных скобках.'
+      - text: 'Только `/docs/a`, но не `/docs/a/b`'
+        why: 'Так работает обычный динамический сегмент `[slug]`. Многоточие захватывает любую глубину.'
+      - text: '`/docs/a/b` и `/docs`, но не `/docs/a`'
+        why: 'Catch-all принимает и один сегмент, а адрес без сегментов как раз не принимает.'
+    explanation: |
+      Динамические сегменты задаются квадратными скобками. `[slug]` — один сегмент, значение строкой.
+      `[...slug]` — один и более сегментов, значение массивом. `[[...slug]]` — ноль и более, при пустом адресе
+      значение `undefined`. Значения приходят в `params` страницы, layout и обработчика маршрута. В Next.js 15
+      и 16 `params` — промис, его нужно ожидать: `const { slug } = await params`. Catch-all удобен для
+      документации, CMS-страниц и прокси к внешним API.
+    links:
+      - https://nextjs.org/docs/app/api-reference/file-conventions/dynamic-routes
+    source: own
+
+  - id: nextjs-routing-005
+    level: senior
+    tags: [error-boundary, error.tsx, layout]
+    question: |
+      Компонент в `app/dashboard/layout.tsx` бросил ошибку при рендере. В папке `app/dashboard` есть
+      `error.tsx`. Что увидит пользователь?
+    options:
+      - text: 'Границу ошибок родительского сегмента, например `app/error.tsx`'
+        correct: true
+        why: '`error.tsx` оборачивает в границу ошибок страницу и вложенные сегменты, но не `layout` своего же сегмента. Ошибка в layout поднимается к ближайшей границе выше: `app/error.tsx` или, для корневого layout, `global-error.tsx`.'
+      - text: 'Файл `app/dashboard/error.tsx` вместо страницы и layout'
+        why: 'Граница ошибок находится внутри layout своего сегмента, поэтому ошибку самого layout поймать не может.'
+      - text: 'Пустую страницу без каких-либо сообщений об ошибке'
+        why: 'Ошибка всплывёт к границе уровнем выше. Если там тоже ничего нет, сработает `global-error` или встроенная страница ошибки.'
+      - text: 'Файл `dashboard/error.tsx` внутри отрендеренного layout'
+        why: 'Layout упал, его отрендеренной версии нет, и граница его сегмента его не охватывает.'
+    explanation: |
+      Вложенность специальных файлов в сегменте такая: `layout` → `template` → `error` (граница ошибок) →
+      `loading` (Suspense) → `not-found` → `page`. Поэтому `error.tsx` ловит ошибки страницы и вложенных
+      сегментов, оставляя layout на экране: навигация и шапка продолжают работать. Ошибки самого layout ловит
+      граница сегмента выше. Для корневого layout есть `global-error.tsx`, и он должен сам рендерить `<html>`
+      и `<body>`. `error.tsx` и `global-error.tsx` — клиентские компоненты: граница ошибок в React возможна
+      только на клиенте.
+    links:
+      - https://nextjs.org/docs/app/api-reference/file-conventions/error
+    source: own
+
+  - id: nextjs-routing-006
+    level: middle
+    tags: [params, async-request-apis, next-16, no-run]
+    question: |
+      Что покажет эта страница по адресу `/legacy/5` в Next.js 16?
+    code: |
+      // app/legacy/[id]/page.jsx
+      export default function Page({ params }) {
+        return <h1>id={String(params.id)}</h1>;
+      }
+    codeLang: jsx
+    options:
+      - text: '`id=undefined`'
+        correct: true
+        why: 'В Next.js 16 `params` — промис. У промиса нет свойства `id`, поэтому получается `undefined`. Нужно сделать страницу асинхронной и написать `const { id } = await params`.'
+      - text: '`id=5`'
+        why: 'Синхронный доступ к `params` работал в Next.js 14 и временно, с предупреждением, в 15. В 16 его убрали.'
+      - text: '`id=[object Promise]`'
+        why: '`String(params.id)` читает свойство промиса, а не сам промис. Свойства `id` у него нет.'
+      - text: 'Ошибку сборки: синхронный доступ запрещён'
+        why: 'В JavaScript-файле компилятор этого не проверит. Ошибку покажет только TypeScript, а в рантайме будет тихий `undefined`.'
+    explanation: |
+      Next.js 15 сделал асинхронными API, которые зависят от запроса: `params`, `searchParams`, `cookies()`,
+      `headers()`, `draftMode()`. Это позволяет фреймворку начать рендер до того, как эти данные понадобятся,
+      и точнее понимать, какие части страницы зависят от запроса. В 15 оставили временную синхронную
+      совместимость, в 16 её удалили. В клиентских компонентах промис `params` разворачивают через
+      `use(params)` или используют хук `useParams`. Для миграции есть codemod `next-async-request-api`.
+    links:
+      - https://nextjs.org/docs/app/guides/upgrading/version-16#async-request-apis-breaking-change
+    source: own
+
+  - id: nextjs-routing-007
+    level: junior
+    tags: [private-folders, colocation]
+    question: |
+      Что произойдёт с файлом `app/blog/_components/PostCard.tsx`?
+    options:
+      - text: 'Он не станет маршрутом, папка с `_` исключена из роутинга'
+        correct: true
+        why: 'Префикс подчёркивания делает папку приватной: Next.js не рассматривает её и всё её содержимое как часть маршрутов.'
+      - text: 'Он откроется по адресу `/blog/_components/PostCard`'
+        why: 'Маршрут создаёт только `page` или `route`, а приватная папка вовсе выключена из роутинга.'
+      - text: 'Сборка упадёт: в `app` нельзя хранить компоненты'
+        why: 'Хранить компоненты рядом с маршрутами можно (colocation). Без `page` они и так не станут адресом.'
+      - text: 'Он станет layout для страниц внутри `blog`'
+        why: 'Layout задаёт только файл с именем `layout`. Имя `PostCard` не имеет специального смысла.'
+    explanation: |
+      Внутри `app` можно хранить любые файлы рядом с маршрутами: маршрутом становится только папка со `page`
+      или `route`. Приватные папки (`_name`) дают дополнительную гарантию: даже специальные файлы внутри них
+      будут проигнорированы. Это удобно, чтобы отделить UI-логику от роутинга, избежать конфликтов с будущими
+      соглашениями Next.js и упорядочить файлы в редакторе. Многие проекты вместо этого держат компоненты вне
+      `app`, в папке `src/components`.
+    links:
+      - https://nextjs.org/docs/app/getting-started/project-structure#private-folders
+    source: own
+
+  - id: nextjs-routing-008
+    level: senior
+    tags: [intercepting-routes, parallel-routes, modal]
+    question: |
+      Галерея открывает фото в модалке через перехват маршрута `app/@modal/(.)photo/[id]/page.tsx`, а полная
+      страница фото лежит в `app/photo/[id]/page.tsx`. Что увидит пользователь, если обновит страницу с
+      открытой модалкой?
+    options:
+      - text: 'Полную страницу фото, без галереи и модалки'
+        correct: true
+        why: 'Перехват работает только при клиентской навигации: Next.js знает, откуда пришёл пользователь, и показывает модалку поверх текущей страницы. При полной загрузке адреса перехвата нет, и рендерится обычный маршрут `/photo/[id]`.'
+      - text: 'Галерею с той же открытой модалкой'
+        why: 'После перезагрузки Next.js не знает, на какой странице была открыта модалка: состояние слотов при полной загрузке не восстанавливается.'
+      - text: 'Галерею без модалки'
+        why: 'Адрес в строке — `/photo/123`, и он ведёт на страницу фото, а не на галерею.'
+      - text: 'Ошибку 404, так как маршрут перехвата недоступен напрямую'
+        why: 'Отдельный маршрут `app/photo/[id]` существует и отвечает на прямой заход.'
+    explanation: |
+      Перехватывающие маршруты (intercepting routes: `(.)`, `(..)`, `(...)`) позволяют при клиентском переходе
+      показать содержимое другого маршрута в текущем контексте, например модалку поверх ленты, и при этом
+      обновить URL. Так модалкой можно поделиться ссылкой, а кнопка «назад» её закрывает. При прямом заходе
+      или обновлении страницы перехвата нет, и открывается полноценная страница. Обычно перехват комбинируют с
+      параллельным слотом `@modal`.
+    links:
+      - https://nextjs.org/docs/app/api-reference/file-conventions/intercepting-routes
+    source: own
+
+  - id: nextjs-routing-009
+    level: middle
+    tags: [parallel-routes, default.js, next-16]
+    question: |
+      Какой файл Next.js 16 требует для каждого параллельного слота (`@modal`, `@sidebar`) и зачем?
+    options:
+      - text: '`default.tsx` для случая, когда слот нельзя восстановить'
+        correct: true
+        why: 'При полной загрузке страницы Next.js не знает, что было открыто в слоте при клиентской навигации. Для слотов без совпадения с текущим URL рендерится `default` — например `null` или `notFound()`.'
+      - text: '`loading.tsx` для стриминга содержимого слота'
+        why: '`loading` в слоте допустим, но не обязателен: он задаёт заглушку загрузки, а не запасное содержимое при полной загрузке.'
+      - text: '`layout.tsx` внутри каждого слота'
+        why: 'Слот рендерится в layout родителя, свой layout ему не обязателен.'
+      - text: 'Никакой: слоты работают без дополнительных файлов'
+        why: 'Next.js 16 сделал `default` обязательным: без него для слота нет понятного поведения после перезагрузки.'
+    explanation: |
+      Параллельные маршруты (`@slot`) рендерят в одном layout несколько независимых областей: дашборд с
+      панелями, модалки, разные виды для разных ролей. При клиентской навигации Next.js помнит, что показано в
+      каждом слоте, а при полной загрузке восстановить это нельзя, и для слотов без совпадения рендерится
+      `default`. Раньше без него получался 404. Руководство по Next.js 16 называет файл обязательным; на
+      практике сборка webpack без него падает, а Turbopack в 16.3 отдаёт страницу со статусом 404, так что
+      файл стоит создавать всегда. Прежнее поведение повторяют, вызвав в нём `notFound()` или вернув `null`.
+    links:
+      - https://nextjs.org/docs/app/guides/upgrading/version-16#parallel-routes-defaultjs-requirement
+      - https://nextjs.org/docs/app/api-reference/file-conventions/default
+    source: own
+  - id: nextjs-routing-010
+    level: middle
+    tags: [loading, suspense, streaming]
+    question: |
+      Что на самом деле делает файл `app/feed/loading.tsx`?
+    options:
+      - text: 'Оборачивает страницу сегмента в `<Suspense>` с этим fallback'
+        correct: true
+        why: 'Next.js вставляет `<Suspense fallback={<Loading />}>` вокруг содержимого `page` (и вложенных сегментов), но внутри layout. Пока страница ждёт данные, показывается fallback, а layout уже на экране.'
+      - text: 'Показывается до загрузки JavaScript-бандла приложения'
+        why: 'Fallback приходит в HTML вместе с layout: он не связан с загрузкой бандла и показывается и без JavaScript.'
+      - text: 'Отображается на время клиентских эффектов страницы'
+        why: 'Эффекты Suspense не задерживают. `loading` показывается, пока серверный рендер страницы ждёт асинхронные данные.'
+      - text: 'Заменяет layout сегмента, пока грузится страница'
+        why: 'Layout остаётся на экране: `loading` находится внутри него и заменяет только содержимое страницы.'
+    explanation: |
+      `loading.tsx` — сокращение для границы Suspense на уровне сегмента. Сервер сразу отправляет layout и
+      fallback, а содержимое страницы догружается потоком (streaming), когда будет готово. Для более точечных
+      состояний загрузки внутри страницы используют обычные `<Suspense>` вокруг медленных компонентов.
+    links:
+      - https://nextjs.org/docs/app/api-reference/file-conventions/loading
+      - https://nextjs.org/docs/app/getting-started/linking-and-navigating#streaming
+    source: own

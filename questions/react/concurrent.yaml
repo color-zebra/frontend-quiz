@@ -1,0 +1,325 @@
+# yaml-language-server: $schema=../../schema.json
+topic: react
+subtopic: concurrent
+questions:
+  - id: react-concurrent-001
+    level: junior
+    tags: [Suspense]
+    question: |
+      Что делает `<Suspense fallback={<Spinner />}>`?
+    options:
+      - text: 'Показывает заглушку, пока дети ждут данные или код'
+        correct: true
+        why: 'Если компонент внутри «приостанавливается» (ждёт промис через `use` или загружается через `lazy`), React показывает ближайший `fallback`, а когда всё готово, подменяет его содержимым.'
+      - text: 'Откладывает рендер детей на заданное время'
+        why: 'Таймера у Suspense нет. Заглушка показывается, пока кто-то внутри ждёт, и убирается, когда ожидание закончено.'
+      - text: 'Перехватывает ошибки в дочерних компонентах'
+        why: 'Ошибки перехватывает граница ошибок (error boundary). Suspense реагирует только на ожидание.'
+      - text: 'Показывает заглушку, пока выполняются эффекты детей'
+        why: 'Эффекты выполняются после коммита и Suspense не задерживают. Ожидание данных внутри `useEffect` Suspense не видит.'
+    explanation: |
+      Suspense — декларативный способ описать состояние загрузки. Вместо `isLoading` в каждом компоненте
+      граница Suspense показывает заглушку для всего поддерева, пока хоть один компонент внутри ждёт.
+      Приостанавливаться умеют `lazy`-компоненты, `use(promise)` и источники данных, поддерживающие
+      Suspense (React Query, Relay, фреймворки вроде Next.js). Обычная загрузка в `useEffect` Suspense не
+      включает. Границы можно вкладывать, чтобы разные части экрана показывались по мере готовности.
+    links:
+      - https://react.dev/reference/react/Suspense
+    source: own
+
+  - id: react-concurrent-002
+    level: middle
+    tags: [useTransition, isPending, output]
+    question: |
+      Что выведется в консоль после клика?
+    code: |
+      function App() {
+        const [isPending, startTransition] = useTransition();
+        const [tab, setTab] = useState('a');
+        console.log('render', tab, isPending);
+
+        return (
+          <button onClick={() => startTransition(() => setTab('b'))}>
+            Вкладка b
+          </button>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`render a true`, `render b false`'
+        correct: true
+        why: 'React сначала делает срочный рендер со старым состоянием и `isPending = true`, чтобы интерфейс сразу показал ожидание. Затем, с низким приоритетом, рендерит переход с новым значением.'
+      - text: '`render b true`, `render b false`'
+        why: 'Обновление внутри перехода не применяется в срочном рендере. Пока переход идёт, состояние остаётся старым.'
+      - text: '`render b false`'
+        why: 'Перед переходом React отдельным срочным рендером выставляет `isPending`, чтобы можно было показать индикатор.'
+      - text: '`render a true`, `render a false`, `render b false`'
+        why: 'Переход завершается одним рендером, где одновременно появляется новое значение и `isPending` возвращается в `false`.'
+    explanation: |
+      `startTransition` помечает обновления как несрочные. React рендерит их с низким приоритетом и может
+      прервать, если появится срочное обновление, например ввод. `isPending` из `useTransition` позволяет
+      показать, что идёт работа, не убирая старый интерфейс. Типичные применения: переключение вкладок,
+      фильтрация большого списка, навигация. Состояние, которое управляет полем ввода, в переход не
+      заворачивают: поле должно обновляться сразу.
+    links:
+      - https://react.dev/reference/react/useTransition
+    source: own
+
+  - id: react-concurrent-003
+    level: middle
+    tags: [useDeferredValue, output]
+    question: |
+      Что выведется в консоль после клика?
+    code: |
+      function App() {
+        const [query, setQuery] = useState('a');
+        const deferredQuery = useDeferredValue(query);
+        console.log('render', query, deferredQuery);
+
+        return <button onClick={() => setQuery('ab')}>ввод</button>;
+      }
+    codeLang: jsx
+    options:
+      - text: '`render ab a`, `render ab ab`'
+        correct: true
+        why: 'Сначала срочный рендер с новым `query`, а отложенное значение остаётся прежним. Затем фоновый рендер, в котором отложенное значение догоняет текущее.'
+      - text: '`render ab ab`'
+        why: 'Отложенное значение обновляется отдельным низкоприоритетным рендером, а в срочном оно остаётся прежним.'
+      - text: '`render a a`, `render ab ab`'
+        why: 'Срочный рендер уже видит новое значение `query`, отстаёт только `deferredQuery`.'
+      - text: '`render ab a`'
+        why: 'Отложенное значение не остаётся старым навсегда: React дорендерит его, когда освободится.'
+    explanation: |
+      `useDeferredValue(value)` возвращает значение, которое «отстаёт» от исходного. При изменении React сначала
+      рендерит с прежним отложенным значением, чтобы быстрые части интерфейса (поле ввода) обновились сразу, а
+      потом в фоне рендерит с новым. Фоновый рендер прерывается, если значение снова изменилось. Тяжёлую часть,
+      например список результатов, рендерят по `deferredQuery` и оборачивают в `memo`, чтобы срочный рендер её
+      пропускал. Это альтернатива debounce без фиксированной задержки.
+    links:
+      - https://react.dev/reference/react/useDeferredValue
+    source: own
+
+  - id: react-concurrent-004
+    level: senior
+    tags: [Suspense, useTransition, fallback, no-run]
+    question: |
+      Вкладка уже показана, данные новой вкладки грузятся через `use` внутри `Suspense`. Что увидит пользователь
+      сразу после переключения обычным `setTab(next)` и через `startTransition(() => setTab(next))`?
+    code: |
+      function App() {
+        const [tab, setTab] = useState('a');
+        const [isPending, startTransition] = useTransition();
+        return (
+          <div style={{ opacity: isPending ? 0.6 : 1 }}>
+            <Suspense fallback={<Spinner />}>
+              <Panel tab={tab} />
+            </Suspense>
+          </div>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: 'Обычное — заглушку, переход — старую вкладку'
+        correct: true
+        why: 'Обычное обновление коммитится сразу, и раз новая вкладка не готова, Suspense показывает заглушку. Переход React не коммитит, пока он не готов: на экране остаётся прежнее содержимое, а `isPending` позволяет его приглушить.'
+      - text: 'В обоих случаях — заглушку до загрузки'
+        why: 'Переход не заменяет уже показанное содержимое заглушкой: React ждёт готовности, оставляя старый интерфейс.'
+      - text: 'В обоих случаях — старую вкладку до загрузки'
+        why: 'Обычное обновление срочное: React не будет его задерживать и покажет заглушку ближайшей границы.'
+      - text: 'Обычное — старую вкладку, переход — заглушку'
+        why: 'Наоборот: удерживать старый интерфейс умеет именно переход.'
+    explanation: |
+      Внезапная замена уже видимого содержимого спиннером раздражает. Поэтому для обновлений в переходе React
+      не показывает заглушку уже отображённой границы Suspense, а держит предыдущий интерфейс, пока новый не
+      будет готов. Новые границы, появившиеся впервые, свою заглушку покажут. Так устроена навигация в
+      роутерах с поддержкой Suspense (Next.js App Router, React Router): переходы между страницами завёрнуты
+      в `startTransition`, и старая страница видна до загрузки новой.
+    links:
+      - https://react.dev/reference/react/Suspense#preventing-already-revealed-content-from-hiding
+    source: own
+
+  - id: react-concurrent-005
+    level: middle
+    tags: [error-boundary, event-handlers]
+    question: |
+      Что будет на экране после клика по кнопке?
+    code: |
+      class Boundary extends Component {
+        state = { failed: false };
+        static getDerivedStateFromError() {
+          return { failed: true };
+        }
+        render() {
+          return this.state.failed ? <p>Что-то сломалось</p> : this.props.children;
+        }
+      }
+
+      function App() {
+        return (
+          <Boundary>
+            <button onClick={() => { throw new Error('click failed'); }}>Сломать</button>
+          </Boundary>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: 'Кнопка останется, а ошибка попадёт в консоль'
+        correct: true
+        why: 'Граница ошибок ловит ошибки, возникшие при рендере, в методах жизненного цикла и в эффектах. Обработчик события выполняется вне рендера, и его ошибка до границы не доходит.'
+      - text: 'Появится текст `Что-то сломалось`'
+        why: 'Так было бы при ошибке во время рендера дочернего компонента. Ошибки в обработчиках событий граница не перехватывает.'
+      - text: 'Пустой экран: React размонтирует приложение'
+        why: 'Размонтирование происходит при необработанной ошибке рендера. Ошибка в обработчике не ломает дерево.'
+      - text: 'React повторит обработчик и только потом покажет ошибку'
+        why: 'Обработчики событий React не повторяет: ошибка просто выбрасывается наружу.'
+    explanation: |
+      Граница ошибок (error boundary) защищает интерфейс от ошибок, после которых дерево нельзя показать: в
+      рендере, конструкторах, методах жизненного цикла и эффектах потомков. Ошибки в обработчиках событий,
+      асинхронном коде (`setTimeout`, `fetch().then`) и в самой границе она не ловит. Такие ошибки обрабатывают
+      `try/catch` в обработчике. А чтобы передать их в границу, сохраняют ошибку в состояние и бросают её
+      при рендере. Так работает функция `showBoundary`, которую возвращает хук `useErrorBoundary` из библиотеки
+      `react-error-boundary`.
+    links:
+      - https://react.dev/reference/react/Component#catching-rendering-errors-with-an-error-boundary
+    source: own
+
+  - id: react-concurrent-006
+    level: junior
+    tags: [error-boundary, class-components]
+    question: |
+      Как в React создать границу ошибок?
+    options:
+      - text: 'Классовым компонентом с `getDerivedStateFromError`'
+        correct: true
+        why: 'Границей ошибок может быть только классовый компонент с `static getDerivedStateFromError` (показать запасной интерфейс) и/или `componentDidCatch` (залогировать).'
+      - text: 'Хуком `useErrorBoundary` из пакета `react`'
+        why: 'Такого хука в React нет. Похожие хуки есть в сторонних библиотеках, но и они опираются на классовую границу.'
+      - text: 'Оберткой `try/catch` вокруг возвращаемого JSX'
+        why: '`try/catch` в компоненте ловит только ошибки его собственного кода. Рендер детей происходит позже, вне этого блока.'
+      - text: 'Колбэком `onUncaughtError` у `createRoot`'
+        why: 'Этот колбэк только сообщает о непойманных ошибках для логирования. Запасной интерфейс он не показывает.'
+    explanation: |
+      Функциональных границ ошибок в React пока нет, поэтому в проектах обычно пишут одну классовую границу
+      или берут `react-error-boundary`. Границы ставят на уровне страниц, виджетов и независимых блоков, чтобы
+      ошибка в одной части не роняла весь экран. В React 19 у `createRoot` появились колбэки `onCaughtError` и
+      `onUncaughtError` для централизованного логирования ошибок, пойманных и не пойманных границами.
+    links:
+      - https://react.dev/reference/react/Component#catching-rendering-errors-with-an-error-boundary
+      - https://react.dev/reference/react-dom/client/createRoot#parameters
+    source: own
+
+  - id: react-concurrent-007
+    level: senior
+    tags: [use, Suspense, promise-caching]
+    question: |
+      Что будет на экране через несколько секунд после монтирования?
+    code: |
+      function Data() {
+        const value = use(new Promise((resolve) => setTimeout(() => resolve('ready'), 10)));
+        return <b>{value}</b>;
+      }
+
+      function App() {
+        return (
+          <Suspense fallback={<i>loading</i>}>
+            <Data />
+          </Suspense>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`loading` навсегда'
+        correct: true
+        why: 'Каждый рендер `Data` создаёт новый промис. Когда первый промис выполнился, React снова рендерит `Data`, тот создаёт новый промис и снова приостанавливается. До готового значения дело не доходит.'
+      - text: '`ready` примерно через 10 мс'
+        why: 'Готов только тот промис, который уже никто не использует. При повторной попытке рендера `use` получает новый, ещё не выполненный промис.'
+      - text: 'Ошибку: промис в `use` должен быть из серверного компонента'
+        why: '`use` работает с промисами и в клиентских компонентах. Требование в другом: промис должен быть стабильным между рендерами.'
+      - text: 'Мигание: `loading` и `ready` по очереди'
+        why: 'Значение `ready` ни разу не будет прочитано: в каждом рендере промис новый и ещё не выполнен.'
+    explanation: |
+      `use(promise)` приостанавливает компонент, пока промис не выполнится, а при повторном рендере возвращает
+      его результат. Для этого React должен получить тот же самый промис. Промис, созданный в рендере, новый при
+      каждой попытке, поэтому компонент приостанавливается бесконечно. Промисы для `use` создают вне рендера:
+      в серверном компоненте с передачей вниз через пропсы, в кэше библиотеки данных или в обработчике события. В клиентском коде проще всего взять
+      библиотеку с поддержкой Suspense.
+    links:
+      - https://react.dev/reference/react/use#promises-must-cached
+      - https://react.dev/reference/react/use#streaming-data-from-server-to-client
+    source: own
+
+  - id: react-concurrent-008
+    level: middle
+    tags: [lazy, code-splitting, Suspense, no-run]
+    question: |
+      Что происходит, когда `Chart` впервые появляется на экране?
+    code: |
+      const Chart = lazy(() => import('./Chart'));
+
+      function Dashboard({ showChart }) {
+        return (
+          <Suspense fallback={<p>Загрузка графика…</p>}>
+            {showChart && <Chart />}
+          </Suspense>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: 'Загружается его код, и пока показана заглушка Suspense'
+        correct: true
+        why: '`lazy` откладывает `import()` до первого рендера компонента. Пока модуль грузится, компонент приостанавливается, и ближайший Suspense показывает `fallback`.'
+      - text: 'Его код уже загружен вместе с основным бандлом'
+        why: 'Динамический `import()` позволяет сборщику вынести модуль в отдельный чанк, который грузится по требованию.'
+      - text: 'Компонент рендерится пустым и перерисовывается после загрузки'
+        why: 'Пустого рендера нет: до загрузки компонента показывается заглушка ближайшей границы Suspense.'
+      - text: 'Код загружается при каждом показе графика заново'
+        why: 'Модуль загружается один раз. `lazy` кэширует результат, и при следующих показах компонент рендерится сразу.'
+    explanation: |
+      `lazy(load)` создаёт компонент, код которого загружается при первом рендере. Вместе с динамическим
+      `import()` это даёт разделение кода (code splitting): редко нужные части (графики, редакторы, модалки) не
+      попадают в основной бандл. Пока чанк грузится, работает ближайший Suspense. `lazy` вызывают на верхнем
+      уровне модуля: объявление внутри компонента создаст новый тип на каждом рендере и сбросит состояние.
+      Модуль должен экспортировать компонент по умолчанию. Загрузку можно начать заранее, вызвав `import()`
+      при наведении на кнопку.
+    links:
+      - https://react.dev/reference/react/lazy
+    source: own
+
+  - id: react-concurrent-009
+    level: middle
+    tags: [Activity, react-19.2, state-preservation]
+    question: |
+      Что происходит с компонентом внутри `<Activity mode="hidden">`?
+    code: |
+      function Tabs({ tab }) {
+        return (
+          <>
+            <Activity mode={tab === 'chat' ? 'visible' : 'hidden'}>
+              <Chat />
+            </Activity>
+            <Activity mode={tab === 'profile' ? 'visible' : 'hidden'}>
+              <Profile />
+            </Activity>
+          </>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: 'Он скрыт, состояние сохраняется, а эффекты очищаются'
+        correct: true
+        why: 'React прячет DOM через `display: none`, оставляет состояние и DOM-узлы, но вызывает очистку эффектов. При показе эффекты запускаются снова, а введённый текст в полях на месте.'
+      - text: 'Он размонтируется вместе с состоянием'
+        why: 'Так работает условный рендер `{tab === "chat" && <Chat />}`. `Activity` как раз сохраняет состояние скрытой части.'
+      - text: 'Он скрыт, а эффекты продолжают работать'
+        why: 'Эффекты скрытого поддерева очищаются: подписки и таймеры не работают, пока часть экрана не видна.'
+      - text: 'Он вообще не рендерится, пока его не покажут'
+        why: 'Скрытая часть рендерится, просто с низким приоритетом. Так её можно подготовить заранее, ещё до показа.'
+    explanation: |
+      `<Activity>` (стабилен с React 19.2) — способ скрыть часть интерфейса, не теряя её состояния: вкладки,
+      боковые панели, предыдущие экраны при навигации. Скрытое поддерево остаётся в памяти, его эффекты
+      отключены, а обновления обрабатываются с низким приоритетом. Если `Activity` скрыт при первом рендере,
+      React всё равно отрендерит содержимое в фоне, чтобы заранее загрузить код и данные. Это быстрее, чем
+      монтировать заново, но требует памяти, поэтому скрывать стоит то, к чему пользователь скорее вернётся.
+    links:
+      - https://react.dev/reference/react/Activity
+    source: own

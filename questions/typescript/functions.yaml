@@ -1,0 +1,306 @@
+# yaml-language-server: $schema=../../schema.json
+topic: typescript
+subtopic: functions
+questions:
+  - id: typescript-functions-001
+    level: junior
+    tags: [parameters, default-parameters]
+    question: |
+      Какие вызовы, отмеченные буквами, не скомпилируются?
+    code: |
+      function greet(name: string, greeting = 'Hello') {
+        return `${greeting}, ${name}`;
+      }
+
+      greet();                 // A
+      greet('Ann');            // B
+      greet('Ann', undefined); // C
+      greet('Ann', 'Hi');      // D
+    codeLang: ts
+    options:
+      - text: 'Только A'
+        correct: true
+        why: '`name` обязателен. Параметр со значением по умолчанию необязателен, и явное `undefined` тоже включает значение по умолчанию.'
+      - text: 'A и C'
+        why: 'Параметру со значением по умолчанию можно передать `undefined`: тип параметра для вызывающего — `string | undefined`.'
+      - text: 'Только C'
+        why: 'Вызов без аргументов — ошибка: обязательный параметр `name` не передан.'
+      - text: 'A, B и C'
+        why: 'Второй параметр можно не передавать: значение по умолчанию делает его необязательным, тип выводится из значения — `string`.'
+    explanation: |
+      В TypeScript все параметры по умолчанию обязательны, в отличие от JavaScript, где можно передать меньше
+      аргументов. Необязательными их делают `?` или значение по умолчанию. Тип параметра со значением по
+      умолчанию выводится из этого значения, а для вызывающего он `T | undefined`: передать `undefined` можно,
+      и тогда сработает значение по умолчанию. Внутри функции такой параметр уже `string`, а параметр с `?`
+      остаётся `string | undefined`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/functions.html#optional-parameters
+    source: own
+
+  - id: typescript-functions-002
+    level: middle
+    tags: [void, return-type, callbacks]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются?
+    code: |
+      type Callback = () => void;
+
+      const callback: Callback = () => 42;          // A
+
+      function run(): void {
+        return 42;                                  // B
+      }
+
+      const names: string[] = [];
+      ['a', 'b'].forEach((s) => names.push(s));     // C
+    codeLang: ts
+    options:
+      - text: 'Только B'
+        correct: true
+        why: 'Функцию, возвращающую значение, можно подставить в тип с `void`: результат просто проигнорируют. А явная аннотация `: void` у объявления функции запрещает возвращать значение.'
+      - text: 'A и B'
+        why: 'Функциональный тип с `void` означает «результат не используется», а не «функция ничего не возвращает». Поэтому строка A компилируется.'
+      - text: 'A, B и C'
+        why: '`push` возвращает новую длину массива, но колбэк `forEach` объявлен с `void`, и возвращаемое значение допускается.'
+      - text: 'Только A'
+        why: 'Строка A корректна. Ошибка в B: функция с явным `void` в объявлении не может вернуть число.'
+    explanation: |
+      `void` в возвращаемом типе значит разное в двух местах. В объявлении функции (`function run(): void`) это
+      обещание ничего не возвращать, и `return 42` — ошибка. В функциональном типе (`() => void`) это «вызывающий
+      проигнорирует результат», поэтому подставить можно функцию с любым результатом. Без этого правила нельзя
+      было бы написать `forEach((s) => names.push(s))`. Обратная сторона: в `forEach` можно передать
+      async-функцию, и компилятор не предупредит, что промисы никто не ждёт. Это ловит правило
+      `no-misused-promises` из typescript-eslint.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/functions.html#return-type-void
+    source: own
+
+  - id: typescript-functions-003
+    level: middle
+    tags: [overloads]
+    question: |
+      Что произойдёт с последней строкой?
+    code: |
+      function parse(input: string): number;
+      function parse(input: number): string;
+      function parse(input: string | number) {
+        return typeof input === 'string' ? Number(input) : String(input);
+      }
+
+      const value = parse(Math.random() > 0.5 ? '1' : 1);
+    codeLang: ts
+    options:
+      - text: 'Ошибка: ни одна перегрузка не принимает `string | number`'
+        correct: true
+        why: 'При вызове видны только сигнатуры перегрузок. Каждая принимает либо строку, либо число, а аргумент — объединение, и ни одна сигнатура целиком ему не подходит.'
+      - text: 'Компилируется, тип `value` — `number | string`'
+        why: 'Компилятор не объединяет перегрузки: он ищет одну сигнатуру, которая подходит под аргумент целиком.'
+      - text: 'Компилируется, тип `value` — `string`, по последней перегрузке'
+        why: 'При вызове перегрузки не перебираются «до последней подходящей»: ищется первая сигнатура, под которую аргумент подходит целиком, а такой нет. Сигнатура реализации снаружи не видна.'
+      - text: 'Компилируется, тип `value` — `number`, по первой перегрузке'
+        why: 'Первая перегрузка требует строку, а `string | number` под неё не подходит. Ошибка, а не выбор первой сигнатуры.'
+    explanation: |
+      Перегрузки (overloads) — несколько сигнатур над одной реализацией. Вызов должен целиком подойти под
+      одну из них, а сигнатура реализации снаружи не видна. Поэтому аргумент-объединение ломает вызов: для
+      него нужна ещё одна перегрузка. Документация советует
+      предпочитать объединения и дженерики перегрузкам, если возвращаемый тип не зависит от аргумента. Здесь
+      связь «строка → число» оправдывает перегрузки, но можно выразить её и условным типом, с приведением в реализации.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/functions.html#function-overloads
+      - https://www.typescriptlang.org/docs/handbook/2/functions.html#writing-good-overloads
+    source: own
+
+  - id: typescript-functions-004
+    level: senior
+    tags: [overloads, overload-order]
+    question: |
+      Какой тип у `result`?
+    code: |
+      function toArray(value: unknown): unknown[];
+      function toArray(value: string): string[];
+      function toArray(value: unknown) {
+        return [value];
+      }
+
+      const result = toArray('a');
+    codeLang: ts
+    options:
+      - text: '`unknown[]`'
+        correct: true
+        why: 'Компилятор берёт первую перегрузку, под которую подходит аргумент. Строка подходит под `unknown`, и до более точной сигнатуры дело не доходит.'
+      - text: '`string[]`'
+        why: 'Выбирается не самая точная, а первая подходящая перегрузка. Чтобы получилось `string[]`, частные сигнатуры ставят выше общих.'
+      - text: '`string[] | unknown[]`'
+        why: 'Результаты подходящих перегрузок не объединяются, используется ровно одна сигнатура.'
+      - text: '`any[]`'
+        why: 'Тип берётся из выбранной перегрузки, `unknown[]`. Сигнатура реализации без аннотации снаружи не видна и на результат не влияет.'
+    explanation: |
+      Перегрузки проверяются строго по порядку объявления, и побеждает первая совместимая. Если общая сигнатура
+      стоит выше частной, частная становится недостижимой, и компилятор об этом не предупреждает. Правило:
+      от самых конкретных сигнатур к самым общим.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/declaration-files/do-s-and-don-ts.html#ordering
+    source: own
+
+  - id: typescript-functions-005
+    level: middle
+    tags: [this-parameter, type-erasure, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function greet(this: { name: string }, greeting: string) {
+        return `${greeting}, ${this.name}`;
+      }
+
+      console.log(greet.length);
+    codeLang: ts
+    options:
+      - text: '`1`'
+        correct: true
+        why: 'Параметр `this` существует только для проверки типов и удаляется при компиляции. В JavaScript остаётся функция с одним параметром `greeting`.'
+      - text: '`2`'
+        why: '`this` в списке параметров — не настоящий параметр, а аннотация типа контекста. В скомпилированном коде его нет.'
+      - text: '`0`'
+        why: '`length` считает параметры без значений по умолчанию до первого такого. `greeting` — обычный параметр, он учитывается.'
+      - text: 'Ошибка компиляции: `this` нельзя объявить параметром'
+        why: 'Можно: первый параметр с именем `this` — специальный синтаксис TypeScript для типа контекста вызова.'
+    explanation: |
+      В JavaScript `this` определяется способом вызова, и TypeScript не может вывести его тип для обычной
+      функции. Фиктивный первый параметр `this: Type` объявляет, с каким контекстом функцию нужно вызывать.
+      Компилятор проверит вызовы: `greet('Hi')` без объекта даст ошибку, а `greet.call({ name: 'Ann' }, 'Hi')`
+      пройдёт. При компиляции параметр стирается, как и все типы. Так типизированы обработчики DOM: в
+      `addEventListener` `this` — это элемент.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/functions.html#declaring-this-in-a-function
+    source: own
+
+  - id: typescript-functions-006
+    level: junior
+    tags: [inference, function-types]
+    question: |
+      Какой тип TypeScript выведет для `add`?
+    code: |
+      const add = (a: number, b: number) => a + b;
+    codeLang: ts
+    options:
+      - text: '`(a: number, b: number) => number`'
+        correct: true
+        why: 'Типы параметров указаны, а тип результата компилятор выводит из выражения: сумма двух чисел — `number`.'
+      - text: '`(a: number, b: number) => any`'
+        why: 'Возвращаемый тип выводится из тела функции, `any` здесь не возникает.'
+      - text: '`Function`'
+        why: '`Function` — общий тип любой функции без информации о параметрах. Компилятор выводит точную сигнатуру.'
+      - text: '`(a: number, b: number) => void`'
+        why: 'Функция возвращает значение выражения `a + b`, поэтому тип результата — `number`, а не `void`.'
+    explanation: |
+      Возвращаемый тип функции TypeScript выводит из `return` или из тела стрелки, поэтому его обычно не пишут.
+      Типы параметров, наоборот, нужно указывать: из тела они не выводятся, без аннотации в режиме
+      `noImplicitAny` будет ошибка. Исключение — контекстная типизация, когда функция передаётся туда, где
+      тип уже известен. Явный возвращаемый тип полезен у публичных функций модуля: он фиксирует контракт и
+      ловит ошибку в самой функции, а не у вызывающих.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/functions.html#function-type-expressions
+    source: own
+
+  - id: typescript-functions-007
+    level: middle
+    tags: [destructuring, annotations]
+    question: |
+      Что на самом деле означает `shape: Shape` в параметре этой функции?
+    code: |
+      type Shape = 'circle' | 'square';
+
+      function draw({ shape: Shape, size: number }) {
+        // ...
+      }
+    codeLang: ts
+    options:
+      - text: 'Переименование свойства `shape` в переменную `Shape`'
+        correct: true
+        why: 'В деструктуризации двоеточие — синтаксис JavaScript для переименования. Здесь создаются переменные `Shape` и `number`, а типа у параметра нет. В режиме `strict` это ошибка «implicitly has an any type».'
+      - text: 'Аннотацию: свойство `shape` получит тип `Shape`'
+        why: 'Типы деструктурированного объекта пишут после всего шаблона: `({ shape, size }: { shape: Shape; size: number })`.'
+      - text: 'Значение по умолчанию `Shape` для свойства `shape`'
+        why: 'Значение по умолчанию задаётся через `=`: `{ shape = "circle" }`. Двоеточие означает переименование.'
+      - text: 'Синтаксическую ошибку: двоеточие в шаблоне запрещено'
+        why: 'Синтаксис корректный, это переименование из JavaScript. Ошибка будет только типовая, из-за неявного `any`.'
+    explanation: |
+      Частая ловушка: внутри деструктуризации двоеточие принадлежит JavaScript и означает «взять свойство и
+      положить в переменную с другим именем». Аннотация типа пишется для всего параметра:
+      `function draw({ shape, size }: { shape: Shape; size: number })` или с отдельным типом `DrawOptions`.
+      Без `strict` такой код скомпилируется молча, с переменными `Shape` и `number` типа `any`. С `strict`
+      компилятор подсветит их как неявный `any`. В объявлении без тела (`declare function`) TypeScript с версии 4.8
+      прямо подсказывает: «unused renaming… Did you intend to use it as a type annotation?».
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/functions.html#parameter-destructuring
+    source: own
+
+  - id: typescript-functions-008
+    level: middle
+    tags: [contextual-typing, noImplicitAny]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются в режиме `strict`?
+    code: |
+      type Handler = (event: { type: string }) => void;
+
+      const handlers: Record<string, Handler> = {
+        click: (event) => console.log(event.type), // A
+      };
+
+      const standalone = (event) => console.log(event.type); // B
+    codeLang: ts
+    options:
+      - text: 'Только B'
+        correct: true
+        why: 'В строке A тип `event` известен из ожидаемого типа значения `Handler` — это контекстная типизация. У `standalone` контекста нет, и параметр неявно получает `any`, что запрещает `noImplicitAny`.'
+      - text: 'Только A'
+        why: 'Стрелка в строке A записана туда, где ожидается `Handler`, и её параметр получает тип оттуда.'
+      - text: 'A и B'
+        why: 'Аннотация параметра не нужна, если функция передаётся в место с известным типом. Строка A компилируется.'
+      - text: 'Ни одна'
+        why: 'У `standalone` нет ни аннотации, ни ожидаемого типа, поэтому `event` неявно `any`, а в режиме `strict` это ошибка.'
+    explanation: |
+      Контекстная типизация (contextual typing) работает в обратную сторону от обычного вывода: тип функции
+      берётся из места, куда её передают или присваивают. Поэтому параметры колбэков `map`, `addEventListener`,
+      обработчиков в объекте с известным типом аннотировать не нужно. Если вынести колбэк в отдельную переменную,
+      контекст пропадает, и параметр придётся аннотировать или задать переменной тип:
+      `const onClick: Handler = (event) => ...`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/type-inference.html#contextual-typing
+    source: own
+
+  - id: typescript-functions-009
+    level: senior
+    tags: [never, inference, return-type]
+    question: |
+      Какие возвращаемые типы выведет TypeScript для `fail` и `failArrow`?
+    code: |
+      function fail(message: string) {
+        throw new Error(message);
+      }
+
+      const failArrow = (message: string) => {
+        throw new Error(message);
+      };
+    codeLang: ts
+    options:
+      - text: '`void` и `never`'
+        correct: true
+        why: 'Для объявления функции без аннотации, которое никогда не завершается нормально, выводится `void`, а для функциональных выражений и стрелок — `never`.'
+      - text: '`never` и `never`'
+        why: 'Для объявлений функций `never` выводится только при явной аннотации. Без неё у `fail` тип `void`, и после вызова сужения не будет.'
+      - text: '`void` и `void`'
+        why: 'Для стрелок и функциональных выражений, которые всегда бросают исключение, компилятор выводит `never`.'
+      - text: '`never` и `void`'
+        why: 'Наоборот: `never` выводится для стрелки, а объявление функции получает `void`.'
+    explanation: |
+      `never` — тип функции, которая никогда не возвращает управление: всегда бросает исключение или
+      зацикливается. Компилятор выводит его для функциональных выражений и стрелок без достижимого конца. Для
+      объявлений `function` сделано исключение ради совместимости: такие функции часто заглушки, которые
+      переопределяются, поэтому выводится `void`. Если функция служит для остановки выполнения
+      (`fail`, `assertNever`), тип `never` лучше указать явно. Тогда код после вызова считается недостижимым,
+      и сужение типов это учитывает.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/functions.html#never
+      - https://github.com/microsoft/TypeScript/pull/8652
+    source: own

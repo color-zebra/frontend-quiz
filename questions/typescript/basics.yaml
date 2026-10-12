@@ -1,0 +1,387 @@
+# yaml-language-server: $schema=../../schema.json
+topic: typescript
+subtopic: basics
+questions:
+  - id: typescript-basics-001
+    level: junior
+    tags: [any, unknown]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются в режиме `strict`?
+    code: |
+      const a: any = JSON.parse('"hi"');
+      const u: unknown = JSON.parse('"hi"');
+
+      a.toUpperCase(); // A
+      u.toUpperCase(); // B
+      if (typeof u === 'string') {
+        u.toUpperCase(); // C
+      }
+    codeLang: ts
+    options:
+      - text: 'Только B'
+        correct: true
+        why: 'С `unknown` нельзя ничего делать, пока тип не уточнён проверкой. В строке C `typeof` уже сузил `u` до `string`, а `any` отключает проверки совсем.'
+      - text: 'B и C'
+        why: 'Внутри `if (typeof u === "string")` компилятор знает, что `u` — строка, и разрешает строковые методы.'
+      - text: 'A и B'
+        why: '`any` выключает проверку типов: с таким значением можно делать что угодно, ошибок не будет.'
+      - text: 'Ни одна'
+        why: 'Обращение к методу у значения типа `unknown` без проверки — ошибка TS18046 «''u'' is of type ''unknown''».'
+    explanation: |
+      `any` и `unknown` принимают любое значение, но ведут себя противоположно. `any` отключает проверку:
+      ошибки, которые он пропускает, всплывут уже в рантайме, и `any` «заражает» всё, что из него получено.
+      `unknown` — безопасный аналог: значение можно сохранить и передать дальше, но, чтобы использовать его,
+      нужно сначала сузить тип через `typeof`, `instanceof`, `in` или type guard. Поэтому для данных извне
+      (ответ API, `JSON.parse`, `catch`) правильнее `unknown` и явная проверка.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/functions.html#unknown
+    source: own
+
+  - id: typescript-basics-002
+    level: junior
+    tags: [inference, literal-types, widening]
+    question: |
+      Какие типы TypeScript выведет для `method` и `fixed`?
+    code: |
+      let method = 'GET';
+      const fixed = 'GET';
+    codeLang: ts
+    options:
+      - text: '`string` и `"GET"`'
+        correct: true
+        why: '`let` можно переприсвоить, поэтому литерал расширяется до `string`. Значение `const` не изменится, и его тип — сам литерал `"GET"`.'
+      - text: '`"GET"` и `"GET"`'
+        why: 'Для `let` TypeScript расширяет литеральный тип до `string`, иначе переменной нельзя было бы присвоить другую строку.'
+      - text: '`string` и `string`'
+        why: 'Для `const` с примитивом расширения нет: значение никогда не изменится, поэтому тип — конкретный литерал.'
+      - text: '`"GET"` и `string`'
+        why: 'Наоборот: литеральный тип остаётся у `const`, а у `let` расширяется.'
+    explanation: |
+      Литеральные типы описывают одно конкретное значение: `"GET"`, `42`, `true`. При выводе типа TypeScript
+      учитывает, может ли значение измениться. У `const` с примитивом тип остаётся литеральным, у `let` и `var`
+      он расширяется (widening) до базового: `string`, `number`, `boolean`. Это важно, когда переменную передают
+      в параметр с типом-объединением литералов вроде `'GET' | 'POST'`: `const` подойдёт, `let` — нет.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#literal-types
+    source: own
+
+  - id: typescript-basics-003
+    level: middle
+    tags: [inference, widening, literal-types]
+    question: |
+      Что произойдёт при компиляции этого кода?
+    code: |
+      const config = { method: 'GET' };
+
+      function request(method: 'GET' | 'POST') {}
+
+      request(config.method);
+    codeLang: ts
+    options:
+      - text: 'Ошибка в вызове `request`: у `config.method` тип `string`'
+        correct: true
+        why: 'Свойства объекта можно переприсвоить даже у объекта в `const`, поэтому строковый литерал в свойстве расширяется до `string`. А `string` нельзя передать туда, где ждут `"GET" | "POST"`.'
+      - text: 'Компилируется: у `const` все вложенные свойства тоже литеральные'
+        why: '`const` запрещает переприсвоить саму переменную, но не её свойства: `config.method = "DELETE"` допустимо. Поэтому свойство получает тип `string`.'
+      - text: 'Компилируется: компилятор видит, что свойство с объявления не менялось'
+        why: 'TypeScript выводит тип свойства в момент объявления объекта и не отслеживает, менялось ли оно потом.'
+      - text: 'Ошибка в объявлении `config`: у объекта не указан тип'
+        why: 'Указывать тип не обязательно: компилятор выведет `{ method: string }`. Проблема возникает только в вызове.'
+    explanation: |
+      Литералы внутри объектов и массивов расширяются: `{ method: 'GET' }` получает тип `{ method: string }`,
+      потому что свойство можно изменить. Исправить можно тремя способами. `as const` делает объект глубоко
+      `readonly` с литеральными типами. Аннотация `const config: { method: 'GET' | 'POST' }` задаёт тип явно.
+      `satisfies` проверяет объект на соответствие типу и сохраняет точные типы значений. Ошибка проявляется
+      далеко от места объявления, поэтому этот случай часто ставит в тупик.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#literal-inference
+    source: own
+
+  - id: typescript-basics-004
+    level: middle
+    tags: [as-const, indexed-access, typeof]
+    question: |
+      Какой тип получится у `Role`?
+    code: |
+      const roles = ['admin', 'user'] as const;
+      type Role = (typeof roles)[number];
+    codeLang: ts
+    options:
+      - text: '`"admin" | "user"`'
+        correct: true
+        why: '`as const` превращает массив в `readonly ["admin", "user"]`. Индексный доступ по `number` берёт тип любого элемента — объединение литералов.'
+      - text: '`string`'
+        why: 'Так было бы без `as const`: массив получил бы тип `string[]`, и элемент — `string`.'
+      - text: '`readonly ["admin", "user"]`'
+        why: 'Это тип самого массива `typeof roles`. Индекс `[number]` достаёт из него тип элемента.'
+      - text: '`"admin" & "user"`'
+        why: 'Пересечение двух разных литералов пусто, оно равно `never`. Индексный доступ по `number` даёт объединение типов элементов.'
+    explanation: |
+      Приём «массив `as const` + `(typeof arr)[number]`» позволяет хранить список значений в одном месте и
+      получать из него тип-объединение. `as const` делает литерал глубоко `readonly` и запрещает расширение
+      литералов, массив становится кортежем. `typeof` в позиции типа берёт тип переменной, а индексный доступ
+      `T[number]` — тип элемента. Так же из объекта получают объединение ключей: `keyof typeof obj`. Это частая
+      замена `enum`, которая не порождает лишнего JavaScript-кода.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-4.html#const-assertions
+    source: own
+
+  - id: typescript-basics-005
+    level: middle
+    tags: [object-type, empty-object-type]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются в режиме `strict`?
+    code: |
+      const a: {} = 42;       // A
+      const b: object = 42;   // B
+      const c: {} = null;     // C
+      const d: {} = 'text';   // D
+    codeLang: ts
+    options:
+      - text: 'B и C'
+        correct: true
+        why: '`{}` означает «любое значение, кроме `null` и `undefined`», поэтому 42 и строка подходят, а `null` — нет. `object` принимает только непримитивы: объекты, массивы, функции.'
+      - text: 'A, B, C и D'
+        why: '`{}` — не «пустой объект», а тип без требований к свойствам. Ему соответствует любое значение, у которого можно читать свойства, включая примитивы.'
+      - text: 'Только C'
+        why: '`object` специально исключает примитивы, поэтому число в строке B — ошибка.'
+      - text: 'Только B'
+        why: 'В режиме `strictNullChecks` значение `null` не входит в `{}`, поэтому строка C тоже ошибка.'
+    explanation: |
+      Похожие типы означают разное. `{}` — тип без требуемых свойств: ему подходит любое значение, кроме `null` и
+      `undefined`, даже число и строка. `object` — любое непримитивное значение. `Object` с большой буквы почти
+      совпадает с `{}`, и его не рекомендуют использовать. Чтобы описать «объект с любыми ключами», пишут
+      `Record<string, unknown>`, а «действительно пустой объект» — `Record<string, never>`. Линтер
+      typescript-eslint предупреждает о `{}` именно из-за этой путаницы.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/functions.html#object
+      - https://typescript-eslint.io/rules/no-empty-object-type/
+    source: own
+
+  - id: typescript-basics-006
+    level: junior
+    tags: [inference, arrays, tuples]
+    question: |
+      Какой тип TypeScript выведет для `items`?
+    code: |
+      const items = [1, 'a', true];
+    codeLang: ts
+    options:
+      - text: '`(string | number | boolean)[]`'
+        correct: true
+        why: 'Из элементов разных типов выводится массив их объединения. Литералы расширяются: элементы массива можно менять.'
+      - text: '`[number, string, boolean]`'
+        why: 'Кортеж получился бы при аннотации или `as const`. По умолчанию литерал массива даёт обычный массив.'
+      - text: '`any[]`'
+        why: 'TypeScript знает типы всех элементов и выводит их объединение, `any` здесь не нужен.'
+      - text: '`readonly [1, "a", true]`'
+        why: 'Такой тип даёт `as const`. Без него массив изменяемый, а литералы расширяются.'
+    explanation: |
+      Для литерала массива TypeScript находит «лучший общий тип» элементов. Если общего нет, получается
+      объединение, и тип элементов расширяется: `1` становится `number`. Длина и позиции не запоминаются,
+      потому что обычный массив можно изменять. Кортеж с фиксированными позициями задают явно:
+      `const pair: [number, string] = [1, 'a']`. С `as const` получится `readonly`-кортеж литералов.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/type-inference.html#best-common-type
+    source: own
+
+  - id: typescript-basics-007
+    level: senior
+    tags: [inference, evolving-any, control-flow]
+    question: |
+      Какие типы у `first` и `second`, если включён `noImplicitAny` (входит в `strict`)?
+    code: |
+      let value;
+      value = 1;
+      const first = value;
+      value = 'text';
+      const second = value;
+    codeLang: ts
+    options:
+      - text: '`number` и `string`'
+        correct: true
+        why: 'Переменная без аннотации и инициализатора получает «развивающийся» тип: компилятор отслеживает присваивания по ходу кода, и после каждого тип равен типу последнего присвоенного значения.'
+      - text: '`any` и `any`'
+        why: 'Объявленный тип `value` действительно `any`, но анализ потока управления сужает его по последнему присваиванию.'
+      - text: '`undefined` и `undefined`'
+        why: 'Тип определяется не по объявлению, а по присваиваниям, которые выполнились до чтения.'
+      - text: '`number | string` и `number | string`'
+        why: 'Компилятор смотрит на присваивание, которое было последним перед чтением, а не объединяет все присваивания в функции.'
+    explanation: |
+      `let x;` без типа — особый случай. При включённом `noImplicitAny` это не «молчаливый `any`», а развивающийся
+      тип (evolving `any`): анализ потока управления запоминает, что присвоено, и в каждой точке чтения даёт
+      тип последнего присваивания. Так же ведёт себя пустой массив `const list = []`: после `list.push(1)`
+      он читается как `number[]`. Механизм удобен, но в больших функциях тип становится неочевидным.
+      Лучше сразу аннотировать: `let value: number | string`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-1.html#improved-any-inference
+    source: own
+
+  - id: typescript-basics-008
+    level: middle
+    tags: [tuples, type-erasure, output]
+    question: |
+      Что произойдёт?
+    code: |
+      const point: [number, number] = [1, 2];
+      point.push(3);
+      console.log(point.length);
+    codeLang: ts
+    options:
+      - text: 'Скомпилируется и выведет `3`'
+        correct: true
+        why: 'Кортеж — это массив, и у его типа есть все методы массива, включая `push`. Компилятор не отслеживает изменение длины, а в рантайме это обычный массив.'
+      - text: 'Скомпилируется и выведет `2`'
+        why: 'Типы стираются при компиляции, кортеж в рантайме — обычный массив, и `push` действительно добавляет элемент.'
+      - text: 'Ошибка компиляции на `point.push(3)`'
+        why: 'TypeScript разрешает `push` у кортежей: тип `[number, number]` расширяет `Array<number>`. Запретить изменение помогает `readonly [number, number]`.'
+      - text: 'Ошибка в рантайме на `point.push(3)`'
+        why: 'В JavaScript нет кортежей с фиксированной длиной: это обычный массив, и `push` работает.'
+    explanation: |
+      Кортеж описывает массив с известной длиной и типом каждой позиции, но это ограничение действует только при
+      компиляции. Методы, меняющие длину (`push`, `pop`, `splice`), у кортежей разрешены, и тип после них врёт:
+      `point[2]` всё равно будет ошибкой. Чтобы запретить изменение, кортеж объявляют `readonly [number, number]`
+      или создают через `as const`. Общий принцип: типы стираются и ничего не гарантируют в рантайме.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/objects.html#tuple-types
+      - https://www.typescriptlang.org/docs/handbook/2/objects.html#readonly-tuple-types
+    source: own
+
+  - id: typescript-basics-009
+    level: middle
+    tags: [never, unknown, union, intersection]
+    question: |
+      Во что упростятся эти типы?
+    code: |
+      type A = string | never;
+      type B = string & unknown;
+      type C = string | unknown;
+      type D = string & never;
+    codeLang: ts
+    options:
+      - text: '`A = string`, `B = string`, `C = unknown`, `D = never`'
+        correct: true
+        why: '`never` — пустое множество значений, `unknown` — множество всех значений. Объединение с пустым ничего не добавляет, пересечение со всеми ничего не убирает, и наоборот.'
+      - text: '`A = never`, `B = unknown`, `C = string`, `D = string`'
+        why: 'Это перепутанные правила. Объединение с `never` ничего не добавляет, а пересечение с `never` пусто.'
+      - text: '`A = string`, `B = unknown`, `C = unknown`, `D = never`'
+        why: 'Пересечение оставляет только значения, входящие в оба типа. `unknown` содержит все значения, поэтому `string & unknown` — это `string`.'
+      - text: '`A = string`, `B = string`, `C = string`, `D = never`'
+        why: '`unknown` включает все значения, и объединение с ним тоже содержит все значения, то есть равно `unknown`.'
+    explanation: |
+      Типы удобно представлять как множества значений. `never` — пустое множество (bottom type), `unknown` —
+      множество всех значений (top type). Объединение `|` складывает множества, пересечение `&` оставляет общее.
+      Отсюда правила: `T | never = T`, `T & never = never`, `T | unknown = unknown`, `T & unknown = T`. На этом
+      держатся многие приёмы. Например, в условных типах ветка `never` выкидывает элемент из объединения, а
+      `Exclude` возвращает `never` для удаляемых членов.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-0.html#new-unknown-top-type
+      - https://www.typescriptlang.org/docs/handbook/2/narrowing.html#the-never-type
+    source: own
+
+  - id: typescript-basics-010
+    level: middle
+    tags: [satisfies, inference]
+    question: |
+      Какая строка, отмеченная буквой, не скомпилируется?
+    code: |
+      type Theme = Record<'primary' | 'secondary', string | [number, number, number]>;
+
+      const annotated: Theme = { primary: '#fff', secondary: [0, 0, 0] };
+      const checked = { primary: '#fff', secondary: [0, 0, 0] } satisfies Theme;
+
+      annotated.primary.toUpperCase(); // A
+      checked.primary.toUpperCase();   // B
+      checked.secondary.map((c) => c); // C
+    codeLang: ts
+    options:
+      - text: 'A'
+        correct: true
+        why: 'Аннотация задаёт переменной тип `Theme`, и у `primary` тип `string | [number, number, number]`: строковых методов у такого объединения нет.'
+      - text: 'B'
+        why: '`satisfies` только проверяет объект на соответствие `Theme`, а тип переменной остаётся выведенным из значения: `primary` — `string`.'
+      - text: 'C'
+        why: 'С `satisfies` у `secondary` выведенный тип `[number, number, number]`, и `map` у него есть.'
+      - text: 'Ни одна'
+        why: 'Аннотация заменяет выведенный тип объявленным, поэтому у `annotated.primary` остаётся тип-объединение.'
+    explanation: |
+      Аннотация `const x: T = value` проверяет значение и делает тип переменной равным `T`: точная информация о
+      значении теряется. Оператор `satisfies T` (TypeScript 4.9) тоже проверяет, что значение подходит под `T`,
+      ловит опечатки в ключах и лишние свойства, но тип переменной оставляет выведенным. Это удобно для
+      конфигов и словарей: проверка соответствия есть, а при использовании известны точные типы значений.
+      Вместе с `as const` (`{...} as const satisfies T`) получаются ещё и литеральные типы.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#the-satisfies-operator
+    source: own
+
+  - id: typescript-basics-011
+    level: senior
+    tags: [inference, return-type, discriminated-union]
+    question: |
+      Какой тип у `value` внутри `if`?
+    code: |
+      function parse(flag: boolean) {
+        if (flag) return { ok: true, value: 1 };
+        return { ok: false, error: 'bad' };
+      }
+
+      const result = parse(true);
+      if (result.ok) {
+        const value = result.value;
+      }
+    codeLang: ts
+    options:
+      - text: '`number | undefined`'
+        correct: true
+        why: 'Литералы `true` и `false` в свойствах расширились до `boolean`, поэтому у обоих вариантов `ok: boolean`, и проверка `result.ok` ничего не сужает. А вариант без `value` получил при нормализации `value?: undefined`.'
+      - text: '`number`'
+        why: 'Так было бы, если бы `ok` остался литералом `true`/`false`. Но литералы в свойствах объекта расширяются до `boolean`.'
+      - text: '`1`'
+        why: 'Литерал `1` в свойстве расширяется до `number`. Конкретный тип `1` получился бы с `as const`.'
+      - text: 'Ошибка: свойства `value` нет во втором варианте'
+        why: 'При выводе возвращаемого типа TypeScript нормализует литералы объектов: недостающие свойства добавляются как необязательные `undefined`, и обращение к `value` разрешено.'
+    explanation: |
+      Возвращаемый тип функции выводится из всех `return`. Литералы в свойствах объектов расширяются, поэтому
+      `{ ok: true }` даёт `{ ok: boolean }`, и размеченного объединения (discriminated union) не получается:
+      проверка `result.ok` не сужает тип. Для объединения литералов объектов TypeScript дополняет каждый
+      вариант недостающими свойствами типа `undefined`. Получить сужение помогает `as const` в каждом `return`
+      или явный возвращаемый тип вида `{ ok: true; value: number } | { ok: false; error: string }`. Для
+      публичных функций, возвращающих такие результаты, явный тип надёжнее вывода.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-7.html#improved-type-inference-for-object-literals
+    source: own
+
+  - id: typescript-basics-012
+    level: junior
+    tags: [non-null-assertion, output]
+    question: |
+      Что произойдёт при выполнении?
+    code: |
+      function size(text?: string) {
+        return text!.length;
+      }
+
+      console.log(size('abc'));
+      console.log(size());
+    codeLang: ts
+    options:
+      - text: 'Выведется `3`, затем будет `TypeError`'
+        correct: true
+        why: '`!` — только указание компилятору «здесь не `undefined`». В JavaScript от него ничего не остаётся, и при вызове без аргумента выполняется `undefined.length`.'
+      - text: 'Выведется `3`, затем `undefined`'
+        why: '`!` не превращается в проверку вроде `?.`: после компиляции остаётся `text.length`, и чтение свойства у `undefined` бросает исключение.'
+      - text: 'Выведется `3`, затем `0`'
+        why: '`!` не подставляет значение по умолчанию. Для этого нужен `??`: `(text ?? "").length`.'
+      - text: 'Ошибка компиляции: `text` может быть `undefined`'
+        why: '`!` как раз отключает эту проверку: компилятор поверит, что значение есть.'
+    explanation: |
+      Non-null assertion `value!` убирает `null` и `undefined` из типа, ничего не проверяя. Это такое же
+      обещание компилятору, как `as`: если обещание ложное, программа падает в рантайме. Оператор оправдан,
+      когда вы знаете больше компилятора, например элемент точно есть в разметке или значение проверено в
+      другой функции. В остальных случаях надёжнее сузить тип проверкой (`if (!text) return 0`) или задать
+      значение по умолчанию. Линтер typescript-eslint может запретить `!` правилом `no-non-null-assertion`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#non-null-assertion-operator-postfix-
+    source: own

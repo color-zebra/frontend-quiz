@@ -1,0 +1,454 @@
+# yaml-language-server: $schema=../../schema.json
+topic: javascript
+subtopic: async-await
+questions:
+  - id: javascript-async-await-001
+    level: junior
+    tags: [async, return-value]
+    question: |
+      Что вернёт вызов `getNumber()`?
+    code: |
+      async function getNumber() {
+        return 1;
+      }
+
+      const result = getNumber();
+    codeLang: js
+    options:
+      - text: 'Число `1`'
+        why: 'Async-функция всегда возвращает промис, даже если внутри обычный `return` значения.'
+      - text: 'Промис, выполненный значением `1`'
+        correct: true
+        why: 'Возвращённое значение заворачивается в промис. Получить само число можно через `await getNumber()` или `.then()`.'
+      - text: '`undefined`, пока функция не завершится'
+        why: 'Функция возвращает промис сразу при вызове. Его состояние меняется, когда тело функции завершится.'
+      - text: 'Промис, который никогда не выполнится без `await` внутри'
+        why: '`await` внутри не обязателен: промис выполнится, как только функция вернёт значение.'
+    explanation: |
+      Ключевое слово `async` меняет контракт функции: она всегда возвращает промис. `return x` выполняет его
+      значением `x` (если `x` — промис, внешний промис повторит его состояние), а брошенное исключение
+      отклоняет его. Поэтому вызывающий код обязан дождаться результата через `await` или `then`. Частая ошибка —
+      `if (isValid())`, где `isValid` асинхронная: промис всегда truthy, и условие выполняется всегда.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function
+    source: own
+
+  - id: javascript-async-await-002
+    level: middle
+    tags: [parallel, sequential, performance]
+    question: |
+      `getUser()` и `getOrders()` независимы и выполняются по секунде. Сколько займёт функция `load`?
+    code: |
+      async function load() {
+        const user = await getUser();
+        const orders = await getOrders();
+        return { user, orders };
+      }
+    codeLang: js
+    options:
+      - text: 'Около секунды: запросы идут параллельно'
+        why: 'Второй запрос даже не начнётся, пока не завершится первый: `await` останавливает функцию до результата.'
+      - text: 'Около двух секунд: запросы выполняются по очереди'
+        correct: true
+        why: '`getOrders()` вызывается только после того, как дождались `getUser()`. Для параллельного запуска нужен `Promise.all([getUser(), getOrders()])`.'
+      - text: 'Около секунды, если браузер поддерживает HTTP/2'
+        why: 'Мультиплексирование HTTP/2 не поможет: второй запрос не отправляется, пока код его не вызовет.'
+      - text: 'Мгновенно: `await` не ждёт сетевых запросов'
+        why: '`await` ждёт выполнения промиса, в том числе промиса сетевого запроса.'
+    explanation: |
+      `await` приостанавливает функцию до выполнения промиса. Если независимые операции идут подряд через
+      `await`, они выполняются последовательно — это waterfall, частая причина медленных страниц. Правильно
+      запустить обе операции сразу и ждать вместе: `const [user, orders] = await Promise.all([getUser(),
+      getOrders()])`. Тот же эффект даёт ранний старт: `const userPromise = getUser(); const ordersPromise =
+      getOrders();` и затем два `await`, но при ошибке в первом второй промис может остаться необработанным.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
+    source: own
+
+  - id: javascript-async-await-003
+    level: middle
+    tags: [forEach, async-callback, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+      async function run() {
+        [1, 2, 3].forEach(async (n) => {
+          await sleep(10);
+          console.log(n);
+        });
+        console.log('done');
+      }
+
+      run();
+    codeLang: js
+    options:
+      - text: '`1 2 3 done`'
+        why: '`forEach` не ждёт промисы, которые возвращает async-колбэк. Он вызывает колбэки и сразу завершается.'
+      - text: '`done 1 2 3`'
+        correct: true
+        why: '`forEach` запускает три async-колбэка и не дожидается их. `done` выводится сразу, а числа — через 10 мс, когда закончатся паузы.'
+      - text: '`done`, а числа не выведутся'
+        why: 'Колбэки работают и выведут числа, просто после `done`. Их никто не ждёт, но и не отменяет.'
+      - text: '`1 done 2 3`'
+        why: 'Ни одно число не может вывестись раньше `done`: каждое ждёт таймер, а `done` выводится синхронно.'
+    explanation: |
+      `forEach`, `map`, `filter` ничего не знают о промисах. Async-колбэк возвращает промис, `forEach` его
+      выбрасывает и переходит к следующему элементу. В итоге все операции стартуют сразу, а внешняя функция
+      завершается, не дождавшись их, и ошибки внутри никто не поймает. Для последовательного выполнения нужен
+      `for...of` с `await`, для параллельного — `await Promise.all(array.map(async (item) => ...))`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/forEach#description
+    source: own
+
+  - id: javascript-async-await-004
+    level: senior
+    tags: [for-of, promise-all, output]
+    question: |
+      Что выведут два варианта обработки?
+    code: |
+      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+      const delays = [30, 10, 20];
+
+      async function sequential() {
+        for (const d of delays) {
+          await sleep(d);
+          console.log('seq', d);
+        }
+      }
+
+      async function parallel() {
+        await Promise.all(delays.map(async (d) => {
+          await sleep(d);
+          console.log('par', d);
+        }));
+      }
+
+      sequential().then(parallel);
+    codeLang: js
+    options:
+      - text: '`seq 30 10 20`, затем `par 30 10 20`'
+        why: 'Порядок `par` определяется длительностью пауз, а не порядком элементов: все паузы идут одновременно.'
+      - text: '`seq 10 20 30`, затем `par 10 20 30`'
+        why: '`for...of` с `await` ждёт каждую паузу по очереди, поэтому сохраняет порядок массива.'
+      - text: '`seq 30 10 20`, затем `par 10 20 30`'
+        correct: true
+        why: 'Последовательный цикл выводит элементы в порядке массива. Параллельный запускает все паузы сразу, и раньше заканчивается самая короткая.'
+      - text: '`seq 10 20 30`, затем `par 30 10 20`'
+        why: 'Ровно наоборот: сортировку по длительности даёт параллельный запуск, а не последовательный.'
+    explanation: |
+      `for...of` с `await` — последовательная обработка: следующая итерация начнётся, когда завершится
+      предыдущая, и общее время — сумма (здесь 60 мс). `Promise.all` с `map` запускает всё сразу, общее время —
+      максимум (30 мс), а побочные эффекты происходят в порядке завершения. Сам `Promise.all` при этом
+      возвращает результаты в порядке исходного массива, независимо от того, кто закончил первым. Выбор
+      зависит от задачи: последовательно, если операции зависят друг от друга или нужно не перегружать сервер,
+      параллельно — во всех остальных случаях.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...of
+    source: own
+
+  - id: javascript-async-await-005
+    level: senior
+    tags: [return-await, try-catch, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      async function load() {
+        try {
+          return Promise.reject(new Error('network'));
+        } catch {
+          return 'fallback';
+        }
+      }
+
+      load().then(
+        (value) => console.log('ok', value),
+        (error) => console.log('error', error.message),
+      );
+    codeLang: js
+    options:
+      - text: '`ok fallback`'
+        why: 'Так было бы с `return await`: тогда отклонение превратилось бы в исключение внутри `try`.'
+      - text: '`error network`'
+        correct: true
+        why: '`return promise` без `await` ничего не бросает: функция просто отдаёт промис наружу, и внешний промис повторяет его состояние. `catch` ловит только исключения, а исключения здесь нет, хотя промис отклонён ещё до `return`.'
+      - text: '`ok undefined`'
+        why: 'Функция возвращает отклонённый промис, и внешний промис его повторяет. Значения `undefined` тут нет.'
+      - text: 'Синтаксическая ошибка: `catch` без параметра'
+        why: '`catch` без параметра — допустимый синтаксис с ES2019 (optional catch binding).'
+    explanation: |
+      `try/catch` в async-функции ловит отклонения только тех промисов, которые ожидаются через `await`
+      внутри блока. `return somePromise` просто передаёт промис наружу, а `return` отклонённого промиса — не исключение,
+      поэтому `catch` не сработает. С `return await somePromise` функция ждёт результат прямо в `try`,
+      и ошибка попадает в `catch`. Отсюда правило: внутри `try` пишите `return await`, вне `try` это не нужно.
+      ESLint-правило `@typescript-eslint/return-await` умеет требовать это автоматически.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/await#control_flow_effects_of_await
+      - https://jakearchibald.com/2017/await-vs-return-vs-return-await/
+    source: own
+
+  - id: javascript-async-await-006
+    level: middle
+    tags: [async, errors, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      async function validate() {
+        throw new Error('invalid');
+      }
+
+      try {
+        validate();
+        console.log('no throw');
+      } catch {
+        console.log('caught');
+      }
+    codeLang: js
+    options:
+      - text: '`caught`'
+        why: 'Исключение внутри async-функции не вылетает из вызова синхронно, даже если брошено до первого `await`.'
+      - text: '`no throw` и unhandled rejection'
+        correct: true
+        why: 'Ошибка внутри async-функции превращается в отклонённый промис. Вызов возвращает его без исключения, а поскольку промис никто не ждёт, получается unhandled rejection.'
+      - text: '`no throw`, и ошибка бесследно исчезнет'
+        why: 'Отклонённый промис без обработчика не исчезает молча: среда сообщит о unhandled rejection.'
+      - text: '`no throw`, затем `caught`'
+        why: 'Вызов `validate()` не бросает исключение, а возвращает отклонённый промис, поэтому `catch` синхронного блока не срабатывает.'
+    explanation: |
+      Тело async-функции целиком обёрнуто в промис: любое исключение, даже на первой строке, отклоняет
+      возвращаемый промис, а не вылетает из вызова. Обычная функция в таком случае бросила бы ошибку прямо в
+      точке вызова. Поэтому `try/catch` вокруг вызова без `await` бесполезен: нужно `await validate()` внутри
+      `try` или `validate().catch(...)`. В Node необработанное отклонение по умолчанию завершает процесс, в
+      браузере пишет ошибку в консоль.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function#description
+    source: own
+
+  - id: javascript-async-await-007
+    level: middle
+    tags: [await, non-promise, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      (async () => {
+        console.log(1);
+        await null;
+        console.log(3);
+      })();
+      console.log(2);
+    codeLang: js
+    options:
+      - text: '`1 3 2`'
+        why: '`await` приостанавливает функцию даже для значения, которое не является промисом.'
+      - text: '`1 2 3`'
+        correct: true
+        why: '`await null` оборачивает значение в выполненный промис и всё равно ставит продолжение в очередь микрозадач. Синхронный код снаружи успевает вывести `2`.'
+      - text: '`2 1 3`'
+        why: 'Тело async-функции начинает выполняться синхронно при вызове, поэтому `1` выводится первым.'
+      - text: '`1 2`, а `3` не выведется'
+        why: '`await null` сразу «выполняется», продолжение гарантированно произойдёт в ближайшей микрозадаче.'
+    explanation: |
+      `await x` работает как `await Promise.resolve(x)`: любое значение заворачивается в промис, и функция
+      в любом случае приостанавливается до следующей микрозадачи. Поэтому `await` никогда не бывает
+      «синхронным», даже для готового значения. Иногда это используют сознательно, чтобы отдать управление и
+      дать выполниться уже запланированным микрозадачам. Для отдачи управления браузеру (отрисовке, событиям)
+      этого мало — нужна задача: `setTimeout` или `scheduler.yield()`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/await
+    source: own
+
+  - id: javascript-async-await-008
+    level: senior
+    tags: [promise-all, unhandled-rejection, output]
+    question: |
+      Два из трёх промисов отклоняются. Сколько раз среда сообщит о необработанном отклонении?
+    code: |
+      const fail = (ms, msg) => new Promise((_, reject) => setTimeout(() => reject(new Error(msg)), ms));
+
+      Promise.all([fail(10, 'first'), fail(20, 'second'), Promise.resolve('ok')])
+        .catch((error) => console.log('caught', error.message));
+    codeLang: js
+    options:
+      - text: 'Ни разу: выведется `caught first`'
+        correct: true
+        why: '`Promise.all` подписывается на все промисы сразу, поэтому отклонение `second` тоже считается обработанным. Наружу передаётся только первая ошибка.'
+      - text: 'Один раз — за `second`, потому что `catch` поймал только `first`'
+        why: 'Отклонение считается необработанным, когда у промиса нет подписчика. У `second` подписчик есть — сам `Promise.all`.'
+      - text: 'Два раза: `Promise.all` не обрабатывает ошибки сам'
+        why: 'Обе ошибки «увидены» `Promise.all`, а первая к тому же передана в `catch`.'
+      - text: 'Ни разу, но выведется `caught second`'
+        why: '`Promise.all` отклоняется первой по времени ошибкой, а `first` отклоняется раньше — через 10 мс.'
+    explanation: |
+      Отклонение необработанное, если в момент проверки у промиса нет ни одного обработчика ошибок.
+      `Promise.all` подписывается на каждый входной промис, поэтому все отклонения «наблюдаются», хотя наружу
+      уходит только первое. Ошибка `second` просто теряется, и это стоит помнить: если важны все ошибки,
+      нужен `Promise.allSettled`. Другая ситуация — промисы, созданные заранее и ожидаемые по очереди через
+      `await`: пока ждём первый, второй может отклониться без подписчика, и тогда предупреждение появится.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all#description
+    source: own
+
+  - id: javascript-async-await-009
+    level: middle
+    tags: [abort-controller, fetch, cancellation, no-run]
+    question: |
+      Пользователь быстро набирает текст в поиске, и на каждую букву уходит запрос. Ответы приходят вразнобой,
+      и на экране иногда оказываются результаты для старой строки. Как это правильно исправить?
+    code: |
+      input.addEventListener('input', async () => {
+        const response = await fetch(`/search?q=${input.value}`);
+        renderResults(await response.json());
+      });
+    codeLang: js
+    options:
+      - text: 'Отменять предыдущий запрос через `AbortController` перед отправкой нового'
+        correct: true
+        why: 'Отменённый `fetch` отклоняется с `AbortError`, его результат не дойдёт до `renderResults`. Заодно экономится сеть. Часто это сочетают с debounce.'
+      - text: 'Обернуть код в `try/catch`, чтобы ошибки не мешали порядку'
+        why: 'Проблема не в ошибках, а в гонке: старый успешный ответ приходит позже нового и перезаписывает экран.'
+      - text: 'Добавить `await` перед `addEventListener`, чтобы обработчики шли по очереди'
+        why: '`addEventListener` синхронный и ничего не возвращает. Обработчики событий всё равно запускаются независимо друг от друга.'
+      - text: 'Использовать `Promise.race` всех запросов'
+        why: '`race` вернёт самый быстрый ответ, а не самый свежий. Гонка останется.'
+    explanation: |
+      Это классическая гонка асинхронных ответов (race condition): запросы уходят в порядке ввода, а ответы
+      приходят в произвольном. Решения: отменять предыдущий запрос через `AbortController` (`fetch(url, { signal })`,
+      затем `controller.abort()`); или помнить идентификатор последнего запроса и игнорировать устаревшие
+      ответы. Отменённый `fetch` отклоняется с `AbortError` прямо в обработчике: его нужно отфильтровать в `try/catch`,
+      иначе в консоли появятся unhandled rejection. Debounce уменьшает число запросов, но гонку сам по себе не
+      устраняет. Библиотеки вроде
+      TanStack Query и RTK Query делают это автоматически.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/AbortController
+    source: own
+
+  - id: javascript-async-await-010
+    level: junior
+    tags: [await, blocking]
+    question: |
+      Что происходит с остальной страницей, пока async-функция ждёт `await fetch(...)`?
+    options:
+      - text: 'Страница зависает до ответа сервера'
+        why: 'Зависания нет: `await` останавливает только свою функцию, а поток свободен для других задач.'
+      - text: 'Приостанавливается только эта функция, страница работает'
+        correct: true
+        why: '`await` возвращает управление event loop. Когда промис выполнится, продолжение функции встанет в очередь микрозадач.'
+      - text: 'Браузер выполняет функцию в отдельном потоке до ответа'
+        why: 'Отдельного потока нет. Функция просто приостановлена, её состояние сохранено до продолжения.'
+      - text: 'Все остальные async-функции тоже приостанавливаются'
+        why: 'Каждая async-функция приостанавливается независимо, остальной код работает.'
+    explanation: |
+      `await` — синтаксический сахар над промисами. В точке `await` функция сохраняет своё состояние
+      (локальные переменные, место выполнения) и возвращает управление вызывающему коду. Стек освобождается,
+      и event loop занимается другими задачами: кликами, таймерами, отрисовкой. Когда промис выполнится,
+      продолжение функции встанет в очередь микрозадач. Поэтому `await` не блокирует страницу, а долгий
+      синхронный цикл внутри async-функции — блокирует.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS/Promises#async_and_await
+    source: own
+
+  - id: javascript-async-await-011
+    level: middle
+    tags: [top-level-await, modules]
+    question: |
+      Где можно использовать `await` вне async-функции (top-level await)?
+    options:
+      - text: 'Только в ES-модулях'
+        correct: true
+        why: 'Top-level await — возможность модулей: `<script type="module">`, файлы `.mjs`, модули сборщика. Модуль с ним приостанавливает выполнение зависимых модулей, пока не дождётся результата.'
+      - text: 'В любом скрипте современного браузера'
+        why: 'В обычном `<script>` без `type="module"` это синтаксическая ошибка.'
+      - text: 'Только в Node.js, браузеры это не поддерживают'
+        why: 'Браузеры поддерживают top-level await в модулях с 2021 года.'
+      - text: 'Нигде: `await` всегда должен быть внутри async-функции'
+        why: 'Это правило было до ES2022. Теперь на верхнем уровне модулей `await` разрешён.'
+    explanation: |
+      С ES2022 модуль может использовать `await` на верхнем уровне, например чтобы загрузить конфигурацию или
+      дождаться динамического импорта. Модуль с top-level await ведёт себя как async-функция: модули, которые
+      его импортируют, начнут выполняться только после того, как он завершится. Это удобно, но может
+      незаметно замедлить загрузку всего графа модулей, поэтому долгих операций на верхнем уровне лучше
+      избегать. В обычных скриптах и CommonJS top-level await недоступен.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/await#top_level_await
+    source: own
+
+  - id: javascript-async-await-012
+    level: middle
+    tags: [fetch, http-errors, no-run]
+    question: |
+      Сервер на запрос несуществующего пользователя отвечает статусом 404 и JSON `{ "error": "not found" }`.
+      Что произойдёт?
+    code: |
+      try {
+        const response = await fetch('/api/users/999');
+        const user = await response.json();
+        renderProfile(user);
+      } catch (error) {
+        showError('Пользователь не найден');
+      }
+    codeLang: js
+    options:
+      - text: 'Сработает `catch`: `fetch` отклоняется при статусе 404'
+        why: '`fetch` отклоняет промис только при сетевой ошибке или отмене. Любой HTTP-ответ, включая 404 и 500, считается успешным.'
+      - text: '`renderProfile` получит объект `{ error: "not found" }`'
+        correct: true
+        why: 'Ответ сервера получен, поэтому промис `fetch` выполнен, и тело с ошибкой разбирается как обычные данные. Статус нужно проверять вручную через `response.ok` или `response.status`.'
+      - text: '`response.json()` бросит исключение, потому что у ответа статус ошибки'
+        why: '`json()` разбирает тело независимо от статуса. Исключение будет, только если тело не является корректным JSON.'
+      - text: 'Промис `fetch` зависнет, пока сервер не вернёт статус 200'
+        why: 'Промис выполняется, как только получены заголовки ответа, с любым статусом.'
+    explanation: |
+      `fetch` разделяет сетевые ошибки и ошибки HTTP. Отклоняется он, только когда ответа нет: сеть недоступна,
+      CORS заблокирован, запрос отменён. Ответ с любым статусом — успех с точки зрения промиса, а `response.ok`
+      показывает, был ли статус в диапазоне 200–299. Поэтому обёртки над `fetch` обычно делают так:
+      `if (!response.ok) throw new HttpError(response.status, await response.text())`. Библиотеки вроде axios
+      ведут себя иначе и отклоняют промис на статусах 4xx и 5xx — это частый вопрос на собеседовании.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch#checking_response_status
+    source: own
+
+  - id: javascript-async-await-013
+    level: senior
+    tags: [concurrency, pool, output]
+    question: |
+      Пул выполняет задачи не больше двух одновременно. Что выведется в консоль?
+    code: |
+      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+      async function runPool(tasks, limit) {
+        const results = [];
+        let next = 0;
+        async function worker(id) {
+          while (next < tasks.length) {
+            const index = next++;
+            results[index] = await tasks[index]();
+            console.log(`worker ${id}: task ${index}`);
+          }
+        }
+        await Promise.all(Array.from({ length: limit }, (_, id) => worker(id)));
+        return results;
+      }
+
+      const tasks = [30, 10, 25, 10].map((ms, i) => () => sleep(ms).then(() => `r${i}`));
+      runPool(tasks, 2).then((results) => console.log(results));
+    codeLang: js
+    options:
+      - text: '`worker 0: task 0`, `worker 1: task 1`, `worker 0: task 2`, `worker 1: task 3`, затем `[ "r0", "r1", "r2", "r3" ]`'
+        why: 'Задачи не раздаются по очереди между воркерами: свободный воркер сразу берёт следующую. Первым освобождается воркер 1.'
+      - text: '`worker 1: task 1`, `worker 0: task 0`, `worker 1: task 2`, `worker 0: task 3`, затем `[ "r0", "r1", "r2", "r3" ]`'
+        correct: true
+        why: 'Сначала воркеры берут задачи 0 (30 мс) и 1 (10 мс). В 10 мс воркер 1 берёт задачу 2 (до 35 мс), в 30 мс воркер 0 — задачу 3 (до 40 мс). Результаты лежат по индексам, поэтому порядок массива исходный.'
+      - text: '`worker 1: task 1`, `worker 0: task 0`, `worker 1: task 2`, `worker 0: task 3`, затем `[ "r1", "r0", "r2", "r3" ]`'
+        why: 'Результат записывается по индексу задачи `results[index]`, а не в порядке завершения, поэтому массив упорядочен как исходный список задач.'
+      - text: '`worker 1: task 1`, `worker 1: task 2`, `worker 0: task 0`, `worker 0: task 3`, затем `[ "r0", "r1", "r2", "r3" ]`'
+        why: 'Воркер 0 освобождается в 30 мс, раньше, чем воркер 1 закончит задачу 2 (35 мс). Поэтому `worker 0: task 0` идёт перед `worker 1: task 2`.'
+    explanation: |
+      Пул ограничивает число одновременных операций — например, чтобы не открыть сотню запросов разом. Здесь
+      запущено `limit` воркеров, каждый в цикле забирает следующий индекс из общего счётчика и ждёт задачу. Так
+      как JavaScript однопоточный, `next++` не вызывает гонок: между `await` код воркера выполняется целиком. Порядок
+      завершения зависит от длительности задач, а результаты собираются по индексам. Задача «напишите
+      `promisePool`» — популярный лайв-кодинг на собеседованиях; готовые решения — `p-limit` и `p-map`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
+    source: own

@@ -1,0 +1,764 @@
+/* Общая раскладка макетов. Цвета, радиусы, шрифты и стекло задаются переменными в theme-*.css. */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--page-bg);
+  color: #e8e8f0;
+  font-family: Inter, system-ui, sans-serif;
+  transition: background 0.4s;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* ---------- Страница с макетами ---------- */
+
+.page {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+}
+
+.page-head h1 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.page-head p {
+  margin: 0 0 18px;
+  color: #9a9aaa;
+  font-size: 14px;
+}
+
+.switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.switcher button {
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 14px;
+}
+
+.switcher button.is-on {
+  background: #f2f2f7;
+  color: #111;
+  border-color: transparent;
+}
+
+.variant-desc {
+  max-width: 760px;
+  margin: 0 0 28px;
+  color: #b4b4c4;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.phones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  justify-content: center;
+}
+
+.phone-wrap {
+  margin: 0;
+}
+
+.phone-wrap figcaption {
+  margin-bottom: 10px;
+  color: #8a8a9a;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ---------- Рамка телефона ---------- */
+
+.phone {
+  position: relative;
+  width: min(375px, calc(100vw - 32px));
+  height: 800px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 44px;
+  background: var(--bg);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  color: var(--text);
+  font-family: var(--font-body);
+}
+
+.bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(var(--blob-blur));
+  opacity: var(--blob-opacity);
+}
+
+.b1 {
+  top: -70px;
+  left: -90px;
+  width: 280px;
+  height: 280px;
+  background: var(--blob1);
+}
+
+.b2 {
+  top: 290px;
+  right: -110px;
+  width: 260px;
+  height: 260px;
+  background: var(--blob2);
+}
+
+.b3 {
+  bottom: -110px;
+  left: 10px;
+  width: 300px;
+  height: 300px;
+  background: var(--blob3);
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 18px 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+/* Без этого колонка сжимает блоки, которые не влезли по высоте, и блок кода сплющивается. */
+.screen > * {
+  flex-shrink: 0;
+}
+
+.screen::-webkit-scrollbar {
+  display: none;
+}
+
+.screen > :last-child {
+  margin-bottom: 22px;
+}
+
+/* ---------- Стекло ---------- */
+
+.glass {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  background: var(--glass-bg);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+}
+
+/* ---------- Общие элементы ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.logo {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: calc(var(--radius) / 2);
+  background: var(--primary-bg);
+  color: var(--primary-text);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  color: var(--text-2);
+}
+
+.icon-btn svg,
+.btn svg,
+.tile svg {
+  width: 18px;
+  height: 18px;
+}
+
+.title {
+  margin: 6px 0 0;
+  font-family: var(--font-heading);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  margin: -6px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.card {
+  padding: 16px;
+}
+
+.card-label {
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--chip-border);
+  border-radius: var(--chip-radius);
+  background: var(--chip-bg);
+  color: var(--text-2);
+  font-size: 14px;
+}
+
+.chip .count {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.chip.is-on {
+  border-color: var(--chip-on-border);
+  background: var(--chip-on-bg);
+  color: var(--chip-on-text);
+  box-shadow: var(--chip-on-glow);
+}
+
+.chip.is-on .count {
+  color: var(--chip-on-count);
+}
+
+.subtopics {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--glass-border);
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.subtopics b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(var(--n), 1fr);
+  gap: 4px;
+  padding: 4px;
+  border-radius: calc(var(--radius) - 4px);
+  background: var(--seg-bg);
+}
+
+.seg {
+  padding: 10px 0;
+  border: 0;
+  border-radius: calc(var(--radius) - 8px);
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.seg.is-on {
+  background: var(--seg-on-bg);
+  color: var(--seg-on-text);
+  box-shadow: var(--seg-on-shadow);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 15px 18px;
+  border-radius: var(--btn-radius);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.btn-primary {
+  border: 0;
+  background: var(--primary-bg);
+  color: var(--primary-text);
+  box-shadow: var(--primary-shadow);
+}
+
+.btn-secondary {
+  color: var(--text);
+}
+
+.hint {
+  margin: -6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  text-align: left;
+}
+
+.tile svg {
+  color: var(--accent);
+}
+
+.tile .tile-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tile .tile-sub {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Лигатуры выключены: в вопросах про код важно видеть `===` и `=>` как есть. */
+code,
+.mono,
+.opt-text {
+  font-family: var(--font-mono);
+  font-variant-ligatures: none;
+}
+
+p code,
+.why code,
+.mistake code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--inline-code-bg);
+  color: var(--inline-code-text);
+  font-size: 0.88em;
+}
+
+/* ---------- Экран вопроса ---------- */
+
+.qbar {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  gap: 12px;
+}
+
+.qbar-mid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.qcount {
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.progress {
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--track);
+}
+
+.progress span {
+  display: block;
+  width: 35%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary-bg);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.pill {
+  padding: 6px 11px;
+  border-radius: 999px;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.level {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--lvl);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.level::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.level.middle {
+  --lvl: var(--lvl-middle);
+}
+
+.level.senior {
+  --lvl: var(--lvl-senior);
+}
+
+.qtext {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.code {
+  margin: 0;
+  padding: 14px 16px;
+  overflow-x: auto;
+  border-radius: var(--code-radius);
+  background: var(--code-bg);
+  color: var(--tok-plain);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre;
+}
+
+.kw { color: var(--tok-kw); }
+.fn { color: var(--tok-fn); }
+.num { color: var(--tok-num); }
+.str { color: var(--tok-str); }
+.cls { color: var(--tok-cls); }
+.punc { color: var(--tok-punc); }
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.option {
+  padding: 13px 14px;
+}
+
+.option-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.key {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--glass-border);
+  border-radius: calc(var(--radius) / 2.5);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.opt-text {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 15px;
+}
+
+.status {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.why {
+  margin: 9px 0 0 38px;
+  color: var(--text-2);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.option.is-correct {
+  border-color: var(--ok);
+  background: var(--ok-bg);
+}
+
+.option.is-correct .key {
+  border-color: transparent;
+  background: var(--ok);
+  color: var(--on-status);
+}
+
+.option.is-correct .status {
+  color: var(--ok);
+}
+
+.option.is-wrong {
+  border-color: var(--bad);
+  background: var(--bad-bg);
+}
+
+.option.is-wrong .key {
+  border-color: transparent;
+  background: var(--bad);
+  color: var(--on-status);
+}
+
+.option.is-wrong .status {
+  color: var(--bad);
+}
+
+.option.is-dim .why {
+  color: var(--muted);
+}
+
+.explain {
+  padding: 16px;
+}
+
+.explain h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-family: var(--font-heading);
+  font-size: 15px;
+}
+
+.explain h3 svg {
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+}
+
+.explain p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.links {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.links a {
+  color: var(--link);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.actionbar {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 10px;
+  margin: 4px -18px 0;
+  padding: 12px 18px 22px;
+  border-top: 1px solid var(--glass-border);
+  background: var(--bar-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+}
+
+.screen > .actionbar:last-child {
+  margin-bottom: 0;
+}
+
+/* ---------- Итог сессии ---------- */
+
+.score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 24px 16px 20px;
+}
+
+.ring {
+  display: grid;
+  place-items: center;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: conic-gradient(var(--ring-color) 0 70%, var(--track) 70% 100%);
+  mask: radial-gradient(circle, transparent 58%, #000 59%);
+  -webkit-mask: radial-gradient(circle, transparent 58%, #000 59%);
+}
+
+.ring-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.ring-text {
+  position: absolute;
+  text-align: center;
+}
+
+.ring-text b {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 32px;
+}
+
+.ring-text span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.score-sub {
+  color: var(--text-2);
+  font-size: 13px;
+  text-align: center;
+}
+
+.stat {
+  display: grid;
+  grid-template-columns: 90px 1fr 36px;
+  gap: 10px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.stat + .stat {
+  margin-top: 10px;
+}
+
+.stat .bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--track);
+}
+
+.stat .bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary-bg);
+}
+
+.stat .val {
+  color: var(--muted);
+  text-align: right;
+}
+
+.mistakes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mistake {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  align-items: center;
+  padding: 12px 14px;
+}
+
+.mistake .m-meta {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.mistake .m-text {
+  grid-column: 1;
+  font-size: 14px;
+}
+
+.mistake .chev {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  color: var(--muted);
+}
+
+.more {
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

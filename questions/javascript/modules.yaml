@@ -1,0 +1,278 @@
+# yaml-language-server: $schema=../../schema.json
+topic: javascript
+subtopic: modules
+questions:
+  - id: javascript-modules-001
+    level: middle
+    tags: [live-bindings, esm, no-run]
+    question: |
+      Что выведет `main.js`?
+    code: |
+      // counter.js
+      export let count = 0;
+      export function increment() {
+        count++;
+      }
+
+      // main.js
+      import { count, increment } from './counter.js';
+      increment();
+      console.log(count);
+    codeLang: js
+    options:
+      - text: '`0`'
+        why: 'Так было бы в CommonJS с деструктуризацией `require`: значение копируется в момент импорта. ES-модули импортируют живую связь.'
+      - text: '`1`'
+        correct: true
+        why: 'Импорт в ES-модулях — живая привязка (live binding) к переменной модуля-источника. Когда `increment` меняет `count`, импортирующий модуль видит новое значение.'
+      - text: '`undefined`'
+        why: 'Переменная экспортирована с начальным значением 0 и доступна импортирующему модулю.'
+      - text: '`TypeError`: нельзя менять экспортированную переменную'
+        why: 'Менять переменную может сам модуль-источник. Запрещено только присваивание импортированному имени снаружи.'
+    explanation: |
+      В ES-модулях импортированное имя — не копия значения, а ссылка на переменную в модуле-источнике. Если
+      модуль меняет экспортированную переменную, все импортирующие видят изменение. При этом импорт
+      доступен только для чтения: `count = 5` в `main.js` бросит `TypeError`. В CommonJS `module.exports` — обычный
+      объект: `const { count } = require('./counter')` копирует текущее значение примитива, и изменения не видны.
+      Поэтому изменяемое состояние модуля лучше отдавать через функции-геттеры.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#imported_values_can_only_be_modified_by_the_exporter
+    source: own
+
+  - id: javascript-modules-002
+    level: senior
+    tags: [hoisting, evaluation-order, esm, no-run]
+    question: |
+      В каком порядке появятся сообщения, если запустить `main.js`?
+    code: |
+      // a.js
+      console.log('a');
+
+      // main.js
+      console.log('main');
+      import './a.js';
+    codeLang: js
+    options:
+      - text: '`main`, `a`'
+        why: 'Импорты не выполняются в месте, где написаны: они обрабатываются до выполнения тела модуля.'
+      - text: '`a`, `main`'
+        correct: true
+        why: 'Статические `import` поднимаются: перед выполнением модуля движок загружает и выполняет все его зависимости. Поэтому `a.js` отработает раньше первой строки `main.js`.'
+      - text: '`main`, а `a` не выведется: импорт без имён игнорируется'
+        why: 'Импорт ради побочного эффекта (`import "./a.js"`) выполняет модуль, это стандартный способ подключить, например, полифил или стили.'
+      - text: '`SyntaxError`: импорт должен стоять в начале файла'
+        why: 'Спецификация разрешает `import` в любом месте верхнего уровня модуля. Стоять в начале — лишь соглашение и правило линтеров.'
+    explanation: |
+      Загрузка ES-модулей идёт в три фазы: построение графа зависимостей (разбор всех `import`), связывание имён
+      и выполнение. Выполнение идёт от листьев графа к корню: зависимости модуля выполняются раньше него самого.
+      Поэтому неважно, на какой строке стоит `import`, — он «поднимается», как объявление функции. Отсюда
+      правило: код, который должен выполниться до импортов (например, полифил), выносят в отдельный модуль и
+      импортируют первым.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#hoisting
+    source: own
+
+  - id: javascript-modules-003
+    level: senior
+    tags: [circular-dependencies, tdz, esm, no-run]
+    question: |
+      Точка входа — `a.js`. Что произойдёт?
+    code: |
+      // a.js
+      import { b } from './b.js';
+      export const a = 'A';
+      console.log('a видит', b);
+
+      // b.js
+      import { a } from './a.js';
+      export const b = 'B';
+      console.log('b видит', a);
+    codeLang: js
+    options:
+      - text: '`b видит A`, `a видит B`'
+        why: 'Модуль `b.js` выполняется первым, когда `a.js` ещё не выполнил строку `export const a`.'
+      - text: '`b видит undefined`, `a видит B`'
+        why: 'Так было бы с `var` или в CommonJS. Переменная `const` до инициализации находится в TDZ, и чтение бросает ошибку.'
+      - text: 'Ошибка `ReferenceError` в `b.js`'
+        correct: true
+        why: '`a.js` импортирует `b.js`, поэтому `b.js` выполняется первым. Он читает `a`, но `a.js` ещё не дошёл до `export const a` — переменная в TDZ, и обращение бросает `ReferenceError`.'
+      - text: 'Бесконечный цикл загрузки модулей'
+        why: 'Граф модулей строится один раз, каждый модуль выполняется однократно. Циклы разрешены, но опасны порядком инициализации.'
+    explanation: |
+      Циклические зависимости в ES-модулях разрешены: связи между именами создаются заранее, до выполнения.
+      Но выполняются модули по одному, и один из них неизбежно начнёт работу раньше, чем другой
+      инициализирует свои экспорты. Обращение к ещё не инициализированному `let`, `const` или `class` даёт
+      `ReferenceError`. Обращение внутри функций, которые вызываются позже, работает. Лечится выносом общего
+      кода в третий модуль или ленивым доступом к импортам. В CommonJS вместо ошибки приходит частично
+      заполненный `module.exports`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules#cyclic_imports
+    source: own
+
+  - id: javascript-modules-004
+    level: senior
+    tags: [export-default, live-bindings, no-run]
+    question: |
+      Что выведет `main.js`?
+    code: |
+      // counter.js
+      let count = 0;
+      export default count;
+      export { count as current };
+      export function inc() {
+        count++;
+      }
+
+      // main.js
+      import value, { current, inc } from './counter.js';
+      inc();
+      console.log(value, current);
+    codeLang: js
+    options:
+      - text: '`1 1`'
+        why: '`export default count` экспортирует значение выражения, а не переменную. Живой привязки у него нет.'
+      - text: '`0 0`'
+        why: 'Именованный экспорт `{ count as current }` — живая связь с переменной, он увидит изменение.'
+      - text: '`0 1`'
+        correct: true
+        why: '`export default выражение` вычисляет значение один раз и сохраняет его в скрытой переменной `*default*`. А `export { count as current }` связывает имя с самой переменной `count`.'
+      - text: '`1 0`'
+        why: 'Ровно наоборот: живая связь — у именованного экспорта, а у default-выражения — снимок.'
+    explanation: |
+      `export default` может экспортировать выражение: `export default count` или `export default 1 + 2`. В этом
+      случае значение вычисляется при выполнении модуля и сохраняется. Это снимок, а не связь с переменной.
+      Живыми остаются именованные экспорты и `export { count as default }` — тогда default связан с переменной.
+      Исключение: `export default function f() {}` и `export default class C {}` — это объявления, и они живые.
+      Разница редко важна на практике, но встречается на собеседованиях и в багах с изменяемым состоянием модулей.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/export#using_the_default_export
+    source: own
+
+  - id: javascript-modules-005
+    level: junior
+    tags: [default-export, named-export]
+    question: |
+      Модуль экспортирует `export default function Button() {}` и `export const SIZE = 'm'`. Какой импорт
+      корректен?
+    options:
+      - text: '`import { Button, SIZE } from "./button.js"`'
+        why: 'Default-экспорт не импортируется по имени в фигурных скобках. Он доступен как `{ default as Button }` или без скобок.'
+      - text: '`import MyButton, { SIZE } from "./button.js"`'
+        correct: true
+        why: 'Default-экспорт импортируется без скобок под любым именем, а именованные — в скобках и только по своим именам (или с `as`).'
+      - text: '`import Button, SIZE from "./button.js"`'
+        why: 'Именованные экспорты всегда импортируются в фигурных скобках.'
+      - text: '`import { MyButton, size } from "./button.js"`'
+        why: 'Имена в фигурных скобках должны совпадать с экспортированными, с учётом регистра.'
+    explanation: |
+      У модуля может быть один экспорт по умолчанию и сколько угодно именованных. Default импортируется без скобок
+      и под любым именем — удобно, но каждый файл может назвать его по-своему, что усложняет поиск и
+      рефакторинг. Именованные экспорты импортируются по точным именам (переименование через `as`), что дружит
+      с автодополнением и tree shaking. Поэтому многие стайлгайды предпочитают именованные экспорты везде, кроме
+      мест, где фреймворк требует default, например страниц Next.js и `React.lazy`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import
+    source: own
+
+  - id: javascript-modules-006
+    level: middle
+    tags: [dynamic-import, code-splitting, no-run]
+    question: |
+      Что вернёт `import('./chart.js')`, если в модуле есть `export default function drawChart() {}`?
+    options:
+      - text: 'Функцию `drawChart`'
+        why: 'Динамический импорт асинхронный: модуль ещё нужно загрузить, поэтому возвращается промис.'
+      - text: 'Промис объекта модуля; функция лежит в его свойстве `default`'
+        correct: true
+        why: '`import()` возвращает промис namespace-объекта модуля. Default-экспорт в нём доступен как `.default`, именованные — по своим именам.'
+      - text: 'Промис самой функции `drawChart`'
+        why: 'Промис выполняется объектом модуля со всеми экспортами, а не конкретным экспортом.'
+      - text: 'Ошибку: `import` можно использовать только на верхнем уровне'
+        why: 'Это ограничение статического `import`. Функциональная форма `import()` работает где угодно, в том числе в обычных скриптах.'
+    explanation: |
+      `import(specifier)` загружает модуль по требованию и возвращает промис его namespace-объекта:
+      `const { default: drawChart } = await import('./chart.js')`. Сборщики (Vite, webpack) превращают такие
+      импорты в отдельные чанки — это основа code splitting и ленивой загрузки: тяжёлый модуль загружается,
+      только когда понадобился. На этом построен `React.lazy(() => import('./Page'))`, которому нужен именно
+      модуль с default-экспортом.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import
+    source: own
+
+  - id: javascript-modules-007
+    level: middle
+    tags: [tree-shaking, side-effects]
+    question: |
+      Почему сборщик может удалить неиспользуемые экспорты из ES-модуля (tree shaking), а из CommonJS — обычно нет?
+    options:
+      - text: 'Структура ES-модулей известна сборщику до выполнения кода'
+        correct: true
+        why: 'Сборщик видит граф ES-модулей без запуска: что экспортируется и что импортируется. В CommonJS `require` можно вызвать условно, с вычисляемым путём, и экспорты меняются в рантайме.'
+      - text: 'CommonJS-модули сжимаются хуже из-за длинных имён'
+        why: 'Минификация работает с любым кодом. Tree shaking — про удаление неиспользуемого, а не про длину имён.'
+      - text: 'ES-модули выполняются только в браузере, а CommonJS — только в Node'
+        why: 'ES-модули работают и в Node, а CommonJS сборщики умеют собирать для браузера. Дело в статичности синтаксиса.'
+      - text: 'Tree shaking работает одинаково, разница только в скорости сборки'
+        why: 'Разница принципиальная: для CommonJS сборщик в общем случае не может доказать, что экспорт не используется.'
+    explanation: |
+      `import` и `export` — синтаксические конструкции верхнего уровня с фиксированными именами, поэтому граф
+      использования можно построить статически и выбросить мёртвый код. `require()` — обычная функция: её
+      можно вызвать в `if`, с путём из переменной, а `module.exports` можно дописывать динамически. Ещё одно
+      условие tree shaking — отсутствие побочных эффектов: модуль, который при импорте что-то меняет глобально,
+      нельзя выбросить. Поэтому библиотеки помечают в `package.json` поле `"sideEffects": false`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Glossary/Tree_shaking
+      - https://webpack.js.org/guides/tree-shaking/
+    source: own
+
+  - id: javascript-modules-008
+    level: middle
+    tags: [singleton, evaluation-once]
+    question: |
+      Модуль `store.js` создаёт объект `export const store = createStore()`. Его импортируют десять разных
+      модулей приложения. Сколько раз выполнится `createStore()`?
+    options:
+      - text: 'Десять: каждый импорт выполняет модуль заново'
+        why: 'Модуль выполняется один раз и кэшируется по своему URL. Повторные импорты получают те же привязки.'
+      - text: 'Один раз, все импорты получат один и тот же объект'
+        correct: true
+        why: 'Каждый модуль выполняется однократно в рамках приложения (реалма), а его экспорты общие для всех импортирующих. Это естественный синглтон.'
+      - text: 'Ни разу, пока не обратиться к `store`'
+        why: 'Тело модуля выполняется при загрузке графа, а не лениво при первом обращении к экспорту.'
+      - text: 'Зависит от порядка импортов'
+        why: 'Порядок влияет на момент выполнения, но не на количество: модуль выполнится ровно один раз.'
+    explanation: |
+      Модульная система кэширует модули по разрешённому пути (URL): первый импорт выполняет модуль, следующие
+      получают готовые привязки. Поэтому состояние на верхнем уровне модуля — общее для всего приложения, как
+      синглтон. Это удобно для конфигурации, клиентов API и сторов, но опасно при серверном рендеринге:
+      модульное состояние на сервере общее для всех запросов разных пользователей. Ещё ловушка: один и тот же
+      файл по разным путям (например, разные копии пакета в `node_modules`) — это разные модули и разные
+      экземпляры.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules#other_differences_between_modules_and_classic_scripts
+    source: own
+
+  - id: javascript-modules-009
+    level: junior
+    tags: [commonjs, esm, conditional-import]
+    question: |
+      Нужно загрузить модуль только при выполнении условия. Как это сделать в ES-модулях?
+    options:
+      - text: '`if (isAdmin) { import { panel } from "./admin.js"; }`'
+        why: 'Статический `import` разрешён только на верхнем уровне модуля. Внутри блока это синтаксическая ошибка.'
+      - text: '`if (isAdmin) { const { panel } = await import("./admin.js"); }`'
+        correct: true
+        why: 'Динамический `import()` — выражение, его можно вызывать где угодно, в том числе в условиях. Он возвращает промис модуля.'
+      - text: '`if (isAdmin) { const { panel } = require("./admin.js"); }`'
+        why: '`require` — функция CommonJS. В ES-модулях она по умолчанию не определена.'
+      - text: '`import { panel } from isAdmin ? "./admin.js" : "./empty.js"`'
+        why: 'Путь в статическом импорте должен быть строковым литералом. Выражения и переменные не допускаются.'
+    explanation: |
+      Статические `import` — только верхний уровень, только строковые литералы. Это даёт сборщикам и движкам
+      возможность заранее построить граф зависимостей. Для условной и ленивой загрузки есть `import(...)`:
+      принимает любое выражение и работает внутри функций и условий. В CommonJS `require` — обычная синхронная
+      функция, её можно вызвать где угодно, но такой код хуже оптимизируется. В Node ESM и CommonJS
+      различаются по расширению (`.mjs` и `.cjs`) или по полю `"type"` в `package.json`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/import
+    source: own

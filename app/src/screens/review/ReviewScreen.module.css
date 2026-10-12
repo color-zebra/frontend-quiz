@@ -1,0 +1,15 @@
+.title {
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.spacer {
+  width: 42px;
+  flex: none;
+}
+
+.missing {
+  color: var(--muted);
+  text-align: center;
+}

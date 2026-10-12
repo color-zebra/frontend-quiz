@@ -1,0 +1,288 @@
+# yaml-language-server: $schema=../../schema.json
+topic: react
+subtopic: hooks
+questions:
+  - id: react-hooks-001
+    level: junior
+    tags: [rules-of-hooks]
+    question: |
+      Почему хуки нельзя вызывать внутри условий и циклов?
+    options:
+      - text: 'React различает хуки по порядку их вызова'
+        correct: true
+        why: 'У хуков нет имён для React: состояние первого `useState` лежит в первой ячейке, второго — во второй. Если в одном рендере вызов пропустить, все последующие хуки получат чужие данные.'
+      - text: 'React хранит хуки по именам переменных'
+        why: 'Имён переменных React не видит вовсе. Он хранит данные хуков списком и сопоставляет их по порядку вызова.'
+      - text: 'Хук в условии создаёт новый экземпляр компонента'
+        why: 'Экземпляр компонента остаётся тем же. Ломается сопоставление: данные хуков достаются не тем вызовам.'
+      - text: 'Так требует только линтер, React это не проверяет'
+        why: 'React сам замечает несовпадение хуков между рендерами и сообщает об этом в режиме разработки.'
+    explanation: |
+      React хранит данные хуков компонента в списке и при каждом рендере проходит по нему по порядку. Поэтому
+      между рендерами должен совпадать порядок вызовов: хуки вызывают на верхнем уровне компонента или
+      кастомного хука, до любых ранних `return`, не в условиях, циклах, обработчиках и вложенных функциях.
+      Условную логику переносят внутрь хука: не «`if (x) useEffect(...)`», а «`useEffect(() => { if (x) ... })`».
+      Исключение — `use` из React 19, его можно вызывать условно. Правило проверяет плагин
+      `eslint-plugin-react-hooks`.
+    links:
+      - https://react.dev/reference/rules/rules-of-hooks
+    source: own
+
+  - id: react-hooks-002
+    level: middle
+    tags: [rules-of-hooks, conditional-hook]
+    question: |
+      Что произойдёт после клика по кнопке?
+    code: |
+      function App() {
+        const [show, setShow] = useState(false);
+
+        if (show) {
+          const [extra] = useState('x');
+        }
+
+        const [name] = useState('Ann');
+        return <button onClick={() => setShow(true)}>{name}</button>;
+      }
+    codeLang: jsx
+    options:
+      - text: 'Ошибка: хуков вызвано больше, чем в прошлом рендере'
+        correct: true
+        why: 'В первом рендере было два вызова `useState`, во втором — три. React сверяет число и порядок хуков и бросает ошибку «Rendered more hooks than during the previous render».'
+      - text: 'Всё работает: у каждого `useState` своя переменная'
+        why: 'Имена переменных React не видит. Для него есть только последовательность вызовов, и она изменилась.'
+      - text: 'Кнопка покажет `x`: состояния сдвинутся на одну позицию'
+        why: 'Сдвиг действительно произошёл бы, если бы React молча продолжил. Но он обнаруживает лишний хук и останавливает рендер ошибкой.'
+      - text: 'Предупреждение в консоли, а `extra` получит `undefined`'
+        why: 'Изменение числа хуков — не предупреждение, а ошибка, которая прерывает рендер компонента.'
+    explanation: |
+      В режиме разработки React сравнивает список хуков с прошлым рендером и печатает таблицу, где порядок
+      разошёлся. Если хуков стало больше или меньше, рендер прерывается ошибкой. Без границы ошибок
+      приложение размонтируется. Если же число то же, а типы поменялись местами, может случиться тихая порча
+      данных. Поэтому правило хуков проверяют статически линтером, не дожидаясь рантайма.
+    links:
+      - https://react.dev/reference/rules/rules-of-hooks
+      - https://react.dev/warnings/invalid-hook-call-warning
+    source: own
+
+  - id: react-hooks-003
+    level: junior
+    tags: [custom-hooks, state-isolation]
+    question: |
+      Пользователь нажал кнопку в компоненте `A`. Что покажут `A` и `B`?
+    code: |
+      function useCounter() {
+        const [count, setCount] = useState(0);
+        return [count, () => setCount((c) => c + 1)];
+      }
+
+      function A() {
+        const [count, increment] = useCounter();
+        return <button onClick={increment}>{count}</button>;
+      }
+
+      function B() {
+        const [count] = useCounter();
+        return <span>{count}</span>;
+      }
+
+      function App() {
+        return (
+          <>
+            <A />
+            <B />
+          </>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`1` и `0`'
+        correct: true
+        why: 'Кастомный хук — функция, которая выполняется внутри каждого компонента отдельно. `useState` внутри неё создаёт отдельное состояние для `A` и для `B`.'
+      - text: '`1` и `1`'
+        why: 'Общей у компонентов является только логика хука, а не данные. Чтобы делить состояние, его поднимают в общего родителя или выносят в контекст или хранилище.'
+      - text: '`0` и `0`'
+        why: 'Клик вызывает `setCount` в состоянии компонента `A`, и он отрендерится со значением 1.'
+      - text: '`0` и `1`'
+        why: 'Обновляется состояние того компонента, в котором вызвана функция `increment`, то есть `A`.'
+    explanation: |
+      Кастомный хук — способ переиспользовать логику с состоянием, а не само состояние. Каждый вызов
+      `useCounter()` равносилен тому, что его код написан прямо в компоненте. Поэтому `A` и `B` получают
+      независимые счётчики. Чтобы компоненты видели одно и то же значение, состояние должно жить в одном месте:
+      в общем родителе (lifting state up), в контексте или во внешнем хранилище, к которому оба подключаются
+      через хук.
+    links:
+      - https://react.dev/learn/reusing-logic-with-custom-hooks#custom-hooks-let-you-share-stateful-logic-not-state-itself
+    source: own
+
+  - id: react-hooks-004
+    level: middle
+    tags: [custom-hooks, naming]
+    question: |
+      Чем кастомный хук отличается от обычной вспомогательной функции?
+    options:
+      - text: 'Он вызывает другие хуки, и его имя начинается с `use`'
+        correct: true
+        why: 'Функция, внутри которой вызываются хуки, сама подчиняется правилам хуков. Префикс `use` сообщает об этом людям и линтеру, который проверяет порядок вызовов.'
+      - text: 'Он выполняется один раз при монтировании компонента'
+        why: 'Кастомный хук выполняется при каждом рендере, как и весь код компонента.'
+      - text: 'React кэширует его результат между рендерами'
+        why: 'Никакого кэширования нет: кастомный хук выполняется заново при каждом рендере, как обычная функция.'
+      - text: 'Его можно вызывать в обработчиках событий'
+        why: 'Наоборот: хуки, включая кастомные, вызывают только на верхнем уровне компонента или другого хука.'
+    explanation: |
+      Технически кастомный хук — обычная функция. Особенной её делает вызов других хуков: из-за них функцию
+      можно вызывать только там, где разрешены хуки, и всегда в одном порядке. Префикс `use` — соглашение, на
+      которое опирается линтер и React Compiler. Если функция не вызывает хуков, называть её `use...` не нужно:
+      это обычная утилита, и её можно вызывать где угодно, в том числе условно.
+    links:
+      - https://react.dev/learn/reusing-logic-with-custom-hooks#hook-names-always-start-with-use
+    source: own
+
+  - id: react-hooks-005
+    level: senior
+    tags: [useSyncExternalStore, snapshot]
+    question: |
+      Что произойдёт при монтировании?
+    code: |
+      const store = {
+        value: 1,
+        listeners: new Set(),
+        subscribe(listener) {
+          store.listeners.add(listener);
+          return () => store.listeners.delete(listener);
+        },
+      };
+
+      function App() {
+        const snapshot = useSyncExternalStore(store.subscribe, () => ({ value: store.value }));
+        return <p>{snapshot.value}</p>;
+      }
+    codeLang: jsx
+    options:
+      - text: 'Бесконечный цикл рендеров и ошибка'
+        correct: true
+        why: '`getSnapshot` каждый раз возвращает новый объект. React сравнивает снимки через `Object.is`, видит «изменение» на каждом вызове и снова рендерит, пока не сработает защита «Maximum update depth exceeded».'
+      - text: 'Компонент покажет `1` и будет обновляться при изменении `store`'
+        why: 'Так было бы, если бы `getSnapshot` возвращал одно и то же значение, пока данные не изменились. Новый объект на каждом вызове React считает новыми данными.'
+      - text: 'Компонент покажет `1` и больше не обновится'
+        why: 'До стабильного состояния дело не доходит: каждый вызов `getSnapshot` выглядит как изменение.'
+      - text: 'Ошибка: `subscribe` должен быть объявлен внутри компонента'
+        why: 'Наоборот, `subscribe` лучше объявлять вне компонента: новая функция на каждом рендере заставляет React переподписываться.'
+    explanation: |
+      `useSyncExternalStore(subscribe, getSnapshot)` подключает компонент к внешнему хранилищу. React вызывает
+      `getSnapshot` при рендере и при каждом уведомлении, сравнивает результат с прошлым через `Object.is` и
+      рендерит, если он изменился. Поэтому `getSnapshot` должен возвращать то же значение, пока данные не
+      менялись: примитив, сам объект из хранилища или закэшированный результат. В разработке React
+      предупреждает: «The result of getSnapshot should be cached». На этом хуке построены Zustand, Redux и
+      другие хранилища с селекторами.
+    links:
+      - https://react.dev/reference/react/useSyncExternalStore#im-getting-an-error-the-result-of-getsnapshot-should-be-cached
+    source: own
+
+  - id: react-hooks-006
+    level: middle
+    tags: [useReducer, output]
+    question: |
+      Что выведется в консоль после клика?
+    code: |
+      function reducer(state, action) {
+        console.log('reduce', action.type, state);
+        return action.type === 'inc' ? state + 1 : state;
+      }
+
+      function App() {
+        const [count, dispatch] = useReducer(reducer, 0);
+        console.log('render', count);
+
+        function handleClick() {
+          dispatch({ type: 'inc' });
+          dispatch({ type: 'inc' });
+          console.log('after dispatch', count);
+        }
+
+        return <button onClick={handleClick}>{count}</button>;
+      }
+    codeLang: jsx
+    options:
+      - text: '`after dispatch 0`, `reduce inc 0`, `reduce inc 1`, `render 2`'
+        correct: true
+        why: '`dispatch` только ставит действия в очередь. Reducer вызывается во время следующего рендера и применяет действия по очереди, поэтому второе получает результат первого.'
+      - text: '`reduce inc 0`, `reduce inc 1`, `after dispatch 2`, `render 2`'
+        why: 'Действия не обрабатываются в момент `dispatch`. К тому же `count` в обработчике — значение из снимка текущего рендера, оно не меняется.'
+      - text: '`reduce inc 0`, `reduce inc 0`, `after dispatch 0`, `render 1`'
+        why: 'Каждое следующее действие reducer получает с результатом предыдущего, как функция-обновление в `useState`.'
+      - text: '`after dispatch 0`, `render 1`, `render 2`'
+        why: 'Оба действия обрабатываются в одном рендере, а reducer вызывается для каждого из них.'
+    explanation: |
+      `useReducer` устроен как `useState` с функцией-обновлением: `dispatch(action)` добавляет действие в
+      очередь, а при рендере React прогоняет очередь через reducer. Отсюда два следствия. Значение в
+      обработчике после `dispatch` прежнее, как и с `setState`. А reducer, как и функция компонента, должен
+      быть чистым: он может вызываться во время рендера, повторно в StrictMode и при прерванных рендерах.
+      `useReducer` удобен, когда следующее состояние зависит от предыдущего сложным образом или несколько
+      полей меняются вместе.
+    links:
+      - https://react.dev/reference/react/useReducer
+    source: own
+
+  - id: react-hooks-007
+    level: middle
+    tags: [useId, ssr]
+    question: |
+      Зачем нужен `useId`, если id для `label` и `input` можно получить через `Math.random()`?
+    options:
+      - text: 'Он даёт одинаковые id при рендере на сервере и на клиенте'
+        correct: true
+        why: '`useId` строит id из положения компонента в дереве, поэтому при гидратации клиент получает те же значения, что сервер вписал в HTML. Случайное число на клиенте не совпадёт с серверным.'
+      - text: 'Он гарантирует уникальность id во всём браузере'
+        why: 'Уникальность гарантируется в пределах приложения (с префиксом — для нескольких приложений на странице), а не «во всём браузере».'
+      - text: 'Он подходит для ключей элементов в списках'
+        why: 'Документация прямо запрещает: ключи должны идти из данных. `useId` даёт id компонента, а не элемента данных.'
+      - text: 'Он сохраняет id в `localStorage` между перезагрузками'
+        why: '`useId` ничего не сохраняет: значение вычисляется из структуры дерева при каждом рендере.'
+    explanation: |
+      Для доступности поля нужно связывать атрибутами `htmlFor`, `aria-describedby`, `aria-labelledby`, и id
+      должны быть уникальны, если компонент используется на странице несколько раз. Захардкоженный id даст
+      дубли, а случайный сломает гидратацию: сервер и клиент сгенерируют разное, и React сообщит о
+      несоответствии. `useId` решает обе проблемы. Для нескольких связанных элементов берут один id и
+      добавляют суффиксы: `${id}-hint`.
+    links:
+      - https://react.dev/reference/react/useId
+    source: own
+
+  - id: react-hooks-008
+    level: senior
+    tags: [useState, function-in-state, output]
+    question: |
+      Что выведется в консоль после клика?
+    code: |
+      function App() {
+        const [action, setAction] = useState(() => () => console.log('first'));
+        console.log('render', typeof action);
+
+        return (
+          <button onClick={() => setAction(() => console.log('second'))}>
+            change
+          </button>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`second`, `render undefined`'
+        correct: true
+        why: 'Сеттер, получивший функцию, считает её функцией-обновлением и вызывает с прошлым состоянием. Стрелка выводит `second` и возвращает `undefined`, это значение и становится новым состоянием.'
+      - text: '`render function`'
+        why: 'Функция не сохраняется как значение: React вызывает её как функцию-обновление.'
+      - text: '`second`, `render function`'
+        why: 'Новым состоянием становится результат вызова функции-обновления, а `console.log` возвращает `undefined`.'
+      - text: '`render function`, `second`'
+        why: 'Функция-обновление вызывается до рендера с новым состоянием, здесь — прямо в момент вызова сеттера.'
+    explanation: |
+      `useState` и сеттер особым образом обрабатывают функции. Функция в `useState(fn)` — ленивый
+      инициализатор, функция в `setState(fn)` — функция-обновление. Поэтому, чтобы сохранить в состоянии саму
+      функцию, её оборачивают ещё одной: `useState(() => handler)` и `setAction(() => newHandler)`. Здесь
+      инициализатор написан правильно, а сеттер нет. Часто функцию в состоянии лучше не хранить вовсе:
+      удобнее хранить данные, по которым выбирается обработчик, или положить функцию в реф.
+    links:
+      - https://react.dev/reference/react/useState#im-trying-to-set-state-to-a-function-but-it-gets-called-instead
+    source: own

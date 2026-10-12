@@ -1,0 +1,343 @@
+# yaml-language-server: $schema=../../schema.json
+topic: javascript
+subtopic: dom-events
+questions:
+  - id: javascript-dom-events-001
+    level: junior
+    tags: [bubbling, no-run]
+    question: |
+      Пользователь кликнул по кнопке. В каком порядке сработают обработчики?
+    code: |
+      <div id="card">
+        <button id="buy">Купить</button>
+      </div>
+      <script>
+        card.addEventListener('click', () => console.log('card'));
+        buy.addEventListener('click', () => console.log('button'));
+        document.body.addEventListener('click', () => console.log('body'));
+      </script>
+    codeLang: html
+    options:
+      - text: '`body`, `card`, `button`'
+        why: 'Это порядок фазы перехвата. Обработчики, добавленные без флага `capture`, срабатывают на всплытии — от цели вверх.'
+      - text: '`button`, `card`, `body`'
+        correct: true
+        why: 'Событие всплывает: сначала обработчики на самом элементе-цели, затем на каждом предке по пути к `document`.'
+      - text: '`button`, `body`, `card`'
+        why: 'Порядок определяется положением в дереве DOM, а не порядком добавления обработчиков.'
+      - text: 'Только `button`: событие не выходит за пределы элемента'
+        why: '`click` всплывающее событие, его получают все предки цели.'
+    explanation: |
+      У большинства событий три фазы: перехват (capturing) — от `window` вниз к цели; цель (target); всплытие
+      (bubbling) — от цели вверх к `window`. Обработчики `addEventListener` по умолчанию срабатывают на
+      всплытии, поэтому порядок — от самого вложенного элемента к внешним. Всплытие позволяет повесить один
+      обработчик на контейнер вместо сотни на элементы — это делегирование событий. Не всплывают, например,
+      `focus`, `blur`, `mouseenter`, `mouseleave` и `load` у элементов.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting/Event_bubbling
+    source: own
+
+  - id: javascript-dom-events-002
+    level: middle
+    tags: [capturing, phases, no-run]
+    question: |
+      Пользователь кликнул по кнопке `#inner` внутри `#outer`. Что выведется?
+    code: |
+      outer.addEventListener('click', () => console.log('outer: всплытие'));
+      outer.addEventListener('click', () => console.log('outer: перехват'), { capture: true });
+      inner.addEventListener('click', () => console.log('inner'));
+    codeLang: js
+    options:
+      - text: '`inner`, `outer: всплытие`, `outer: перехват`'
+        why: 'Обработчик с `capture: true` срабатывает на пути вниз, раньше обработчиков цели.'
+      - text: '`outer: перехват`, `inner`, `outer: всплытие`'
+        correct: true
+        why: 'Сначала фаза перехвата идёт от предков к цели, затем срабатывают обработчики самой цели, затем всплытие обратно вверх.'
+      - text: '`outer: всплытие`, `outer: перехват`, `inner`'
+        why: 'Порядок фаз не зависит от порядка добавления обработчиков: перехват всегда раньше, всплытие всегда позже.'
+      - text: '`inner`, `outer: перехват`'
+        why: 'Оба обработчика на `outer` сработают, каждый в своей фазе.'
+    explanation: |
+      Третий аргумент `addEventListener` — `true` или `{ capture: true }` — подписывает обработчик на фазу
+      перехвата. Событие сначала проходит от `window` вниз и вызывает такие обработчики у предков, затем
+      обрабатывается на цели, затем всплывает и вызывает обычные обработчики. Перехват полезен, когда нужно
+      среагировать раньше вложенных элементов: закрыть выпадающее меню по клику вне его, залогировать все клики
+      страницы или остановить событие до того, как оно дойдёт до цели.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener#usecapture
+    source: own
+
+  - id: javascript-dom-events-003
+    level: middle
+    tags: [target, currentTarget, delegation, no-run]
+    question: |
+      Список задач обработан делегированием. Пользователь кликнул по `<span>` внутри кнопки. Чему равны
+      `event.target` и `event.currentTarget`?
+    code: |
+      <ul id="todo">
+        <li><button data-id="7"><span class="icon">✕</span> Удалить</button></li>
+      </ul>
+      <script>
+        todo.addEventListener('click', (event) => { /* ... */ });
+      </script>
+    codeLang: html
+    options:
+      - text: '`target` — `<button>`, `currentTarget` — `<ul>`'
+        why: '`target` — самый глубокий элемент под курсором, то есть `<span>`. Кнопку нужно искать от него через `closest`.'
+      - text: '`target` — `<span>`, `currentTarget` — `<ul>`'
+        correct: true
+        why: '`target` — элемент, где произошло событие (самый вложенный). `currentTarget` — элемент, на котором висит сработавший обработчик.'
+      - text: '`target` — `<ul>`, `currentTarget` — `<span>`'
+        why: 'Ровно наоборот: обработчик висит на `ul`, а кликнули по `span`.'
+      - text: 'Оба равны `<span>`'
+        why: '`currentTarget` указывает на элемент с обработчиком, а он — `ul`.'
+    explanation: |
+      В делегировании обработчик один на контейнере, а нужный элемент вычисляют из `event.target`. Подвох в том,
+      что `target` — самый глубокий элемент: иконка, текст в `span`, картинка. Поэтому вместо проверки
+      `event.target.tagName === 'BUTTON'` используют `event.target.closest('button[data-id]')` и проверяют, что
+      найденный элемент внутри контейнера. `currentTarget` всегда равен элементу с обработчиком.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Event/currentTarget
+      - https://developer.mozilla.org/en-US/docs/Web/API/Element/closest
+    source: own
+
+  - id: javascript-dom-events-004
+    level: middle
+    tags: [stopPropagation, stopImmediatePropagation, no-run]
+    question: |
+      Пользователь кликнул по кнопке. Что выведется?
+    code: |
+      button.addEventListener('click', (event) => {
+        console.log('first');
+        event.stopPropagation();
+      });
+      button.addEventListener('click', () => console.log('second'));
+      document.addEventListener('click', () => console.log('document'));
+    codeLang: js
+    options:
+      - text: '`first`'
+        why: '`stopPropagation` не останавливает другие обработчики на том же элементе. Для этого есть `stopImmediatePropagation`.'
+      - text: '`first`, `second`'
+        correct: true
+        why: '`stopPropagation` запрещает событию двигаться к другим элементам, но обработчики текущего элемента выполняются до конца.'
+      - text: '`first`, `second`, `document`'
+        why: 'Всплытие до `document` остановлено вызовом `stopPropagation`.'
+      - text: '`first`, `document`'
+        why: '`stopPropagation` не пропускает обработчики текущего элемента, а останавливает именно переход к предкам.'
+    explanation: |
+      `event.stopPropagation()` прекращает распространение события на следующие элементы, но остальные
+      обработчики того же элемента вызовутся. `event.stopImmediatePropagation()` дополнительно отменяет все
+      оставшиеся обработчики текущего элемента. Ни один из них не отменяет действие браузера по умолчанию —
+      для этого `preventDefault`. Останавливать всплытие стоит осторожно: оно ломает делегирование, аналитику
+      и логику «закрыть меню по клику снаружи», которые слушают события на `document`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Event/stopImmediatePropagation
+    source: own
+
+  - id: javascript-dom-events-005
+    level: junior
+    tags: [preventDefault]
+    question: |
+      Что делает `event.preventDefault()` в обработчике клика по ссылке?
+    options:
+      - text: 'Отменяет переход по ссылке, но событие продолжает всплывать'
+        correct: true
+        why: '`preventDefault` отменяет действие браузера по умолчанию. Распространение события по дереву он не трогает.'
+      - text: 'Останавливает всплытие события к родительским элементам'
+        why: 'Всплытие останавливает `stopPropagation`. `preventDefault` отменяет только действие браузера.'
+      - text: 'Удаляет обработчик после первого срабатывания'
+        why: 'Одноразовый обработчик задаётся опцией `{ once: true }` в `addEventListener`.'
+      - text: 'Отменяет и переход, и все другие обработчики клика'
+        why: 'Другие обработчики продолжат работать. Обработчики того же элемента останавливает `stopImmediatePropagation`, обработчики предков — `stopPropagation`.'
+    explanation: |
+      У многих событий есть действие по умолчанию: переход по ссылке, отправка формы, установка флажка,
+      прокрутка колесом, контекстное меню. `preventDefault()` его отменяет, а `event.defaultPrevented` позволяет
+      другим обработчикам узнать об этом. Типичное применение — SPA-роутер перехватывает клик по ссылке и
+      меняет страницу без перезагрузки, а форма отправляется через `fetch`. Остановка всплытия — отдельная
+      операция `stopPropagation`, и смешивать их не нужно.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Event/preventDefault
+    source: own
+
+  - id: javascript-dom-events-006
+    level: middle
+    tags: [delegation]
+    question: |
+      В таблице 10 000 строк, у каждой кнопка «Удалить». Какое главное преимущество делегирования —
+      одного обработчика на `<table>` вместо 10 000 на кнопках?
+    options:
+      - text: 'Меньше обработчиков, и новые строки работают без подписки'
+        correct: true
+        why: 'Один обработчик дешевле десяти тысяч, а строки, добавленные позже, уже «покрыты» обработчиком на таблице — не нужно вешать обработчики на каждую новую строку.'
+      - text: 'Обработчик на таблице срабатывает раньше, чем обработчик на кнопке'
+        why: 'При всплытии обработчик на предке срабатывает позже обработчика цели. Скорость реакции не главное преимущество.'
+      - text: 'Только делегирование позволяет получить `data-id` строки'
+        why: '`data-id` доступен и в обработчике на самой кнопке. Делегирование лишь меняет способ найти нужный элемент.'
+      - text: 'Делегирование работает и для событий, которые не всплывают'
+        why: 'Наоборот, делегирование опирается на всплытие. Для `focus` и `blur` нужны всплывающие аналоги `focusin` и `focusout`.'
+    explanation: |
+      Делегирование событий — один обработчик на общем предке, который определяет нужный элемент по
+      `event.target.closest(...)`. Плюсы: меньше обработчиков в памяти, быстрее первичный рендер, автоматическая
+      поддержка динамически добавленных элементов, не нужно следить за подпиской каждой строки. React делает именно так:
+      до 17-й версии вешал обработчики на `document`, с 17-й — на корневой контейнер, и сам раздаёт события
+      компонентам. Ограничения — события
+      должны всплывать, а логику выбора элемента приходится писать аккуратно.
+    links:
+      - https://javascript.info/event-delegation
+    source: own
+
+  - id: javascript-dom-events-007
+    level: senior
+    tags: [passive, scroll, performance, no-run]
+    question: |
+      Обработчик `touchmove` на `document` вызывает `event.preventDefault()`, чтобы запретить прокрутку, но в
+      Chrome прокрутка продолжается, а в консоли предупреждение. Почему?
+    code: |
+      document.addEventListener('touchmove', (event) => {
+        if (isDragging) event.preventDefault();
+      });
+    codeLang: js
+    options:
+      - text: 'Обработчик на `document` по умолчанию пассивный'
+        correct: true
+        why: 'Пассивный обработчик обещает не отменять прокрутку, и браузер прокручивает, не дожидаясь JS. Нужно явно указать `{ passive: false }`.'
+      - text: '`preventDefault` не работает для событий касания, только для мыши'
+        why: '`preventDefault` работает для касаний, если обработчик не пассивный. Например, так реализуют перетаскивание на мобильных.'
+      - text: 'Нужно вызвать `stopPropagation`, иначе прокрутка срабатывает на предках'
+        why: 'Прокрутка — действие браузера по умолчанию, а не обработчик предков. Остановка всплытия её не отменит.'
+      - text: 'Обработчик срабатывает уже после прокрутки, так как это макрозадача'
+        why: 'Обработчик мог бы отменить прокрутку, если бы не был пассивным. Дело не в очереди задач.'
+    explanation: |
+      Чтобы прокрутка была плавной, браузер хочет прокручивать сразу, не ожидая обработчиков `touchstart`,
+      `touchmove` и `wheel` — вдруг они вызовут `preventDefault`. Флаг `{ passive: true }` — обещание не отменять
+      действие. Chrome (для касаний с версии 56, для `wheel` — с 73) и Firefox делают такие обработчики на `window`,
+      `document` и `body` пассивными по умолчанию, поэтому `preventDefault` в них игнорируется с предупреждением. Для жестов и
+      кастомного перетаскивания нужно явно `{ passive: false }`, а лучше — CSS `touch-action: none` на элементе.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener#using_passive_listeners
+    source: own
+
+  - id: javascript-dom-events-008
+    level: middle
+    tags: [removeEventListener, bind, no-run]
+    question: |
+      Почему обработчик не удаляется?
+    code: |
+      class Modal {
+        open() {
+          document.addEventListener('keydown', this.onKey.bind(this));
+        }
+        close() {
+          document.removeEventListener('keydown', this.onKey.bind(this));
+        }
+        onKey(event) { /* ... */ }
+      }
+    codeLang: js
+    options:
+      - text: '`bind` каждый раз создаёт новую функцию'
+        correct: true
+        why: '`removeEventListener` ищет точно такую же функцию по ссылке. Два вызова `bind` дают две разные функции.'
+      - text: '`removeEventListener` не работает для событий клавиатуры'
+        why: 'Удаление работает для любых событий, если передать ту же функцию и те же опции `capture`.'
+      - text: 'Обработчики на `document` можно удалить только перезагрузкой страницы'
+        why: 'С `document` обработчики удаляются как с любого элемента.'
+      - text: 'Нужно передать в `removeEventListener` строку с именем метода'
+        why: 'Метод принимает ссылку на функцию, а не её имя.'
+    explanation: |
+      `removeEventListener(type, listener, options)` удаляет обработчик, совпадающий по типу события, ссылке на
+      функцию и флагу `capture`. Анонимная функция или новый результат `bind` — это другая ссылка, и удаление молча
+      ничего не делает: обработчик остаётся, держит в памяти модалку и продолжает реагировать на клавиши. Решения:
+      сохранить привязанную функцию в поле (`this.handleKey = this.onKey.bind(this)`), использовать поле-стрелку
+      или `AbortController`: `addEventListener('keydown', fn, { signal })` и затем `controller.abort()` снимает все
+      обработчики разом.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/removeEventListener#matching_event_listeners_for_removal
+    source: own
+
+  - id: javascript-dom-events-009
+    level: middle
+    tags: [focus, focusin, delegation, no-run]
+    question: |
+      Нужно подсвечивать форму, когда фокус находится в любом её поле. Почему этот код не работает, и что
+      поможет?
+    code: |
+      form.addEventListener('focus', () => form.classList.add('active'));
+      form.addEventListener('blur', () => form.classList.remove('active'));
+    codeLang: js
+    options:
+      - text: '`focus` и `blur` не всплывают; нужны всплывающие `focusin` и `focusout`'
+        correct: true
+        why: 'Фокус получает поле, а не форма, и событие `focus` до формы не дойдёт. `focusin` и `focusout` — те же события, но всплывающие.'
+      - text: 'Форма не может получить фокус, нужно добавить ей `tabindex="0"`'
+        why: 'Форма станет фокусируемой сама по себе, но при фокусе на её поле событие у формы всё равно не сработает.'
+      - text: 'Нужно передать `{ once: true }`, иначе обработчики конфликтуют'
+        why: '`once` удаляет обработчик после первого срабатывания и только ухудшит ситуацию.'
+      - text: '`classList` нельзя менять внутри обработчиков фокуса'
+        why: 'Ограничений на изменение классов в обработчиках нет.'
+    explanation: |
+      `focus` и `blur` исторически не всплывают, поэтому делегирование через них не работает. Варианты:
+      всплывающие `focusin`/`focusout`, или `focus` с `{ capture: true }` — перехват работает и для невсплывающих
+      событий. Для чистой подсветки JS вообще не нужен: CSS-псевдокласс `:focus-within` срабатывает у предка,
+      если фокус где-то внутри. Похожая пара — `mouseenter`/`mouseleave` (не всплывают) и
+      `mouseover`/`mouseout` (всплывают).
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Element/focusin_event
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/:focus-within
+    source: own
+
+  - id: javascript-dom-events-010
+    level: senior
+    tags: [live-collection, htmlcollection, no-run]
+    question: |
+      На странице 4 элемента с классом `item`. Сколько из них останутся с этим классом после цикла?
+    code: |
+      const items = document.getElementsByClassName('item');
+      for (let i = 0; i < items.length; i++) {
+        items[i].classList.remove('item');
+      }
+    codeLang: js
+    options:
+      - text: 'Ни одного'
+        why: 'Так было бы со статическим списком из `querySelectorAll`. Здесь коллекция «живая» и сжимается прямо во время цикла.'
+      - text: 'Два'
+        correct: true
+        why: '`getElementsByClassName` возвращает живую коллекцию. После удаления класса элемент исчезает из неё, индексы сдвигаются, и цикл перескакивает через каждый второй элемент.'
+      - text: 'Четыре: изменения применятся только после цикла'
+        why: 'Класс удаляется сразу, и живая коллекция обновляется немедленно.'
+      - text: 'Один'
+        why: 'Посчитайте шаги: i = 0 удаляет первый, коллекция сжимается до 3; i = 1 удаляет бывший третий, коллекция — 2; i = 2 — цикл заканчивается. Останутся два.'
+    explanation: |
+      DOM-коллекции бывают живыми и статическими. `getElementsByClassName`, `getElementsByTagName`, `children`,
+      `form.elements` — живые `HTMLCollection`: они отражают текущее состояние DOM при каждом обращении. Если
+      цикл меняет то, по чему отбирались элементы, коллекция сжимается под ним. `querySelectorAll` возвращает
+      статический `NodeList` — снимок на момент вызова. Безопасные варианты: обходить живую коллекцию с конца,
+      превратить её в массив (`[...items]`) или использовать `querySelectorAll`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/HTMLCollection
+    source: own
+
+  - id: javascript-dom-events-011
+    level: middle
+    tags: [innerHTML, textContent, xss]
+    question: |
+      Нужно вывести имя пользователя, пришедшее с сервера. Почему `el.innerHTML = name` хуже, чем
+      `el.textContent = name`?
+    options:
+      - text: '`innerHTML` разбирает строку как HTML и выполнит обработчики'
+        correct: true
+        why: 'Имя вроде `<img src=x onerror="steal()">` превратится в элемент, и обработчик выполнится. `textContent` вставляет текст как есть, без разбора.'
+      - text: '`innerHTML` не поддерживает кириллицу'
+        why: 'Кодировка не связана с выбором свойства, оба свойства работают с любыми символами.'
+      - text: '`textContent` работает асинхронно и не блокирует страницу'
+        why: 'Оба свойства синхронные. Разница в том, разбирается ли строка как HTML.'
+      - text: 'Разницы нет, `innerHTML` просто устарел'
+        why: '`innerHTML` не устарел, но вставлять через него непроверенные данные опасно.'
+    explanation: |
+      `innerHTML` запускает HTML-парсер: строка превращается в элементы, а атрибуты-обработчики вроде `onerror`
+      выполнятся. Если строка пришла от пользователя или с сервера без экранирования, это классическая XSS. Кроме
+      того, присваивание `innerHTML` пересоздаёт всё содержимое: теряются обработчики и состояние полей.
+      `textContent` (и `innerText`, который учитывает CSS) вставляют чистый текст. Если HTML всё-таки нужен,
+      его очищают санитайзером, а фреймворки экранируют текст по умолчанию.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML#security_considerations
+    source: own

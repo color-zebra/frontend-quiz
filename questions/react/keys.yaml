@@ -1,0 +1,309 @@
+# yaml-language-server: $schema=../../schema.json
+topic: react
+subtopic: keys
+questions:
+  - id: react-keys-001
+    level: junior
+    tags: [keys, lists]
+    question: |
+      Зачем элементам списка, созданным через `map`, нужен проп `key`?
+    options:
+      - text: 'Чтобы React сопоставлял элементы между рендерами'
+        correct: true
+        why: 'По ключу React понимает, какой элемент списка какому соответствовал в прошлом рендере: какой добавлен, удалён или переставлен. Так сохраняется состояние и DOM-узлы нужных элементов.'
+      - text: 'Чтобы задать порядок сортировки элементов'
+        why: 'Порядок определяет массив. Ключ только связывает элементы между рендерами и на порядок не влияет.'
+      - text: 'Чтобы у элемента появился атрибут `id` в DOM'
+        why: '`key` не попадает ни в DOM, ни в пропсы компонента. Это служебная информация для React.'
+      - text: 'Чтобы ускорить самый первый рендер списка'
+        why: 'При первом рендере сравнивать не с чем. Ключи нужны при обновлениях, когда список меняется.'
+    explanation: |
+      При обновлении React сравнивает новые дочерние элементы со старыми. Без ключей он сопоставляет их по
+      позиции: первый с первым, второй со вторым. Если элемент вставили в начало, все последующие
+      «сдвинутся», и React обновит каждый вместо одной вставки, а состояние окажется не у тех элементов. С
+      ключами React находит соответствие по идентичности. Ключ должен быть стабильным и уникальным среди
+      соседей: обычно это id из данных.
+    links:
+      - https://react.dev/learn/rendering-lists#keeping-list-items-in-order-with-key
+    source: own
+
+  - id: react-keys-002
+    level: middle
+    tags: [keys, index-as-key, state]
+    question: |
+      У каждого `Item` своё состояние `checked`: оно `true` только у `B` при монтировании. Что будет в списках
+      после клика по кнопке `add`?
+    code: |
+      function Item({ label }) {
+        const [checked] = useState(label === 'B');
+        return <li>{label}:{checked ? 'x' : '-'}</li>;
+      }
+
+      function App() {
+        const [items, setItems] = useState(['A', 'B']);
+        return (
+          <>
+            <button onClick={() => setItems(['C', ...items])}>add</button>
+            <ul>{items.map((label, index) => <Item key={index} label={label} />)}</ul>
+            <ol>{items.map((label) => <Item key={label} label={label} />)}</ol>
+          </>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`<ul>`: `C:- A:x B:x`, `<ol>`: `C:- A:- B:x`'
+        correct: true
+        why: 'С ключом-индексом React связывает состояние с позицией. `C` занимает позицию 0 и получает состояние бывшего `A`, `A` — состояние бывшего `B`, а `B` на новой позиции 2 создаётся заново. С ключом по значению состояние следует за элементом.'
+      - text: 'В обоих списках `C:- A:- B:x`'
+        why: 'В списке с ключами-индексами состояние привязано к позициям: после вставки в начало оно сдвигается на соседние элементы.'
+      - text: '`<ul>`: `C:x A:- B:x`, `<ol>`: `C:- A:- B:x`'
+        why: 'На позицию 0 переходит состояние бывшего элемента 0, то есть `A` с `-`, а не `B`.'
+      - text: 'В обоих списках `C:- A:x B:x`'
+        why: 'С ключом по значению React узнаёт `A` и `B` на новых местах и сохраняет их собственное состояние.'
+    explanation: |
+      Индекс в роли ключа — то же самое, что отсутствие ключа: React сопоставляет элементы по позициям. Пока
+      список только дополняется в конец и не переставляется, это работает. Но при вставке в начало,
+      удалении из середины или сортировке состояние (чекбоксы, введённый текст, раскрытость) остаётся на
+      прежних позициях и оказывается у других элементов. Ошибку трудно заметить, если у элементов нет своего
+      состояния. Правило: ключ — стабильный идентификатор сущности, а не позиция.
+    links:
+      - https://react.dev/learn/rendering-lists#why-does-react-need-keys
+    source: own
+
+  - id: react-keys-003
+    level: middle
+    tags: [keys, reset-state, output]
+    question: |
+      Оба счётчика накликали до `A:3`, затем нажали `switch`. Что покажут счётчики?
+    code: |
+      function Counter({ label }) {
+        const [count, setCount] = useState(0);
+        return <button onClick={() => setCount(count + 1)}>{label}:{count}</button>;
+      }
+
+      function App() {
+        const [user, setUser] = useState('A');
+        return (
+          <>
+            <button onClick={() => setUser('B')}>switch</button>
+            <Counter label={user} />
+            <Counter key={user} label={user} />
+          </>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`B:3` и `B:0`'
+        correct: true
+        why: 'Первый счётчик остался тем же компонентом на той же позиции, React обновил проп и сохранил состояние. У второго сменился ключ, и React создал новый экземпляр с начальным состоянием.'
+      - text: '`B:0` и `B:0`'
+        why: 'Смена пропса не сбрасывает состояние: экземпляр тот же, пока тип и позиция не изменились.'
+      - text: '`B:3` и `B:3`'
+        why: 'Новый `key` для React означает другой компонент. Старый размонтируется вместе с состоянием.'
+      - text: '`A:3` и `B:0`'
+        why: 'Проп `label` обновился, и первый счётчик показывает новое имя, но с прежним числом.'
+    explanation: |
+      Состояние принадлежит позиции в дереве, а не пропсам. Пока на месте тот же тип компонента, React
+      сохраняет состояние, даже если пропсы совсем другие. Это частая ошибка в формах: переключились на другого
+      пользователя, а в полях остались чужие данные. Ключ меняет идентичность: `<Form key={userId} />` при смене
+      `userId` размонтирует старую форму и смонтирует новую. Это проще и надёжнее, чем сбрасывать состояние
+      эффектом, который ещё и вызывает лишний рендер.
+    links:
+      - https://react.dev/learn/preserving-and-resetting-state#option-2-resetting-state-with-a-key
+    source: own
+
+  - id: react-keys-004
+    level: senior
+    tags: [reconciliation, fragment, position, output]
+    question: |
+      Что выведется в консоль после клика?
+    code: |
+      function Counter({ name }) {
+        useState(() => {
+          console.log('init', name);
+          return 0;
+        });
+        useEffect(() => () => console.log('unmount', name), []);
+        return <span>{name}</span>;
+      }
+
+      function App() {
+        const [show, setShow] = useState(false);
+        return (
+          <div>
+            <button onClick={() => setShow(true)}>show</button>
+            {show
+              ? <><Counter name="banner" /><Counter name="main" /></>
+              : <Counter name="main" />}
+          </div>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`init banner`, `init main`, `unmount main`'
+        correct: true
+        why: 'На позиции, где стоял `Counter`, теперь фрагмент: другой тип, и старый `main` уничтожается. Новые компоненты инициализируются в фазе рендера, а очистка старого выполняется позже, при коммите.'
+      - text: '`init banner`'
+        why: '`main` не сохранится: он оказался внутри фрагмента, то есть на другом уровне дерева, и React его не узнаёт.'
+      - text: '`unmount main`, `init banner`, `init main`'
+        why: 'Инициализатор состояния вызывается во время рендера нового дерева, а очистка эффектов удалённого компонента — в коммите, после рендера.'
+      - text: '`init banner`, `unmount main`'
+        why: 'Новый `main` во фрагменте — новый экземпляр, его инициализатор тоже вызывается.'
+    explanation: |
+      Позиция в дереве — это путь от корня по типам и индексам. `<Counter />` и фрагмент `<>...</>` — разные
+      типы на одной позиции, поэтому всё содержимое пересоздаётся, хотя `main` визуально остался. Порядок
+      логов показывает фазы. Сначала рендер нового дерева: вызываются компоненты и инициализаторы. Затем
+      коммит: очистки удалённых компонентов, вставка DOM, эффекты новых. Поэтому инициализация новых
+      компонентов в логах всегда идёт раньше очистки старых.
+    links:
+      - https://react.dev/learn/preserving-and-resetting-state#same-component-at-the-same-position-preserves-state
+    source: own
+
+  - id: react-keys-005
+    level: middle
+    tags: [reconciliation, conditional-rendering, output]
+    question: |
+      Что выведется в консоль после клика?
+    code: |
+      function Counter({ name }) {
+        useState(() => {
+          console.log('init', name);
+          return 0;
+        });
+        useEffect(() => () => console.log('unmount', name), []);
+        return <span>{name}</span>;
+      }
+
+      function App() {
+        const [show, setShow] = useState(false);
+        return (
+          <div>
+            <button onClick={() => setShow(true)}>show</button>
+            {show && <Counter name="banner" />}
+            <Counter name="main" />
+          </div>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`init banner`'
+        correct: true
+        why: 'Выражение `{show && ...}` занимает свою позицию среди детей `div` всегда: при `false` там пустое место. Поэтому `main` остаётся третьим ребёнком, React узнаёт его и сохраняет.'
+      - text: '`init banner`, `init main`, `unmount main`'
+        why: 'Позиция `main` не сдвигается: `false` в JSX тоже занимает слот, просто ничего не рисует.'
+      - text: '`init banner`, `init main`'
+        why: '`main` не создаётся заново: он на прежней позиции и того же типа.'
+      - text: 'Ничего'
+        why: 'Появившийся `banner` — новый компонент, его инициализатор вызывается.'
+    explanation: |
+      React сопоставляет детей по позициям в массиве детей. Условное выражение `{cond && <X />}` даёт либо
+      элемент, либо `false`, но позиция в массиве есть всегда. Поэтому соседние компоненты не сдвигаются и
+      сохраняют состояние. Именно поэтому условный рендер «на месте» безопаснее, чем выбор между двумя
+      разными структурами через тернарный оператор. Если нужно, чтобы компонент сохранялся независимо от
+      структуры, ему дают явный `key`.
+    links:
+      - https://react.dev/learn/preserving-and-resetting-state
+    source: own
+
+  - id: react-keys-006
+    level: junior
+    tags: [keys, props, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function Item(props) {
+        console.log('key prop', props.key, props.id);
+        return null;
+      }
+
+      function App() {
+        return [1].map((id) => <Item key={id} id={id} />);
+      }
+    codeLang: jsx
+    options:
+      - text: '`key prop undefined 1`'
+        correct: true
+        why: '`key` — служебный атрибут: React забирает его себе и не передаёт в пропсы. Нужное значение передают отдельным пропом, как здесь `id`.'
+      - text: '`key prop 1 1`'
+        why: '`key` не попадает в `props`. В режиме разработки React ещё и предупреждает, что его чтение вернёт `undefined`.'
+      - text: '`key prop undefined undefined`'
+        why: 'Обычный проп `id` передаётся как есть, поэтому `props.id` равен 1.'
+      - text: 'Ошибка: читать `props.key` запрещено'
+        why: 'Ошибки нет, только предупреждение в разработке. Значение будет `undefined`.'
+    explanation: |
+      `key` используется React для сопоставления элементов и не входит в пропсы.
+      Если компоненту нужен тот же идентификатор, его передают отдельно: `<Item key={id} id={id} />`. Ключ
+      ставится на элемент внутри `map`, а не внутри самого компонента: компонент свой ключ не видит.
+    links:
+      - https://react.dev/learn/rendering-lists#rules-of-keys
+    source: own
+
+  - id: react-keys-007
+    level: junior
+    tags: [keys, uniqueness]
+    question: |
+      Где ключи должны быть уникальными?
+    options:
+      - text: 'Среди соседних элементов одного списка'
+        correct: true
+        why: 'React сравнивает ключи только среди детей одного родителя. В разных списках одинаковые ключи допустимы.'
+      - text: 'Во всём приложении'
+        why: 'Глобальная уникальность не нужна: ключ сопоставляется только с ключами соседей.'
+      - text: 'Во всём компоненте, включая вложенные списки'
+        why: 'Вложенный список — дети другого родителя, его ключи с внешними не сравниваются.'
+      - text: 'Между всеми рендерами за всю жизнь приложения'
+        why: 'Ключ, наоборот, должен совпадать между рендерами для одного и того же элемента, чтобы React его узнавал.'
+    explanation: |
+      Ключ должен быть уникальным среди соседей и стабильным между рендерами. Если два соседа получат одинаковый
+      ключ, React выведет предупреждение и может спутать элементы: дублировать или потерять их при обновлении.
+      Ключи из базы данных подходят идеально. Для локально созданных записей id генерируют при создании записи
+      (`crypto.randomUUID()`), а не при рендере.
+    links:
+      - https://react.dev/learn/rendering-lists#rules-of-keys
+    source: own
+
+  - id: react-keys-008
+    level: middle
+    tags: [keys, random-key, output]
+    question: |
+      Что выведется в консоль после клика?
+    code: |
+      function Row({ id }) {
+        useEffect(() => {
+          console.log('mount', id);
+          return () => console.log('unmount', id);
+        }, []);
+        return <li>{id}</li>;
+      }
+
+      function App() {
+        const [n, setN] = useState(0);
+        return (
+          <>
+            <button onClick={() => setN(n + 1)}>+</button>
+            <ul>
+              {[1, 2].map((id) => <Row key={Math.random()} id={id} />)}
+            </ul>
+          </>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`unmount 1`, `unmount 2`, `mount 1`, `mount 2`'
+        correct: true
+        why: 'При каждом рендере ключи новые, и React не находит соответствия ни одному прошлому элементу. Все строки размонтируются и монтируются заново, теряя состояние и DOM-узлы.'
+      - text: 'Ничего: данные строк не изменились'
+        why: 'React сопоставляет элементы по ключам, а не по данным. Новые случайные ключи означают новые элементы.'
+      - text: '`mount 1`, `mount 2`'
+        why: 'Прежде чем монтировать новые элементы, React удаляет старые, и их очистки выполняются.'
+      - text: '`mount 1`, `unmount 1`, `mount 2`, `unmount 2`'
+        why: 'Сначала выполняются очистки всех удалённых элементов, затем эффекты всех новых.'
+    explanation: |
+      Случайный ключ (`Math.random()`, `crypto.randomUUID()` прямо в рендере) хуже индекса: он гарантирует,
+      что элементы никогда не совпадут. Каждый рендер родителя пересоздаёт весь список. Это медленно,
+      сбрасывает фокус и введённый текст, перезапускает эффекты и анимации появления. Ключ должен быть свойством
+      данных, а не результатом рендера. Если у данных нет id, его генерируют один раз при создании или
+      загрузке записи.
+    links:
+      - https://react.dev/learn/rendering-lists#rules-of-keys
+    source: own

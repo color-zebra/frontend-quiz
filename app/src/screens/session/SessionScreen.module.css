@@ -1,0 +1,39 @@
+.progressBox {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.count {
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.track {
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--track);
+}
+
+.track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary-bg);
+  transition: width 0.3s;
+}
+
+.spacer {
+  width: 42px;
+  flex: none;
+}
+
+.hasNote {
+  border-color: var(--accent);
+  color: var(--accent);
+}

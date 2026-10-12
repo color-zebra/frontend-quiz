@@ -1,0 +1,175 @@
+# Справочник тем и подтем. id подтемы = имя файла в questions/<topic>/<subtopic>.yaml
+topics:
+  - id: html
+    title: HTML
+    subtopics:
+      - id: document
+        title: Документ, head и парсинг
+      - id: loading
+        title: Загрузка скриптов и ресурсов
+      - id: semantics
+        title: Семантика и встроенные элементы
+      - id: attributes
+        title: Атрибуты и связь с DOM
+      - id: forms
+        title: Формы
+      - id: accessibility
+        title: Доступность (a11y)
+      - id: media
+        title: Изображения, видео, iframe
+
+  - id: css
+    title: CSS и SCSS
+    subtopics:
+      - id: cascade
+        title: Каскад, специфичность, наследование
+      - id: box-model
+        title: Блочная модель и отступы
+      - id: flexbox
+        title: Flexbox
+      - id: grid
+        title: Grid
+      - id: positioning
+        title: Позиционирование и наложение (z-index)
+      - id: units
+        title: Единицы и адаптивность
+      - id: selectors
+        title: Селекторы, псевдоклассы и псевдоэлементы
+      - id: rendering
+        title: Отрисовка, анимации и производительность
+      - id: modern
+        title: Custom properties и современный CSS
+      - id: scss
+        title: SCSS
+
+  - id: javascript
+    title: JavaScript
+    subtopics:
+      - id: types
+        title: Типы, приведение и сравнение
+      - id: scope
+        title: Области видимости, hoisting, TDZ
+      - id: closures
+        title: Замыкания
+      - id: this
+        title: this, call, apply, bind
+      - id: prototypes
+        title: Прототипы и наследование
+      - id: classes
+        title: Классы
+      - id: event-loop
+        title: Event loop, задачи и микрозадачи
+      - id: promises
+        title: Промисы
+      - id: async-await
+        title: async/await и асинхронные паттерны
+      - id: objects
+        title: Объекты, дескрипторы, копирование, Proxy
+      - id: arrays
+        title: Массивы, Map и Set
+      - id: functions
+        title: Функции и параметры
+      - id: modules
+        title: Модули ESM и CommonJS
+      - id: dom-events
+        title: DOM и события
+      - id: memory
+        title: Память и сборка мусора
+      - id: errors
+        title: Ошибки и исключения
+      - id: generators
+        title: Итераторы и генераторы
+      - id: strings
+        title: Строки, Unicode и регулярные выражения
+
+  - id: typescript
+    title: TypeScript
+    subtopics:
+      - id: basics
+        title: Типы и вывод типов
+      - id: structural
+        title: Структурная типизация и совместимость
+      - id: narrowing
+        title: Объединения и сужение типов
+      - id: objects
+        title: Интерфейсы, type и объектные типы
+      - id: functions
+        title: Функции и перегрузки
+      - id: generics
+        title: Дженерики
+      - id: utility
+        title: Встроенные утилитные типы
+      - id: advanced
+        title: Условные, mapped и template literal типы
+      - id: classes
+        title: Классы в TypeScript
+      - id: runtime
+        title: TypeScript и рантайм — стирание типов, enum
+      - id: config
+        title: tsconfig, .d.ts и сборка
+
+  - id: react
+    title: React
+    subtopics:
+      - id: rendering
+        title: Рендер, коммит и reconciliation
+      - id: state
+        title: Состояние, обновления и батчинг
+      - id: effects
+        title: Эффекты и порядок их выполнения
+      - id: refs
+        title: Рефы и работа с DOM
+      - id: memo
+        title: Мемоизация и лишние рендеры
+      - id: context
+        title: Контекст
+      - id: keys
+        title: Списки, ключи и сохранение состояния
+      - id: hooks
+        title: Правила хуков и кастомные хуки
+      - id: events
+        title: События и порталы
+      - id: forms
+        title: Формы и Actions
+      - id: concurrent
+        title: Переходы, Suspense и границы ошибок
+      - id: typescript
+        title: React и TypeScript
+
+  - id: network
+    title: Сети в браузере
+    subtopics:
+      - id: http
+        title: HTTP — методы, статусы, заголовки
+      - id: transport
+        title: Соединение — DNS, TLS, HTTP/2 и HTTP/3
+      - id: cors
+        title: Same-origin policy и CORS
+      - id: cookies
+        title: Cookies и хранилища браузера
+      - id: caching
+        title: HTTP-кэширование
+      - id: security
+        title: Безопасность — XSS, CSRF, CSP
+      - id: api
+        title: Работа с API — REST, GraphQL, WebSocket, повторы
+
+  - id: nextjs
+    title: Next.js
+    subtopics:
+      - id: routing
+        title: App Router — файлы и маршруты
+      - id: components
+        title: Server и Client Components
+      - id: rendering
+        title: Статический и динамический рендеринг, стриминг
+      - id: caching
+        title: Кэширование и ревалидация
+      - id: actions
+        title: Server Actions и Route Handlers
+      - id: navigation
+        title: Навигация, proxy и ошибки
+      - id: optimization
+        title: Изображения, шрифты, метаданные, env
+      - id: pages
+        title: Pages Router — основы

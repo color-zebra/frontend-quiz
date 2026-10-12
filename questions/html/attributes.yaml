@@ -1,0 +1,240 @@
+# yaml-language-server: $schema=../../schema.json
+topic: html
+subtopic: attributes
+questions:
+  - id: html-attributes-001
+    level: junior
+    tags: [data-attributes, dataset]
+    question: |
+      В переменной `buy` лежит эта кнопка. Как прочитать значение атрибута через `dataset`?
+    code: |
+      <button id="buy" data-product-id="42">Купить</button>
+    codeLang: html
+    options:
+      - text: '`buy.dataset["product-id"]`'
+        why: 'В `dataset` ключи хранятся в camelCase. Обращение с дефисом вернёт `undefined`.'
+      - text: '`buy.dataset.productId`'
+        correct: true
+        why: 'Имя после `data-` переводится в camelCase: дефис убирается, следующая буква становится заглавной.'
+      - text: '`buy.dataset.dataProductId`'
+        why: 'Префикс `data-` в ключ не входит.'
+      - text: '`buy.data.productId`'
+        why: 'Свойства `data` у элементов нет. Data-атрибуты доступны через `dataset` или `getAttribute("data-product-id")`.'
+    explanation: |
+      Атрибуты `data-*` — официальный способ хранить свои данные в разметке. В JS они доступны через
+      объект `element.dataset` по правилу: `data-` отбрасывается, а kebab-case превращается в camelCase
+      (`data-product-id` → `productId`). Значения всегда строки: `dataset.productId` вернёт `"42"`, а не
+      число. Запись `el.dataset.isOpen = true` создаст атрибут `data-is-open="true"`. В CSS к ним
+      обращаются селектором `[data-product-id="42"]` или функцией `attr()`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/dataset
+    source: own
+
+  - id: html-attributes-002
+    level: middle
+    tags: [boolean-attributes]
+    question: |
+      Будет ли поле заблокировано?
+    code: |
+      <input name="email" disabled="false">
+    codeLang: html
+    options:
+      - text: 'Нет: значение `false` выключает атрибут'
+        why: 'Логические атрибуты HTML не читают значение. Важно только, есть атрибут или нет.'
+      - text: 'Да, важно только присутствие атрибута'
+        correct: true
+        why: '`disabled="false"`, `disabled=""` и просто `disabled` значат одно и то же. Чтобы снять блокировку, атрибут нужно удалить.'
+      - text: 'Зависит от браузера: Chrome заблокирует, Firefox — нет'
+        why: 'Поведение логических атрибутов строго описано в спецификации и одинаково во всех браузерах.'
+      - text: 'Нет, а валидатор покажет ошибку значения'
+        why: 'Валидатор действительно поругается на недопустимое значение, но поле всё равно будет заблокировано.'
+    explanation: |
+      У логических (boolean) атрибутов — `disabled`, `checked`, `required`, `hidden`, `readonly`
+      и других — значение определяется наличием атрибута. Допустимые записи — пустая строка или имя самого
+      атрибута, но браузер заблокирует поле при любом значении. Из JS правильно управлять ими через
+      свойство (`input.disabled = false`) или `removeAttribute('disabled')`. Ловушка встречается в шаблонах и
+      старом jQuery-коде: `setAttribute('disabled', false)` поле не разблокирует. А вот `aria-hidden="false"` и
+      `contenteditable="false"` работают как ожидается: это перечисляемые атрибуты, а не логические.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Glossary/Boolean/HTML
+    source: own
+
+  - id: html-attributes-003
+    level: middle
+    tags: [hidden, css, display]
+    question: |
+      Будет ли видна строка на странице?
+    code: |
+      <style>
+        .row { display: flex; }
+      </style>
+      <div class="row" hidden>Секретная строка</div>
+    codeLang: html
+    options:
+      - text: 'Нет: атрибут `hidden` всегда сильнее CSS'
+        why: 'Атрибут `hidden` работает через обычное CSS-правило браузера, которое перебивается любым авторским стилем.'
+      - text: 'Да: авторский `display: flex` перекрывает скрытие'
+        correct: true
+        why: '`hidden` реализован стилем браузера `[hidden] { display: none }`, а авторские стили в каскаде сильнее стилей браузера.'
+      - text: 'Нет, потому что `hidden` стоит в теге после `class`'
+        why: 'Порядок атрибутов в теге ни на что не влияет.'
+      - text: 'Будет видна только для скринридеров, но не на экране'
+        why: 'Элемент будет виден всем. Если бы `hidden` сработал, он скрыл бы элемент и для скринридеров тоже.'
+    explanation: |
+      Браузер реализует атрибут `hidden` правилом в своей таблице стилей: `[hidden] { display: none }`.
+      Стили браузера стоят в каскаде ниже авторских, поэтому любой `display` в вашем CSS перебивает скрытие.
+      Типичный баг: компонент с `display: flex` не скрывается атрибутом `hidden`. Лечится глобальным правилом
+      `[hidden] { display: none !important; }`, которое есть во многих reset-стилях. Ещё есть значение
+      `hidden="until-found"`: контент скрыт, но находится поиском по странице и раскрывается при совпадении.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/hidden
+    source: own
+
+  - id: html-attributes-004
+    level: middle
+    tags: [attribute-vs-property, dom]
+    question: |
+      Пользователь стёр текст в поле и ввёл «Пётр». Что вернут `input.getAttribute('value')` и `input.value`?
+    code: |
+      <input id="first-name" value="Иван">
+      <script>
+        const input = document.getElementById('first-name');
+      </script>
+    codeLang: html
+    options:
+      - text: 'Оба вернут строку «Пётр»'
+        why: 'Ввод пользователя меняет свойство `value`, но не атрибут. Атрибут остаётся таким, каким был в разметке.'
+      - text: '«Иван» и «Пётр»'
+        correct: true
+        why: 'Атрибут `value` задаёт только начальное значение (свойство `defaultValue`), а свойство `value` — текущее.'
+      - text: 'Оба вернут строку «Иван»'
+        why: 'Свойство `value` отражает текущее содержимое поля, а значит, вернёт введённый текст.'
+      - text: '`null` и «Пётр»'
+        why: 'Атрибут есть в разметке, поэтому `getAttribute` вернёт его значение, а не `null`.'
+    explanation: |
+      Атрибуты живут в HTML, свойства — в объекте DOM. Многие свойства просто отражают атрибуты (`id`,
+      `href`, `className`), но у полей формы связь хитрее: атрибут `value` соответствует свойству
+      `defaultValue` — начальному значению, к которому поле вернётся при `form.reset()`. Текущее значение
+      живёт только в свойстве `value`. То же с `checked` у чекбокса: атрибут — начальное состояние,
+      свойство — текущее. Отсюда правило: читать и менять состояние формы через свойства.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes#content_versus_idl_attributes
+      - https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement#defaultvalue
+    source: own
+
+  - id: html-attributes-005
+    level: junior
+    tags: [tabindex, focus, a11y]
+    question: |
+      Что означает `tabindex="-1"` на элементе?
+    options:
+      - text: 'Элемент нельзя сфокусировать никаким способом'
+        why: 'Наоборот: `-1` делает элемент фокусируемым программно, через `element.focus()`.'
+      - text: 'Фокус только из JavaScript, без обхода клавишей Tab'
+        correct: true
+        why: 'Элемент фокусируется через `focus()`, но не попадает в последовательность Tab. Так делают с заголовком модалки или блоком ошибки, куда переводят фокус скриптом.'
+      - text: 'Элемент получает фокус последним при обходе клавишей Tab'
+        why: 'Отрицательный `tabindex` исключает элемент из обхода, а не переносит в конец.'
+      - text: 'Элемент получает фокус первым при обходе клавишей Tab'
+        why: 'Первыми идут элементы с положительным `tabindex`, и это антипаттерн. `-1` из обхода исключает.'
+    explanation: |
+      Три режима `tabindex`. `0` — элемент фокусируемый и стоит в обходе Tab в порядке документа: так делают
+      фокусируемыми кастомные контролы. `-1` — фокус только программный: для элементов, куда фокус переводят
+      скриптом (заголовок открытого диалога, сообщение об ошибке), и для неактивных пунктов списка при
+      технике roving tabindex. Положительные значения ставят элемент в начало обхода и ломают естественный
+      порядок, поэтому их почти не используют. Нативные кнопки, ссылки и поля фокусируются без `tabindex`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/tabindex
+    source: own
+
+  - id: html-attributes-006
+    level: middle
+    tags: [id, dom]
+    question: |
+      На странице случайно два элемента с `id="price"`. Что вернут эти выражения?
+    code: |
+      document.getElementById('price');
+      document.querySelectorAll('#price').length;
+    codeLang: js
+    options:
+      - text: '`null` и `0`: при дублях браузер считает id недействительным'
+        why: 'Браузер не отбрасывает дубли: разметка с повторяющимися id невалидна, но элементы находятся.'
+      - text: 'Первый элемент в порядке документа и `2`'
+        correct: true
+        why: '`getElementById` возвращает первый подходящий элемент, а селектор `#price` честно находит все совпадения.'
+      - text: 'Последний элемент и `1`: побеждает последний'
+        why: 'Ни один из методов не берёт последний элемент и не обрезает результат до одного.'
+      - text: 'Выбросится исключение о неуникальном id'
+        why: 'DOM-методы не проверяют уникальность и не бросают исключений из-за дублей.'
+    explanation: |
+      Уникальность id — требование спецификации к автору, браузер её не обеспечивает. `getElementById`
+      возвращает первый элемент в порядке дерева, `querySelectorAll('#price')` — все. Дубли опасны не только
+      для скриптов: ломается связь `<label for>` с полем, `aria-labelledby` и якорные ссылки. В компонентных
+      фреймворках дубли возникают, когда компонент с захардкоженным id рендерится дважды. В React для
+      этого есть `useId()`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Document/getElementById
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/id
+    source: own
+
+  - id: html-attributes-007
+    level: senior
+    tags: [id, window, named-access]
+    question: |
+      Что выведет скрипт?
+    code: |
+      <div id="app"></div>
+      <div id="alert"></div>
+      <script>
+        console.log(typeof app, typeof alert);
+      </script>
+    codeLang: html
+    options:
+      - text: '`undefined undefined` — переменные нигде не объявлены'
+        why: 'Браузер сам создаёт глобальные имена для элементов с id, так что `app` найдётся. А `alert` и так есть в `window`.'
+      - text: '`object object` — оба id стали глобальными переменными'
+        why: 'Глобальное имя из id не перекрывает собственные свойства `window`. `alert` останется встроенной функцией.'
+      - text: '`object function`'
+        correct: true
+        why: 'Для id, не совпадающих со свойствами `window`, браузер даёт доступ к элементу по имени. Встроенные свойства важнее.'
+      - text: 'Скрипт упадёт с `ReferenceError` на имени `app`'
+        why: 'Ошибки не будет: `typeof` не бросает исключений даже для необъявленных имён, а `app` к тому же существует.'
+    explanation: |
+      Это named access on the Window object: элемент с `id="app"` доступен как `window.app` и просто `app`.
+      Механизм работает через отдельный объект в цепочке прототипов `window`, поэтому собственные свойства
+      окна (`alert`, `name`, `location`, `top`) и объявленные глобальные переменные имеют приоритет.
+      Пользоваться этим нельзя: код неявно зависит от разметки, а совпадение с встроенным свойством молча
+      ломает доступ. Но знать полезно: так объясняются загадочные глобальные переменные в отладчике и баги
+      вроде «почему `name` — это строка, а не мой input».
+    links:
+      - https://html.spec.whatwg.org/multipage/nav-history-apis.html#named-access-on-the-window-object
+    source: own
+
+  - id: html-attributes-008
+    level: middle
+    tags: [inert, focus, a11y]
+    question: |
+      Что делает атрибут `inert` на контейнере?
+    code: |
+      <main inert>...</main>
+      <div class="drawer">Боковое меню</div>
+    codeLang: html
+    options:
+      - text: 'Скрывает контейнер визуально, как атрибут `hidden`'
+        why: 'Визуально контент остаётся на месте. `inert` меняет только интерактивность и доступность.'
+      - text: 'Отключает клики, фокус и видимость для скринридеров'
+        correct: true
+        why: 'Элементы внутри нельзя кликнуть, сфокусировать Tab-ом, выделить, и они исключены из дерева доступности.'
+      - text: 'Отключает только клики мышью, как `pointer-events: none`'
+        why: '`pointer-events: none` не мешает фокусу с клавиатуры и не скрывает контент от скринридеров. `inert` делает и то и другое.'
+      - text: 'Запрещает JavaScript изменять содержимое контейнера'
+        why: 'Скрипты по-прежнему могут менять DOM внутри. `inert` касается только взаимодействия пользователя.'
+    explanation: |
+      Раньше, чтобы «запереть» пользователя в боковом меню или самописной модалке, приходилось перехватывать
+      Tab, расставлять `aria-hidden` и `tabindex="-1"` по всему фону. Атрибут `inert` делает это одной
+      строкой: поддерево становится неинтерактивным, а его элементы исчезают из дерева доступности. Так же
+      устроен фон у нативного `dialog.showModal()`. Визуально inert-контент никак не меняется, поэтому его
+      обычно дополнительно приглушают стилями.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/inert
+    source: own

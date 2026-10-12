@@ -1,0 +1,358 @@
+# yaml-language-server: $schema=../../schema.json
+topic: react
+subtopic: typescript
+questions:
+  - id: react-typescript-001
+    level: junior
+    tags: [props, typescript]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются?
+    code: |
+      type ButtonProps = { label: string; disabled?: boolean };
+
+      function Button({ label, disabled }: ButtonProps) {
+        return <button disabled={disabled}>{label}</button>;
+      }
+
+      const a = <Button label="OK" />;           // A
+      const b = <Button disabled />;             // B
+      const c = <Button label="OK" size="s" />;  // C
+    codeLang: tsx
+    options:
+      - text: 'B и C'
+        correct: true
+        why: 'JSX-атрибуты проверяются по типу пропсов, как литерал объекта. В B не передан обязательный `label`, в C есть проп `size`, которого нет в `ButtonProps`.'
+      - text: 'Только B'
+        why: 'Лишние атрибуты в JSX тоже ошибка: `size` нет в типе пропсов.'
+      - text: 'Только C'
+        why: '`label` без `?` обязателен, и элемент без него не компилируется.'
+      - text: 'Ни одна'
+        why: 'Компилятор проверяет JSX по типу пропсов компонента: пропущенный обязательный проп и неизвестный проп — ошибки.'
+    explanation: |
+      Пропсы функционального компонента — обычный параметр-объект, и его типизируют как любой параметр: типом
+      или интерфейсом. JSX-элемент `<Button label="OK" />` проверяется как вызов с литералом
+      `{ label: 'OK' }`, поэтому работают и обязательность, и проверка лишних свойств. Необязательные пропсы
+      помечают `?` и задают значения по умолчанию в деструктуризации: `{ disabled = false }`. Для дефолтов не
+      нужен устаревший `defaultProps`.
+    links:
+      - https://react.dev/learn/typescript#typescript-with-react-components
+    source: own
+
+  - id: react-typescript-002
+    level: middle
+    tags: [children, ReactNode, typescript]
+    question: |
+      Какой тип пропа `children` позволит передать в компонент текст, элементы, `null` и массивы?
+    options:
+      - text: '`ReactNode`'
+        correct: true
+        why: '`ReactNode` описывает всё, что React умеет отрендерить: элементы, строки, числа (включая `bigint`), `null`, `undefined`, `boolean`, массивы, порталы, а в типах React 19 и промисы.'
+      - text: '`React.JSX.Element`'
+        why: 'Это тип одного JSX-элемента. Текст (`<Card>Привет</Card>`) или `null` с ним не скомпилируются.'
+      - text: '`ReactElement`'
+        why: '`ReactElement` — объект-элемент. Строки, числа, `null` и массивы под него не подходят.'
+      - text: '`string | HTMLElement`'
+        why: 'React не принимает DOM-узлы как детей. `HTMLElement` здесь не подходит, а элементы JSX не входят в этот тип.'
+    explanation: |
+      Для произвольного содержимого используют `ReactNode`. Более узкие типы нужны, когда компонент
+      рассчитывает на конкретную форму детей: `ReactElement`, если он клонирует ребёнка через `cloneElement`,
+      функция `(state) => ReactNode` для паттерна render props. С типами React 19 глобального пространства
+      имён `JSX` больше нет: вместо `JSX.Element` пишут `React.JSX.Element` или импортируют тип из `react`.
+    links:
+      - https://react.dev/learn/typescript#typing-children
+    source: own
+
+  - id: react-typescript-003
+    level: junior
+    tags: [useState, inference, typescript]
+    question: |
+      Почему этот код не компилируется?
+    code: |
+      import { useState } from 'react';
+
+      function Profile() {
+        const [user, setUser] = useState(null);
+
+        function login() {
+          setUser({ name: 'Ann' });
+        }
+
+        return <button onClick={login}>{user ? 'Выйти' : 'Войти'}</button>;
+      }
+    codeLang: tsx
+    options:
+      - text: 'Тип состояния выведен из `null` как `null`'
+        correct: true
+        why: 'Тип состояния выводится из начального значения. Из `null` получается тип `null`, и никакой объект в такое состояние записать нельзя. Нужно указать тип явно: `useState<User | null>(null)`.'
+      - text: '`useState` нельзя вызывать с `null`'
+        why: '`null` — допустимое начальное значение. Проблема в выведенном типе, а не в значении.'
+      - text: 'Тип состояния выведен из `null` как `any`'
+        why: 'С `any` код бы скомпилировался. В режиме `strict` из `null` выводится именно тип `null`.'
+      - text: 'Сеттер `setUser` нельзя вызывать вне `useEffect`'
+        why: 'Сеттер можно вызывать в обработчиках и любых функциях компонента. Ошибка в типе состояния.'
+    explanation: |
+      `useState` — дженерик: тип состояния он берёт из начального значения. Для `useState(0)` или
+      `useState('')` этого достаточно. Если начальное значение не отражает всех возможных состояний (`null`,
+      пустой массив `[]`, пустой объект), тип указывают явно: `useState<User | null>(null)`,
+      `useState<string[]>([])`. Иначе получится тип `null` или `never[]`, с которым состояние нельзя
+      обновить. То же относится к `useReducer` и `createContext`.
+    links:
+      - https://react.dev/learn/typescript#typing-usestate
+    source: own
+
+  - id: react-typescript-004
+    level: middle
+    tags: [useRef, null, typescript]
+    question: |
+      Что сообщит компилятор?
+    code: |
+      import { useRef } from 'react';
+
+      function Search() {
+        const inputRef = useRef<HTMLInputElement>(null);
+
+        function focus() {
+          inputRef.current.focus();
+        }
+
+        return <input ref={inputRef} onFocus={focus} />;
+      }
+    codeLang: tsx
+    options:
+      - text: 'Ошибку, что `inputRef.current` может быть `null`'
+        correct: true
+        why: 'Тип рефа — `RefObject<HTMLInputElement | null>`: до монтирования и после размонтирования в нём `null`. Нужна проверка: `inputRef.current?.focus()`.'
+      - text: 'Ничего, реф заполнится при монтировании'
+        why: 'Компилятор не знает, когда вызовут `focus`. Тип прямо включает `null`, и его нужно обработать.'
+      - text: 'Ошибку, что `useRef` нельзя типизировать DOM-элементом'
+        why: 'Именно так и типизируют рефы на DOM: параметр типа описывает элемент, к которому реф будет привязан.'
+      - text: 'Ошибку, что начальным значением должен быть `undefined`'
+        why: 'Для рефа на DOM-элемент начальное значение — `null`, так и принято в React.'
+    explanation: |
+      Реф на DOM-элемент создают так: `useRef<HTMLInputElement>(null)`. В типах React 19 получается
+      `RefObject<HTMLInputElement | null>`. `current` изменяем, но может быть `null`: элемента ещё или уже нет.
+      В обработчиках и эффектах используют `?.` или ранний выход. Для рефов-«переменных» (id таймера, счётчик)
+      начальное значение задают явно: `useRef<number>(0)` или `useRef<number | null>(null)`.
+    links:
+      - https://react.dev/reference/react/useRef
+    source: own
+
+  - id: react-typescript-005
+    level: middle
+    tags: [react-19-types, useRef, JSX-namespace]
+    question: |
+      Какая строка перестала компилироваться с типами React 19?
+    code: |
+      import { useRef, useState } from 'react';
+
+      function Timer() {
+        const a = useRef<number>();             // A
+        const b = useRef<HTMLDivElement>(null);  // B
+        const c = useRef(0);                     // C
+        const [d] = useState<string>('');        // D
+        return <div ref={b}>{d}</div>;
+      }
+    codeLang: tsx
+    options:
+      - text: 'A'
+        correct: true
+        why: 'В React 19 у `useRef` обязательный аргумент: вызов без начального значения не компилируется. Пишут `useRef<number>(undefined)` или `useRef<number | null>(null)`.'
+      - text: 'B'
+        why: 'Реф на DOM-элемент с начальным `null` — основной способ, он работает и в React 19.'
+      - text: 'C'
+        why: 'Тип выводится из начального значения `0`, это корректный вызов.'
+      - text: 'D'
+        why: 'Явный тип состояния с начальным значением нужного типа — корректный код.'
+    explanation: |
+      Типы React 19 изменились в нескольких местах. У `useRef` аргумент стал обязательным, и все рефы стали
+      изменяемыми `RefObject<T>`. Раньше были `MutableRefObject` и неизменяемый `RefObject` в зависимости от
+      перегрузки. Глобальное пространство имён `JSX` убрали: используют `React.JSX`. Тип `ReactElement` по
+      умолчанию стал иметь пропсы `unknown` вместо `any`. Для автоматической миграции есть codemod
+      `types-react-codemod`.
+    links:
+      - https://react.dev/blog/2024/04/25/react-19-upgrade-guide#typescript-changes
+    source: own
+
+  - id: react-typescript-006
+    level: middle
+    tags: [events, ChangeEvent, typescript, no-run]
+    question: |
+      Какой тип указать для параметра `e`, если обработчик вынесен в отдельную функцию?
+    code: |
+      function NameField() {
+        function handleChange(e: ???) {
+          console.log(e.target.value);
+        }
+        return <input onChange={handleChange} />;
+      }
+    codeLang: tsx
+    options:
+      - text: '`React.ChangeEvent<HTMLInputElement>`'
+        correct: true
+        why: '`onChange` у `<input>` передаёт синтетическое событие `ChangeEvent`, параметр типа задаёт тип `target`. Тогда `e.target.value` — строка.'
+      - text: '`React.MouseEvent<HTMLInputElement>`'
+        why: '`MouseEvent` — тип событий мыши, вроде `onClick`. У `onChange` другой тип события, и функция с таким параметром не подойдёт.'
+      - text: '`Event`'
+        why: 'Это нативный DOM-тип. React передаёт синтетическое событие, и у `Event` поле `target` не знает про `value`.'
+      - text: 'Нативный `InputEvent`'
+        why: 'Это нативное событие DOM. React-обработчик получает синтетическое событие `ChangeEvent`.'
+    explanation: |
+      Более общий `FormEvent<HTMLInputElement>` `onChange` тоже примет, но у него типизирован только
+      `currentTarget`: `e.target.value` не скомпилируется, придётся писать `e.currentTarget.value`.
+      Если обработчик записан прямо в JSX (`onChange={(e) => ...}`), тип `e` выводится из контекста, и
+      аннотация не нужна. Когда функция вынесена, тип нужно указать: `ChangeEvent<HTMLInputElement>`,
+      `MouseEvent<HTMLButtonElement>`, `FormEvent<HTMLFormElement>`, `KeyboardEvent<HTMLDivElement>`. Есть
+      и готовые типы обработчиков: `ChangeEventHandler<HTMLInputElement>` для всей функции. Быстрый
+      способ узнать тип — навести курсор на `e` во встроенном обработчике.
+    links:
+      - https://react.dev/learn/typescript#typing-dom-events
+    source: own
+
+  - id: react-typescript-007
+    level: senior
+    tags: [generic-components, inference, typescript]
+    question: |
+      Какой тип у параметра `n` в `render`?
+    code: |
+      import type { ReactNode } from 'react';
+
+      type ListProps<T> = {
+        items: T[];
+        render: (item: T) => ReactNode;
+      };
+
+      function List<T>({ items, render }: ListProps<T>) {
+        return <ul>{items.map((item, i) => <li key={i}>{render(item)}</li>)}</ul>;
+      }
+
+      const view = <List items={[1, 2]} render={(n) => n.toFixed(1)} />;
+    codeLang: tsx
+    options:
+      - text: '`number`'
+        correct: true
+        why: 'JSX-элемент дженерик-компонента выводит параметр типа так же, как вызов функции: из `items` получается `T = number`, и `render` типизируется контекстно.'
+      - text: '`unknown`'
+        why: '`T` не остаётся неизвестным: компилятор выводит его из пропа `items`.'
+      - text: '`any`'
+        why: 'Неявного `any` нет: тип `n` выводится из `ListProps<number>`.'
+      - text: '`T`'
+        why: 'Вне компонента `T` подставлен конкретным типом. В месте использования это `number`.'
+    explanation: |
+      Компоненты-дженерики (таблицы, списки, селекты) связывают тип данных и колбэков: передали массив
+      пользователей, и `render` получает `User`. Вывод работает по пропсам, а явно параметр задают так:
+      `<List<User> items={users} ... />`. Если компонент объявлен стрелкой в `.tsx`, пишут `<T,>` или
+      `<T extends unknown>`: просто `<T>` парсер примет за JSX-тег. Обёртки `memo` и `forwardRef` теряют
+      дженерик-параметр, это частая проблема в дизайн-системах. Решение — приведение типа обёрнутого
+      компонента.
+    links:
+      - https://react.dev/learn/typescript#typescript-with-react-components
+      - https://www.typescriptlang.org/docs/handbook/2/generics.html
+    source: own
+
+  - id: react-typescript-008
+    level: senior
+    tags: [discriminated-union, props, typescript]
+    question: |
+      Какая строка, отмеченная буквой, не скомпилируется?
+    code: |
+      type ActionProps =
+        | { as: 'link'; href: string }
+        | { as: 'button'; onClick: () => void };
+
+      function Action(props: ActionProps) {
+        return props.as === 'link'
+          ? <a href={props.href}>go</a>
+          : <button onClick={props.onClick}>go</button>;
+      }
+
+      const a = <Action as="link" href="/home" />;        // A
+      const b = <Action as="button" onClick={() => {}} />; // B
+      const c = <Action as="link" onClick={() => {}} />;   // C
+    codeLang: tsx
+    options:
+      - text: 'C'
+        correct: true
+        why: 'Значение `as="link"` выбирает вариант `{ as: "link"; href: string }`. В нём нет `onClick` и есть обязательный `href`, поэтому комбинация из C не подходит ни под один вариант.'
+      - text: 'B'
+        why: 'Вариант `as: "button"` требует `onClick`, и он передан. Строка B корректна.'
+      - text: 'A'
+        why: 'Для `as="link"` нужен `href`, он передан. Строка A корректна.'
+      - text: 'Ни одна'
+        why: 'Пропсы-объединение не смешиваются: при `as="link"` компилятор проверяет атрибуты по варианту ссылки.'
+    explanation: |
+      Размеченное объединение в пропсах описывает компоненты, у которых набор пропсов зависит от режима:
+      ссылка или кнопка, контролируемый или неконтролируемый, одиночный или множественный выбор. Компилятор
+      проверяет JSX по выбранному варианту, а внутри компонента сужает `props` по дискриминанту. Важно не
+      деструктурировать пропсы в сигнатуре: `({ as, href })` не скомпилируется, потому что `href` есть не во
+      всех вариантах. Сначала нужно проверить `props.as`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions
+    source: own
+
+  - id: react-typescript-009
+    level: middle
+    tags: [ComponentProps, props, typescript]
+    question: |
+      Какая строка, отмеченная буквой, не скомпилируется?
+    code: |
+      import type { ComponentProps } from 'react';
+
+      type ButtonProps = ComponentProps<'button'> & { variant: 'primary' | 'ghost' };
+
+      function Button({ variant, ...rest }: ButtonProps) {
+        return <button data-variant={variant} {...rest} />;
+      }
+
+      const a = <Button variant="primary" onClick={() => {}} disabled />; // A
+      const b = <Button variant="danger" />;                               // B
+      const c = <Button variant="ghost" type="submit" aria-label="Save" />; // C
+    codeLang: tsx
+    options:
+      - text: 'B'
+        correct: true
+        why: '`variant` — объединение `"primary" | "ghost"`, и `"danger"` в него не входит. Остальные атрибуты взяты из `ComponentProps<"button">` и проверены как у обычной кнопки.'
+      - text: 'A'
+        why: '`onClick` и `disabled` — стандартные атрибуты кнопки, они пришли из `ComponentProps<"button">`.'
+      - text: 'C'
+        why: '`type` и `aria-label` тоже входят в атрибуты `<button>`, их можно передать.'
+      - text: 'Ни одна'
+        why: 'Значение `"danger"` не входит в объединение вариантов, это ошибка.'
+    explanation: |
+      `ComponentProps<'button'>` (или `ComponentPropsWithoutRef`) даёт все атрибуты нативной кнопки, включая
+      события, `aria-*` и `data-*`. Это стандартный способ сделать обёртку, которая принимает всё, что принимает
+      исходный элемент, и пробрасывает остальное через `...rest`. Для своего компонента тип берут так же:
+      `ComponentProps<typeof Select>`. Если собственный проп конфликтует с нативным, нативный исключают:
+      `Omit<ComponentProps<'input'>, 'size'> & { size: 'sm' | 'lg' }`.
+    links:
+      - https://react.dev/learn/typescript#typescript-with-react-components
+    source: own
+
+  - id: react-typescript-010
+    level: middle
+    tags: [React.FC, children, typescript]
+    question: |
+      Почему здесь ошибка «Property 'children' does not exist»?
+    code: |
+      import type { FC } from 'react';
+
+      const Panel: FC = ({ children }) => <section>{children}</section>;
+    codeLang: tsx
+    options:
+      - text: 'С типов React 18 `FC` не добавляет `children` сам'
+        correct: true
+        why: 'Раньше `FC` неявно разрешал `children` любому компоненту, даже тому, кто их не рендерит. Теперь `children` нужно объявить в пропсах: `FC<{ children: ReactNode }>`.'
+      - text: '`FC` можно использовать только с классами'
+        why: '`FC` (FunctionComponent) описывает именно функциональные компоненты.'
+      - text: 'Деструктурировать пропсы в `FC` нельзя'
+        why: 'Деструктуризация разрешена. Ошибка в том, что в типе пропсов нет `children`.'
+      - text: '`children` доступен только через `props.children`'
+        why: 'Обращение `props.children` даст ту же ошибку: у `FC` без параметра пропсы — пустой объект.'
+    explanation: |
+      `React.FC<Props>` типизирует переменную-компонент. В типах React 18 у него убрали неявные `children`, и
+      он перестал отличаться от обычной аннотации параметра. Многие команды отказались от `FC` в пользу
+      функций с типизированным параметром: `function Panel({ children }: { children: ReactNode })`. Так проще
+      использовать дженерики и значения по умолчанию. Для компонентов, которые просто оборачивают содержимое,
+      есть утилита `PropsWithChildren<Props>`.
+    links:
+      - https://react.dev/learn/typescript#typing-children
+    source: own

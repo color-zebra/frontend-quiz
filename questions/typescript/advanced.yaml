@@ -1,0 +1,450 @@
+# yaml-language-server: $schema=../../schema.json
+topic: typescript
+subtopic: advanced
+questions:
+  - id: typescript-advanced-001
+    level: junior
+    tags: [keyof]
+    question: |
+      Чему равен тип `Keys`?
+    code: |
+      interface User {
+        id: number;
+        name: string;
+      }
+
+      type Keys = keyof User;
+    codeLang: ts
+    options:
+      - text: '`"id" | "name"`'
+        correct: true
+        why: '`keyof` даёт объединение литеральных типов всех известных ключей объектного типа.'
+      - text: '`string`'
+        why: 'Ключи `User` известны точно, поэтому `keyof` даёт их литералы, а не общий `string`.'
+      - text: '`number | string`'
+        why: 'Это типы значений свойств, то есть `User[keyof User]`. `keyof` возвращает сами ключи.'
+      - text: '`["id", "name"]`'
+        why: '`keyof` даёт объединение, а не кортеж: у ключей объектного типа нет порядка.'
+    explanation: |
+      `keyof T` — объединение ключей типа `T`. Вместе с индексным доступом `T[K]` и mapped-типами это основа
+      почти всех преобразований типов: `Partial`, `Pick`, `Record` устроены именно так. `keyof` работает с
+      типами, а не со значениями. Чтобы получить ключи объекта-значения, сначала берут его тип: `keyof typeof
+      config`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/keyof-types.html
+    source: own
+
+  - id: typescript-advanced-002
+    level: junior
+    tags: [indexed-access]
+    question: |
+      Чему равен тип `Value`?
+    code: |
+      interface User {
+        id: number;
+        name: string;
+        active: boolean;
+      }
+
+      type Value = User['id' | 'name'];
+    codeLang: ts
+    options:
+      - text: '`number | string`'
+        correct: true
+        why: 'Индексный доступ с объединением ключей даёт объединение типов соответствующих свойств: `User["id"] | User["name"]`.'
+      - text: '`{ id: number; name: string }`'
+        why: 'Это результат `Pick<User, "id" | "name">`. Индексный доступ достаёт типы значений, а не объект.'
+      - text: '`"id" | "name"`'
+        why: 'Это сами ключи. Индексный доступ по ключам возвращает типы значений свойств.'
+      - text: '`never`'
+        why: 'Свойства `id` и `name` есть в `User`, и результат — объединение их типов, а не пересечение.'
+    explanation: |
+      Индексный доступ `T[K]` (indexed access type) работает как чтение свойства, только на уровне типов. Ключ
+      может быть объединением, тогда результат — объединение типов свойств. `T[keyof T]` даёт объединение всех
+      типов значений. Для массивов и кортежей используют `T[number]`: тип элемента. Ключ должен существовать
+      в типе: `User['email']` — ошибка компиляции.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/indexed-access-types.html
+    source: own
+
+  - id: typescript-advanced-003
+    level: middle
+    tags: [conditional-types, distributive]
+    question: |
+      Чему равны `A` и `B`?
+    code: |
+      type IsString<T> = T extends string ? 'yes' : 'no';
+
+      type A = IsString<'hello'>;
+      type B = IsString<string | number>;
+    codeLang: ts
+    options:
+      - text: '`"yes"` и `"yes" | "no"`'
+        correct: true
+        why: 'Литерал `"hello"` — подтип `string`. Для объединения условный тип над «голым» параметром применяется к каждому члену отдельно: `IsString<string> | IsString<number>`.'
+      - text: '`"yes"` и `"no"`'
+        why: 'Так было бы, если бы объединение проверялось целиком: `string | number` не подтип `string`. Но условный тип распределяется по членам.'
+      - text: '`"no"` и `"yes" | "no"`'
+        why: 'Строковый литерал — подтип `string`, поэтому проверка `"hello" extends string` истинна.'
+      - text: '`"yes"` и `"yes"`'
+        why: 'Для члена `number` проверка `number extends string` ложна, и он даёт `"no"`.'
+    explanation: |
+      Условный тип `T extends U ? X : Y` выбирает ветку по совместимости типов. Если `T` — «голый» параметр типа
+      (не обёрнутый в кортеж или другой тип), а при подстановке приходит объединение, условие применяется к
+      каждому члену, и результаты объединяются. Это распределительные условные типы (distributive conditional
+      types). На них построены `Exclude`, `Extract`, `NonNullable`. Чтобы проверить объединение целиком,
+      параметр оборачивают: `[T] extends [string] ? ... : ...`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#distributive-conditional-types
+    source: own
+
+  - id: typescript-advanced-004
+    level: senior
+    tags: [conditional-types, never, distributive]
+    question: |
+      Чему равен тип `Result`?
+    code: |
+      type IsNever<T> = T extends never ? true : false;
+
+      type Result = IsNever<never>;
+    codeLang: ts
+    options:
+      - text: '`never`'
+        correct: true
+        why: '`never` — пустое объединение. Распределительный условный тип применяется к каждому члену, членов нет, и результат — пустое объединение, то есть `never`.'
+      - text: '`true`'
+        why: 'Так было бы при проверке без распределения: `[T] extends [never]`. С «голым» `T` пустое объединение даёт пустой результат.'
+      - text: '`false`'
+        why: 'Ветка `false` не выбирается: для `never` условие не вычисляется ни для одного члена.'
+      - text: '`boolean`'
+        why: '`boolean` — это `true | false`, он получился бы, если бы обе ветки вычислились. Здесь не вычислилась ни одна.'
+    explanation: |
+      Распределение по объединению — это «применить условие к каждому члену и объединить результаты». `never`
+      можно считать объединением из нуля членов, поэтому любой распределительный условный тип от `never`
+      возвращает `never`, какой бы ни была проверка. Это ломает наивные проверки вроде `IsNever`. Правильная
+      версия отключает распределение, оборачивая параметр в кортеж: `[T] extends [never] ? true : false`. Тот
+      же приём нужен в любом условном типе, который должен отдельно обработать `never`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#distributive-conditional-types
+      - https://github.com/microsoft/TypeScript/issues/23182
+    source: own
+
+  - id: typescript-advanced-005
+    level: middle
+    tags: [conditional-types, infer]
+    question: |
+      Чему равны `A`, `B` и `C`?
+    code: |
+      type ElementType<T> = T extends (infer U)[] ? U : T;
+
+      type A = ElementType<string[]>;
+      type B = ElementType<number>;
+      type C = ElementType<(string | number)[]>;
+    codeLang: ts
+    options:
+      - text: '`string`, `number`, `string | number`'
+        correct: true
+        why: '`infer U` объявляет переменную типа, которую компилятор выводит при сопоставлении с шаблоном `U[]`. Для массивов это тип элемента, а `number` под шаблон не подходит и возвращается как есть.'
+      - text: '`string`, `never`, `string | number`'
+        why: 'При несовпадении выбирается ветка `: T`, и возвращается сам `number`, а не `never`.'
+      - text: '`string[]`, `number`, `(string | number)[]`'
+        why: '`infer U` захватывает тип элемента, а не массива: шаблон `(infer U)[]` сопоставляет `U` с тем, что стоит перед `[]`.'
+      - text: '`string`, `number`, `string`'
+        why: '`U` захватывает весь тип элемента, в том числе объединение `string | number`.'
+    explanation: |
+      `infer` объявляет переменную типа внутри условия `extends`. Компилятор пытается сопоставить проверяемый
+      тип с шаблоном и, если получилось, подставляет найденную часть в ветку «да». Так устроены `ReturnType`
+      (`T extends (...args: any) => infer R ? R : any`), `Parameters`, `Awaited`. Шаблоном может быть что угодно:
+      функция, промис, кортеж, template literal. В последнем случае `infer` разбирает строковые литералы,
+      например вытаскивает параметры из строки маршрута.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#inferring-within-conditional-types
+    source: own
+
+  - id: typescript-advanced-006
+    level: senior
+    tags: [template-literal-types, infer, recursion]
+    question: |
+      Чему равен тип `Params`?
+    code: |
+      type RouteParams<T extends string> =
+        T extends `${string}:${infer Param}/${infer Rest}`
+          ? Param | RouteParams<`/${Rest}`>
+          : T extends `${string}:${infer Param}`
+            ? Param
+            : never;
+
+      type Params = RouteParams<'/users/:id/posts/:postId'>;
+    codeLang: ts
+    options:
+      - text: '`"id" | "postId"`'
+        correct: true
+        why: 'Первая ветка находит `:id/` и забирает `id`, а остаток передаёт рекурсивно как `/posts/:postId`. Там после параметра нет `/`, срабатывает вторая ветка и даёт `postId`.'
+      - text: '`"id"`'
+        why: 'Ветка с первым совпадением рекурсивно обрабатывает остаток строки, поэтому найдётся и `postId`.'
+      - text: '`"id/posts/:postId"`'
+        why: '`infer Param` перед `/` захватывает только текст до первого слеша после двоеточия, то есть `id`.'
+      - text: '`never`'
+        why: 'Строка содержит `:` и `/`, первый шаблон совпадает, поэтому результат не пустой.'
+    explanation: |
+      Template literal types позволяют разбирать строковые литералы на уровне типов. В шаблоне
+      `${string}:${infer Param}/${infer Rest}` компилятор ищет совпадение: `${string}` поглощает любой префикс,
+      `infer Param` захватывает текст до первого следующего `/`, `Rest` — остаток. Рекурсия обрабатывает
+      остаток строки, и параметры собираются в объединение. Так типизированы роутеры (React Router, Hono,
+      Elysia): `params.postId` проверяется по строке маршрута. Рекурсия в типах ограничена глубиной, поэтому
+      для очень длинных строк такие типы падают с ошибкой «Type instantiation is excessively deep».
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html
+      - https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#inferring-within-conditional-types
+    source: own
+
+  - id: typescript-advanced-007
+    level: middle
+    tags: [template-literal-types, union]
+    question: |
+      Сколько строковых литералов входит в тип `ClassName`?
+    code: |
+      type Size = 'sm' | 'lg';
+      type Color = 'red' | 'blue';
+
+      type ClassName = `${Size}-${Color}`;
+    codeLang: ts
+    options:
+      - text: '4'
+        correct: true
+        why: 'Template literal type с объединениями перебирает все комбинации: `"sm-red" | "sm-blue" | "lg-red" | "lg-blue"`.'
+      - text: '2'
+        why: 'Объединения не сопоставляются попарно по позициям: каждая подстановка `Size` сочетается с каждой подстановкой `Color`.'
+      - text: '8'
+        why: 'Комбинаций столько, сколько произведение размеров объединений: 2 × 2 = 4.'
+      - text: '1'
+        why: 'Шаблон с объединениями не сворачивается в один тип `string`: компилятор строит каждую комбинацию литералом.'
+    explanation: |
+      Template literal types строят строковые литеральные типы по шаблону, как template string в JavaScript.
+      Если в шаблон подставлено объединение, результат — объединение всех комбинаций (декартово
+      произведение). Удобно для имён классов, событий (`on${Capitalize<Event>}`), CSS-значений
+      (`${number}px`). Число комбинаций растёт быстро, а у компилятора есть предел — около 100 000
+      членов объединения. Поэтому несколько больших объединений в одном шаблоне могут дать ошибку.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/template-literal-types.html
+    source: own
+
+  - id: typescript-advanced-008
+    level: middle
+    tags: [mapped-types, key-remapping]
+    question: |
+      Чему равен тип `UserGetters`?
+    code: |
+      type Getters<T> = {
+        [K in keyof T as `get${Capitalize<string & K>}`]: () => T[K];
+      };
+
+      type UserGetters = Getters<{ name: string; age: number }>;
+    codeLang: ts
+    options:
+      - text: '`{ getName: () => string; getAge: () => number }`'
+        correct: true
+        why: '`as` в mapped-типе переименовывает ключ: к каждому ключу приписывается `get` и первая буква становится заглавной. Значение — функция, возвращающая тип исходного свойства.'
+      - text: '`{ name: () => string; age: () => number }`'
+        why: 'Ключи не остаются прежними: выражение после `as` задаёт новое имя для каждого ключа.'
+      - text: '`{ getname: () => string; getage: () => number }`'
+        why: '`Capitalize` делает первую букву заглавной, поэтому получится `getName`, а не `getname`.'
+      - text: '`{ getName: string; getAge: number }`'
+        why: 'Тип значения задан как `() => T[K]`, то есть функция, а не само значение свойства.'
+    explanation: |
+      Mapped-тип `{ [K in keyof T]: ... }` проходит по ключам и строит новый объектный тип. С TypeScript 4.1
+      ключи можно переименовывать через `as` (key remapping), используя template literal types и встроенные
+      строковые утилиты `Capitalize`, `Uncapitalize`, `Uppercase`, `Lowercase`. Пересечение `string & K` нужно,
+      потому что ключи бывают ещё числами и символами, а `Capitalize` принимает только строки. Так генерируют
+      типы геттеров, обработчиков `onChange...` и событий из одного описания.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/mapped-types.html#key-remapping-via-as
+    source: own
+
+  - id: typescript-advanced-009
+    level: middle
+    tags: [mapped-types, modifiers, Required]
+    question: |
+      Какое определение соответствует встроенному `Required<T>`?
+    options:
+      - text: '`{ [K in keyof T]-?: T[K] }`'
+        correct: true
+        why: 'Модификатор `-?` снимает необязательность с каждого свойства а у необязательных свойств заодно убирает `undefined` из типа значения, даже написанный явно.'
+      - text: '`{ [K in keyof T]: T[K] }`'
+        why: 'Это копия типа: mapped-тип по `keyof T` сохраняет модификаторы `?` и `readonly` исходных свойств.'
+      - text: '`{ [K in keyof T]+?: T[K] }`'
+        why: '`+?` добавляет необязательность. Так устроен `Partial`, а не `Required`.'
+      - text: '`{ [K in keyof T]: NonNullable<T[K]> }`'
+        why: 'Это убирает `null` и `undefined` из значений, но знак `?` у свойств сохраняется, и их по-прежнему можно пропускать.'
+    explanation: |
+      Mapped-тип по `keyof T` гомоморфный: он копирует модификаторы `?` и `readonly` исходных свойств. Чтобы
+      их изменить, используют префиксы `+` и `-`: `+?` или просто `?` добавляет необязательность (`Partial`),
+      `-?` убирает её (`Required`), `readonly` добавляет неизменяемость (`Readonly`), `-readonly` снимает её.
+      Встроенного `Mutable` нет, его пишут сами: `{ -readonly [K in keyof T]: T[K] }`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/mapped-types.html#mapping-modifiers
+    source: own
+
+  - id: typescript-advanced-010
+    level: senior
+    tags: [mapped-types, key-remapping, never]
+    question: |
+      Чему равен тип `NumberFields`?
+    code: |
+      type PickByValue<T, V> = {
+        [K in keyof T as T[K] extends V ? K : never]: T[K];
+      };
+
+      type NumberFields = PickByValue<{ id: number; name: string; age: number }, number>;
+    codeLang: ts
+    options:
+      - text: '`{ id: number; age: number }`'
+        correct: true
+        why: 'Если `as` возвращает `never`, ключ выбрасывается из результата. Остаются ключи, у которых значение подходит под `number`.'
+      - text: '`{ id: number; name: never; age: number }`'
+        why: '`never` в позиции ключа удаляет свойство целиком, а не меняет тип его значения.'
+      - text: '`{ name: string }`'
+        why: 'Условие оставляет ключи, чьё значение подходит под `V`, а не наоборот.'
+      - text: '`"id" | "age"`'
+        why: 'Mapped-тип строит объект, а не объединение ключей. Объединение получилось бы с `keyof` от результата.'
+    explanation: |
+      В key remapping `as` может вернуть `never`, и тогда свойство исчезает из результата. Это превращает
+      mapped-тип в фильтр по ключам или по типам значений. Так пишут `PickByValue`, `OmitByValue`, типы
+      «только методы» или «только данные» класса. Раньше фильтр собирали в два шага: условным типом получали
+      объединение нужных ключей, потом применяли `Pick`. Важная деталь: проверка `T[K] extends V` для
+      необязательных свойств видит и `undefined`, и это может неожиданно выбросить их.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/mapped-types.html#key-remapping-via-as
+    source: own
+
+  - id: typescript-advanced-011
+    level: senior
+    tags: [keyof, index-signature]
+    question: |
+      Чему равен тип `Keys`?
+    code: |
+      type Dictionary = { [key: string]: unknown };
+
+      type Keys = keyof Dictionary;
+    codeLang: ts
+    options:
+      - text: '`string | number`'
+        correct: true
+        why: 'В JavaScript числовые ключи объектов приводятся к строкам: `obj[1]` и `obj["1"]` — одно и то же. Поэтому строковая индексная сигнатура принимает и числа, и `keyof` это отражает.'
+      - text: '`string`'
+        why: 'Строковая сигнатура разрешает и числовые ключи, так как в рантайме они всё равно становятся строками. `keyof` включает `number`.'
+      - text: '`never`'
+        why: '`never` получился бы у типа без ключей вообще. Индексная сигнатура описывает бесконечное множество ключей.'
+      - text: '`string | number | symbol`'
+        why: 'Символы — отдельный вид ключей, строковая сигнатура их не покрывает. Для символов нужна сигнатура `[key: symbol]`.'
+    explanation: |
+      `keyof` у типа с индексной сигнатурой даёт не литералы, а тип ключа: для `[key: number]` — `number`,
+      для `[key: string]` — `string | number`, потому что числа в ключах приводятся к строкам. Это
+      неожиданно ломает код вроде `function f<T>(key: keyof T) { key.toUpperCase() }`: ключ может оказаться
+      числом. Если нужны только строки, пишут `Extract<keyof T, string>` или `string & keyof T`. Для
+      произвольного ключа объекта есть встроенный тип `PropertyKey = string | number | symbol`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/keyof-types.html
+      - https://www.typescriptlang.org/docs/handbook/2/objects.html#index-signatures
+    source: own
+
+  - id: typescript-advanced-012
+    level: junior
+    tags: [typeof, type-query, output]
+    question: |
+      Какой тип у `User` и что выведется в консоль?
+    code: |
+      const user = { name: 'Ann', age: 30 };
+
+      type User = typeof user;
+      console.log(typeof user);
+    codeLang: ts
+    options:
+      - text: '`{ name: string; age: number }` и `object`'
+        correct: true
+        why: '`typeof` в позиции типа — оператор TypeScript, он берёт выведенный тип переменной. В выражении это обычный JavaScript-оператор, и для объекта он возвращает строку `"object"`.'
+      - text: '`object` и `object`'
+        why: '`typeof` в позиции типа возвращает полный тип переменной, а не название категории значения.'
+      - text: '`{ name: string; age: number }` и `{ name: string; age: number }`'
+        why: 'Типы стираются при компиляции, в рантайме `typeof` — оператор JavaScript, он возвращает одну из нескольких строк вроде `"object"`.'
+      - text: '`{ name: "Ann"; age: 30 }` и `object`'
+        why: 'Литералы в свойствах объекта расширяются: тип `user` — `{ name: string; age: number }`.'
+    explanation: |
+      Одно слово `typeof` означает разное в зависимости от позиции. В выражении это оператор JavaScript,
+      работающий в рантайме: он возвращает строку `"string"`, `"number"`, `"object"`, `"function"` и т. д. В
+      позиции типа (после `type X =`, в аннотации, в угловых скобках) это оператор TypeScript: type query,
+      берёт тип переменной. Он нужен, чтобы выводить типы из значений и не дублировать описание:
+      `typeof config`, `ReturnType<typeof fn>`, `keyof typeof map`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/typeof-types.html
+    source: own
+
+  - id: typescript-advanced-013
+    level: middle
+    tags: [keyof, union, intersection]
+    question: |
+      Чему равны `UnionKeys` и `IntersectionKeys`?
+    code: |
+      type A = { id: number; name: string };
+      type B = { id: number; age: number };
+
+      type UnionKeys = keyof (A | B);
+      type IntersectionKeys = keyof (A & B);
+    codeLang: ts
+    options:
+      - text: '`"id"` и `"id" | "name" | "age"`'
+        correct: true
+        why: 'О значении типа `A | B` известно только то, что есть в обоих вариантах, поэтому безопасный ключ один — `id`. Значение `A & B` имеет все свойства обоих типов.'
+      - text: '`"id" | "name" | "age"` и `"id"`'
+        why: 'Перепутано: у объединения доступны только общие ключи, у пересечения — все.'
+      - text: '`"id" | "name" | "age"` в обоих случаях'
+        why: 'Значение `A | B` может оказаться типа `A`, где нет `age`. Поэтому `keyof` объединения содержит только общие ключи.'
+      - text: '`"id"` в обоих случаях'
+        why: 'Пересечение требует свойств обоих типов сразу, поэтому у него доступны все ключи: `id`, `name` и `age`.'
+    explanation: |
+      Объединение и пересечение ведут себя «наоборот» для ключей: `keyof (A | B)` равен `keyof A & keyof B`
+      (общие ключи), а `keyof (A & B)` равен `keyof A | keyof B` (все ключи). Это следует из множеств
+      значений. Объединение шире, о нём известно меньше, поэтому и безопасных ключей меньше. Пересечение уже,
+      о нём известно больше.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/keyof-types.html
+    source: own
+
+  - id: typescript-advanced-014
+    level: senior
+    tags: [recursive-types, mapped-types, readonly]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются?
+    code: |
+      type DeepReadonly<T> = {
+        readonly [K in keyof T]: T[K] extends object ? DeepReadonly<T[K]> : T[K];
+      };
+
+      const config: DeepReadonly<{ server: { ports: number[] } }> = {
+        server: { ports: [80] },
+      };
+
+      config.server = { ports: [] };   // A
+      config.server.ports.push(443);   // B
+    codeLang: ts
+    options:
+      - text: 'A и B'
+        correct: true
+        why: 'Тип рекурсивно применяется ко всем вложенным объектам. Для массива mapped-тип по `keyof T` даёт `readonly number[]`, у которого нет `push`.'
+      - text: 'Только A'
+        why: 'Рекурсия доходит и до массива: `DeepReadonly<number[]>` превращается в `readonly number[]`, поэтому `push` недоступен.'
+      - text: 'Только B'
+        why: 'Свойство `server` первого уровня тоже помечено `readonly`, присвоить ему новый объект нельзя.'
+      - text: 'Ни одна'
+        why: 'В отличие от встроенного `Readonly`, этот тип рекурсивный и защищает все уровни.'
+    explanation: |
+      Псевдоним типа может ссылаться сам на себя, и так строят глубокие преобразования: `DeepReadonly`,
+      `DeepPartial`, тип JSON-значения. Важная деталь: mapped-тип вида `{ [K in keyof T]: ... }` от массива или
+      кортежа даёт снова массив или кортеж, а модификатор `readonly` делает его неизменяемым. Функции тоже
+      `object`, и наивная версия сломает их тип, поэтому их обычно исключают отдельной веткой. У рекурсии есть
+      предел глубины. Слишком глубокие или бесконечные инстанцирования дают ошибку «Type instantiation is
+      excessively deep and possibly infinite».
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/mapped-types.html
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#more-recursive-type-aliases
+    source: own

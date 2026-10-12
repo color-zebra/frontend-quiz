@@ -1,0 +1,72 @@
+/* A. Аврора: фиолетово-бирюзовое сияние, сильное размытие, градиентная кнопка. */
+:root {
+  --page-bg: #07061a;
+  --bg: #0b0920;
+  --blob1: #7c3aed;
+  --blob2: #06b6d4;
+  --blob3: #db2777;
+  --blob-blur: 80px;
+  --blob-opacity: 0.55;
+
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-blur: 22px;
+  --glass-sat: 160%;
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --bar-bg: rgba(14, 11, 38, 0.55);
+
+  --radius: 20px;
+  --chip-radius: 999px;
+  --btn-radius: 16px;
+  --code-radius: 16px;
+
+  --font-body: Manrope, system-ui, sans-serif;
+  --font-heading: Manrope, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --text: #ecebff;
+  --text-2: #c9c6ea;
+  --muted: #8f8bb8;
+  --accent: #a78bfa;
+  --link: #67e8f9;
+
+  --primary-bg: linear-gradient(135deg, #8b5cf6, #06b6d4);
+  --primary-text: #fff;
+  --primary-shadow: 0 10px 30px rgba(124, 58, 237, 0.45);
+
+  --chip-bg: rgba(255, 255, 255, 0.05);
+  --chip-border: rgba(255, 255, 255, 0.1);
+  --chip-on-bg: rgba(139, 92, 246, 0.28);
+  --chip-on-border: rgba(167, 139, 250, 0.7);
+  --chip-on-text: #fff;
+  --chip-on-glow: 0 0 18px rgba(139, 92, 246, 0.45);
+  --chip-on-count: #c4b5fd;
+
+  --seg-bg: rgba(0, 0, 0, 0.25);
+  --seg-on-bg: rgba(255, 255, 255, 0.14);
+  --seg-on-text: #fff;
+  --seg-on-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+
+  --ok: #34d399;
+  --ok-bg: rgba(52, 211, 153, 0.12);
+  --bad: #fb7185;
+  --bad-bg: rgba(251, 113, 133, 0.12);
+  --on-status: #0b0920;
+  --lvl-junior: #34d399;
+  --lvl-middle: #fbbf24;
+  --lvl-senior: #f472b6;
+
+  --track: rgba(255, 255, 255, 0.1);
+  --ring-color: #a78bfa;
+
+  --code-bg: rgba(8, 6, 25, 0.55);
+  --tok-plain: #e5e4ff;
+  --tok-kw: #c4b5fd;
+  --tok-fn: #67e8f9;
+  --tok-num: #fda4af;
+  --tok-str: #86efac;
+  --tok-cls: #fcd34d;
+  --tok-punc: #a5a3c9;
+  --inline-code-bg: rgba(139, 92, 246, 0.2);
+  --inline-code-text: #ddd6fe;
+}

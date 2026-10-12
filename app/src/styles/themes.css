@@ -1,0 +1,301 @@
+/*
+ * Четыре темы — наборы переменных. Компоненты берут цвета, радиусы и шрифты только отсюда.
+ * Тема включается атрибутом data-theme на <html>; в превью тем атрибут стоит на самой карточке.
+ * Точечные отличия тем (префикс «> » у заголовков терминала и т. п.) лежат в модулях компонентов.
+ */
+
+[data-theme="aurora"] {
+  --bg: #0b0920;
+  --blob1: #7c3aed;
+  --blob2: #06b6d4;
+  --blob3: #db2777;
+  --blob-blur: 80px;
+  --blob-opacity: 0.55;
+
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-blur: 22px;
+  --glass-sat: 160%;
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --bar-bg: rgba(14, 11, 38, 0.78);
+  --sheet-bg: rgba(20, 16, 48, 0.82);
+  --backdrop: rgba(4, 3, 14, 0.6);
+
+  --radius: 20px;
+  --chip-radius: 999px;
+  --btn-radius: 16px;
+  --code-radius: 16px;
+
+  --font-body: "Manrope Variable", system-ui, sans-serif;
+  --font-heading: "Manrope Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --text: #ecebff;
+  --text-2: #c9c6ea;
+  --muted: #8f8bb8;
+  --accent: #a78bfa;
+  --link: #67e8f9;
+
+  --primary-bg: linear-gradient(135deg, #8b5cf6, #06b6d4);
+  --primary-text: #fff;
+  --primary-shadow: 0 10px 30px rgba(124, 58, 237, 0.45);
+
+  --chip-bg: rgba(255, 255, 255, 0.05);
+  --chip-border: rgba(255, 255, 255, 0.1);
+  --chip-on-bg: rgba(139, 92, 246, 0.28);
+  --chip-on-border: rgba(167, 139, 250, 0.7);
+  --chip-on-text: #fff;
+  --chip-on-glow: 0 0 18px rgba(139, 92, 246, 0.45);
+  --chip-on-count: #c4b5fd;
+
+  --seg-bg: rgba(0, 0, 0, 0.25);
+  --seg-on-bg: rgba(255, 255, 255, 0.14);
+  --seg-on-text: #fff;
+  --seg-on-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+
+  --ok: #34d399;
+  --ok-bg: rgba(52, 211, 153, 0.12);
+  --bad: #fb7185;
+  --bad-bg: rgba(251, 113, 133, 0.12);
+  --on-status: #0b0920;
+  --lvl-junior: #34d399;
+  --lvl-middle: #fbbf24;
+  --lvl-senior: #f472b6;
+
+  --track: rgba(255, 255, 255, 0.1);
+  --ring-color: #a78bfa;
+
+  --code-bg: rgba(8, 6, 25, 0.55);
+  --tok-plain: #e5e4ff;
+  --tok-kw: #c4b5fd;
+  --tok-fn: #67e8f9;
+  --tok-num: #fda4af;
+  --tok-str: #86efac;
+  --tok-cls: #fcd34d;
+  --tok-punc: #a5a3c9;
+  --tok-com: #6f6b98;
+  --inline-code-bg: rgba(139, 92, 246, 0.2);
+  --inline-code-text: #ddd6fe;
+}
+
+[data-theme="graphite"] {
+  --bg: #17181c;
+  --blob1: #4f6b8a;
+  --blob2: #8a6a4f;
+  --blob3: #5b5470;
+  --blob-blur: 90px;
+  --blob-opacity: 0.7;
+
+  --glass-bg: rgba(255, 255, 255, 0.09);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --glass-blur: 40px;
+  --glass-sat: 180%;
+  --glass-shadow: 0 20px 40px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --bar-bg: rgba(30, 31, 36, 0.8);
+  --sheet-bg: rgba(38, 39, 45, 0.85);
+  --backdrop: rgba(8, 8, 10, 0.55);
+
+  --radius: 28px;
+  --chip-radius: 14px;
+  --btn-radius: 999px;
+  --code-radius: 20px;
+
+  --font-body: "Inter Variable", system-ui, sans-serif;
+  --font-heading: "Inter Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --text: #f5f5f7;
+  --text-2: #d1d1d6;
+  --muted: #98989f;
+  --accent: #f5f5f7;
+  --link: #64d2ff;
+
+  --primary-bg: #f5f5f7;
+  --primary-text: #111114;
+  --primary-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+
+  --chip-bg: rgba(255, 255, 255, 0.07);
+  --chip-border: rgba(255, 255, 255, 0.1);
+  --chip-on-bg: rgba(255, 255, 255, 0.92);
+  --chip-on-border: transparent;
+  --chip-on-text: #111114;
+  --chip-on-glow: none;
+  --chip-on-count: rgba(0, 0, 0, 0.5);
+
+  --seg-bg: rgba(0, 0, 0, 0.22);
+  --seg-on-bg: rgba(255, 255, 255, 0.22);
+  --seg-on-text: #fff;
+  --seg-on-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+
+  --ok: #30d158;
+  --ok-bg: rgba(48, 209, 88, 0.14);
+  --bad: #ff453a;
+  --bad-bg: rgba(255, 69, 58, 0.14);
+  --on-status: #111114;
+  --lvl-junior: #30d158;
+  --lvl-middle: #ffd60a;
+  --lvl-senior: #bf5af2;
+
+  --track: rgba(255, 255, 255, 0.12);
+  --ring-color: #f5f5f7;
+
+  --code-bg: rgba(0, 0, 0, 0.3);
+  --tok-plain: #f2f2f7;
+  --tok-kw: #ff7ab2;
+  --tok-fn: #6bdfff;
+  --tok-num: #d9c97c;
+  --tok-str: #fc6a5d;
+  --tok-cls: #dabaff;
+  --tok-punc: #a3a3a8;
+  --tok-com: #7f8088;
+  --inline-code-bg: rgba(255, 255, 255, 0.13);
+  --inline-code-text: #fff;
+}
+
+[data-theme="terminal"] {
+  --bg: #040607;
+  --blob1: #10b981;
+  --blob2: #0ea5e9;
+  --blob3: #84cc16;
+  --blob-blur: 90px;
+  --blob-opacity: 0.3;
+
+  --glass-bg: rgba(16, 28, 24, 0.45);
+  --glass-border: rgba(52, 211, 153, 0.2);
+  --glass-blur: 14px;
+  --glass-sat: 140%;
+  --glass-shadow: inset 0 0 24px rgba(16, 185, 129, 0.06);
+  --bar-bg: rgba(4, 10, 8, 0.85);
+  --sheet-bg: rgba(6, 16, 12, 0.9);
+  --backdrop: rgba(0, 0, 0, 0.65);
+
+  --radius: 12px;
+  --chip-radius: 8px;
+  --btn-radius: 10px;
+  --code-radius: 10px;
+
+  --font-body: "Inter Variable", system-ui, sans-serif;
+  --font-heading: "JetBrains Mono Variable", ui-monospace, monospace;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --text: #d7fbe8;
+  --text-2: #a7d9c2;
+  --muted: #5f8a77;
+  --accent: #34d399;
+  --link: #22d3ee;
+
+  --primary-bg: linear-gradient(90deg, #34d399, #a3e635);
+  --primary-text: #03140c;
+  --primary-shadow: 0 0 24px rgba(52, 211, 153, 0.35);
+
+  --chip-bg: rgba(255, 255, 255, 0.02);
+  --chip-border: rgba(52, 211, 153, 0.16);
+  --chip-on-bg: rgba(52, 211, 153, 0.14);
+  --chip-on-border: #34d399;
+  --chip-on-text: #bbf7d0;
+  --chip-on-glow: 0 0 12px rgba(52, 211, 153, 0.35);
+  --chip-on-count: #6ee7b7;
+
+  --seg-bg: rgba(0, 0, 0, 0.4);
+  --seg-on-bg: rgba(52, 211, 153, 0.18);
+  --seg-on-text: #bbf7d0;
+  --seg-on-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.6);
+
+  --ok: #4ade80;
+  --ok-bg: rgba(74, 222, 128, 0.1);
+  --bad: #f87171;
+  --bad-bg: rgba(248, 113, 113, 0.1);
+  --on-status: #03140c;
+  --lvl-junior: #4ade80;
+  --lvl-middle: #facc15;
+  --lvl-senior: #38bdf8;
+
+  --track: rgba(52, 211, 153, 0.12);
+  --ring-color: #34d399;
+
+  --code-bg: rgba(0, 0, 0, 0.55);
+  --tok-plain: #d7fbe8;
+  --tok-kw: #22d3ee;
+  --tok-fn: #a3e635;
+  --tok-num: #fbbf24;
+  --tok-str: #4ade80;
+  --tok-cls: #c084fc;
+  --tok-punc: #4b7a66;
+  --tok-com: #3f6656;
+  --inline-code-bg: rgba(52, 211, 153, 0.12);
+  --inline-code-text: #6ee7b7;
+}
+
+[data-theme="sunset"] {
+  --bg: #140a1f;
+  --blob1: #f97316;
+  --blob2: #ec4899;
+  --blob3: #8b5cf6;
+  --blob-blur: 80px;
+  --blob-opacity: 0.55;
+
+  --glass-bg: rgba(255, 255, 255, 0.07);
+  --glass-border: rgba(255, 210, 190, 0.16);
+  --glass-blur: 26px;
+  --glass-sat: 170%;
+  --glass-shadow: 0 10px 34px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 230, 220, 0.1);
+  --bar-bg: rgba(28, 12, 34, 0.78);
+  --sheet-bg: rgba(36, 16, 44, 0.84);
+  --backdrop: rgba(10, 4, 14, 0.6);
+
+  --radius: 26px;
+  --chip-radius: 999px;
+  --btn-radius: 999px;
+  --code-radius: 20px;
+
+  --font-body: "Manrope Variable", system-ui, sans-serif;
+  --font-heading: "Unbounded Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --text: #fff3ec;
+  --text-2: #f2d4c8;
+  --muted: #b08f9f;
+  --accent: #fdba74;
+  --link: #fdba74;
+
+  --primary-bg: linear-gradient(120deg, #fb923c, #ec4899);
+  --primary-text: #fff;
+  --primary-shadow: 0 12px 30px rgba(236, 72, 153, 0.4);
+
+  --chip-bg: rgba(255, 255, 255, 0.05);
+  --chip-border: rgba(255, 210, 190, 0.14);
+  --chip-on-bg: linear-gradient(120deg, rgba(251, 146, 60, 0.35), rgba(236, 72, 153, 0.35));
+  --chip-on-border: rgba(253, 186, 116, 0.6);
+  --chip-on-text: #fff;
+  --chip-on-glow: 0 0 18px rgba(236, 72, 153, 0.35);
+  --chip-on-count: #fed7aa;
+
+  --seg-bg: rgba(0, 0, 0, 0.25);
+  --seg-on-bg: rgba(255, 255, 255, 0.16);
+  --seg-on-text: #fff;
+  --seg-on-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+
+  --ok: #4ade80;
+  --ok-bg: rgba(74, 222, 128, 0.12);
+  --bad: #f43f5e;
+  --bad-bg: rgba(244, 63, 94, 0.13);
+  --on-status: #140a1f;
+  --lvl-junior: #86efac;
+  --lvl-middle: #fdba74;
+  --lvl-senior: #f0abfc;
+
+  --track: rgba(255, 255, 255, 0.1);
+  --ring-color: #fb923c;
+
+  --code-bg: rgba(20, 6, 26, 0.55);
+  --tok-plain: #fff1ea;
+  --tok-kw: #f9a8d4;
+  --tok-fn: #fdba74;
+  --tok-num: #c4b5fd;
+  --tok-str: #bef264;
+  --tok-cls: #fde68a;
+  --tok-punc: #b9a0b0;
+  --tok-com: #8a6f80;
+  --inline-code-bg: rgba(251, 146, 60, 0.18);
+  --inline-code-text: #fed7aa;
+}

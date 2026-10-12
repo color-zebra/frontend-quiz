@@ -1,0 +1,299 @@
+# yaml-language-server: $schema=../../schema.json
+topic: react
+subtopic: context
+questions:
+  - id: react-context-001
+    level: junior
+    tags: [context, default-value, provider]
+    question: |
+      Что будет на экране?
+    code: |
+      const Theme = createContext('light');
+
+      function Label() {
+        return <span>{useContext(Theme)} </span>;
+      }
+
+      function App() {
+        return (
+          <>
+            <Label />
+            <Theme value="dark">
+              <Label />
+              <Theme value="blue">
+                <Label />
+              </Theme>
+            </Theme>
+          </>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`light dark blue`'
+        correct: true
+        why: 'Компонент берёт значение ближайшего провайдера выше по дереву. У первого `Label` провайдера нет, и он получает значение по умолчанию из `createContext`.'
+      - text: '`dark dark blue`'
+        why: 'Провайдер действует только на своих потомков. Первый `Label` стоит вне `<Theme value="dark">` и получает значение по умолчанию.'
+      - text: '`light dark dark`'
+        why: 'Вложенный провайдер перекрывает внешний для своего поддерева: третий `Label` получает `blue`.'
+      - text: '`light light light`'
+        why: 'Значение по умолчанию используется, только если выше нет ни одного провайдера.'
+    explanation: |
+      Контекст передаёт значение вниз по дереву без пропсов. `createContext(defaultValue)` создаёт контекст,
+      провайдер задаёт значение для поддерева, а `useContext` ищет ближайший провайдер выше по дереву.
+      Провайдеры можно вкладывать и переопределять: так делают вложенные темы или локали. С React 19
+      провайдером служит сам контекст, `<Theme value="dark">`, а запись `<Theme.Provider>` по-прежнему
+      работает. Значение по умолчанию — запасной вариант на случай, когда провайдера нет вовсе, например в
+      тестах.
+    links:
+      - https://react.dev/learn/passing-data-deeply-with-context
+      - https://react.dev/blog/2024/12/05/react-19#context-as-a-provider
+    source: own
+
+  - id: react-context-002
+    level: middle
+    tags: [context, memo, output]
+    question: |
+      Что выведется в консоль после клика?
+    code: |
+      const Count = createContext(0);
+
+      function Leaf() {
+        const count = useContext(Count);
+        console.log('Leaf', count);
+        return null;
+      }
+
+      const Middle = memo(function Middle() {
+        console.log('Middle');
+        return <Leaf />;
+      });
+
+      function App() {
+        const [n, setN] = useState(0);
+        console.log('App', n);
+        return (
+          <Count value={n}>
+            <button onClick={() => setN(n + 1)}>+</button>
+            <Middle />
+          </Count>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`App 1`, `Leaf 1`'
+        correct: true
+        why: '`Middle` в `memo` без пропсов, его рендер пропускается. Но `Leaf` читает контекст, и при смене значения React рендерит его напрямую, минуя пропущенного родителя.'
+      - text: '`App 1`'
+        why: '`memo` у промежуточного компонента не блокирует контекст. Потребитель контекста получает новое значение и рендерится сам.'
+      - text: '`App 1`, `Middle`, `Leaf 1`'
+        why: 'У `Middle` нет пропсов, и они не изменились, поэтому `memo` пропускает его рендер. Контекст его не касается: он не читает `Count`.'
+      - text: '`Leaf 1`'
+        why: 'Состояние живёт в `App`, и он рендерится первым.'
+    explanation: |
+      Изменение значения провайдера помечает для рендера всех компонентов, которые читают этот контекст, где бы
+      они ни находились. Промежуточные компоненты, если их рендер пропущен через `memo`, не рендерятся.
+      Поэтому контекст часто сочетают с `memo` на верхних уровнях: рендерятся только реальные потребители.
+    links:
+      - https://react.dev/reference/react/useContext#caveats
+    source: own
+
+  - id: react-context-003
+    level: middle
+    tags: [context, referential-equality, performance, no-run]
+    question: |
+      Компонент `Page` обёрнут в `memo`. Почему все потребители `AuthContext` внутри него рендерятся при каждом
+      рендере `App`, даже если `user` не менялся?
+    code: |
+      function App() {
+        const [user, setUser] = useState(null);
+        const [count, setCount] = useState(0);
+
+        return (
+          <AuthContext value={{ user, login: setUser }}>
+            <button onClick={() => setCount(count + 1)}>{count}</button>
+            <Page />
+          </AuthContext>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: 'Значение контекста каждый раз новый объект'
+        correct: true
+        why: 'React сравнивает новое значение провайдера с прошлым через `Object.is`. Литерал `{ user, login }` каждый раз создаёт новый объект, и для React значение «изменилось».'
+      - text: 'Провайдер всегда рендерит всех потребителей вместе с собой'
+        why: 'Если значение провайдера то же самое (по ссылке), потребители из-за провайдера не рендерятся.'
+      - text: '`useContext` подписывает на любые изменения в дереве'
+        why: 'Подписка только на значение конкретного провайдера. Изменения состояния в других местах её не затрагивают.'
+      - text: 'Контекст несовместим с `memo` и отключает его'
+        why: '`memo` работает, но сравнивает пропсы, а контекст — отдельный источник рендера. Проблема в том, что значение каждый раз новое.'
+    explanation: |
+      Если значение контекста — объект, массив или функция, созданные в теле компонента, провайдер получает
+      новое значение на каждом рендере, и все потребители рендерятся вместе с ним. Решение — стабилизировать
+      значение: `const value = useMemo(() => ({ user, login }), [user])`. Но это помогает, только если
+      промежуточные компоненты сами не рендерятся: без `memo` у `Page` потребители отрендерятся вместе с ним.
+      Сеттер из `useState` стабилен, его можно не указывать в зависимостях. В небольших приложениях это не критично, но для контекста, который
+      читают сотни компонентов, лишние рендеры заметны.
+    links:
+      - https://react.dev/reference/react/useContext#optimizing-re-renders-when-passing-objects-and-functions
+    source: own
+
+  - id: react-context-004
+    level: middle
+    tags: [use, context, react-19]
+    question: |
+      Чем `use(Context)` из React 19 отличается от `useContext(Context)`?
+    options:
+      - text: 'Его можно вызывать внутри условий и циклов'
+        correct: true
+        why: '`use` — не обычный хук: на него не распространяется правило вызова на верхнем уровне. Его можно вызвать после раннего `return` или внутри `if`.'
+      - text: 'Он не подписывает компонент на изменения значения'
+        why: 'Подписка такая же, как у `useContext`: при смене значения компонент рендерится.'
+      - text: 'Его можно вызывать внутри `try/catch`'
+        why: 'Наоборот, документация запрещает вызывать `use` внутри `try/catch`. Ошибки при чтении промиса обрабатывают границей ошибок.'
+      - text: 'Он игнорирует провайдер и возвращает значение по умолчанию'
+        why: '`use(Context)` ищет ближайший провайдер так же, как `useContext`.'
+    explanation: |
+      `use` (React 19) читает значение «ресурса»: промиса или контекста. С контекстом он ведёт себя как
+      `useContext`, но его можно вызывать условно: `if (!show) return null; const theme = use(Theme)`. Хуки
+      так вызывать нельзя. Вызывать `use`, как и хуки, можно
+      только внутри компонента или хука, но не в обычной функции.
+    links:
+      - https://react.dev/reference/react/use#reading-context-with-use
+    source: own
+
+  - id: react-context-005
+    level: junior
+    tags: [context, prop-drilling]
+    question: |
+      Какую проблему в первую очередь решает контекст?
+    options:
+      - text: 'Передачу данных глубоко без пропсов на каждом уровне'
+        correct: true
+        why: 'Без контекста значение, нужное далеко внизу, приходится передавать через все промежуточные компоненты (prop drilling), хотя им самим оно не нужно.'
+      - text: 'Сохранение данных между перезагрузками страницы'
+        why: 'Контекст живёт в памяти, пока смонтирован провайдер. После перезагрузки он создаётся заново. Для сохранения нужны `localStorage` или сервер.'
+      - text: 'Ускорение рендера большого дерева компонентов'
+        why: 'Контекст не ускоряет рендер. При неудачном использовании он, наоборот, вызывает лишние рендеры потребителей.'
+      - text: 'Обмен данными между вкладками браузера'
+        why: 'Каждая вкладка — отдельное приложение со своим деревом. Для обмена между вкладками есть `BroadcastChannel` и событие `storage`.'
+    explanation: |
+      Контекст подходит для данных, которые нужны многим компонентам на разной глубине: текущий пользователь,
+      тема, язык, настройки, роутер. Перед тем как вводить контекст, документация советует попробовать
+      проще. Передать пропсы явно: это делает поток данных понятным. Либо передать JSX через `children`,
+      чтобы промежуточным компонентам не пришлось знать о данных. Для часто меняющегося глобального
+      состояния обычно берут менеджер состояния с подпиской на часть данных.
+    links:
+      - https://react.dev/learn/passing-data-deeply-with-context#before-you-use-context
+    source: own
+
+  - id: react-context-006
+    level: senior
+    tags: [context, granularity, split-context, no-run]
+    question: |
+      Контекст `AppContext` хранит `{ user, theme }`. Кнопка темы читает только `theme`, но рендерится при каждом
+      изменении `user`. Какое изменение это исправит?
+    code: |
+      function ThemeButton() {
+        const { theme } = useContext(AppContext);
+        return <button className={theme}>Тема</button>;
+      }
+    codeLang: jsx
+    options:
+      - text: 'Разделить его на `UserContext` и `ThemeContext`'
+        correct: true
+        why: 'Компонент подписан на значение контекста целиком. Если тема живёт в отдельном контексте, смена пользователя меняет только `UserContext`, и кнопка темы о ней не узнает.'
+      - text: 'Обернуть `ThemeButton` в `memo`'
+        why: '`memo` сравнивает пропсы при рендере родителя, а рендер из-за контекста он не блокирует.'
+      - text: 'Мемоизировать значение провайдера через `useMemo`'
+        why: '`useMemo` убирает рендеры, когда значение не менялось. Здесь `user` действительно изменился, и новое значение объекта неизбежно.'
+      - text: 'Читать контекст через `use` вместо `useContext`'
+        why: '`use` подписывает компонент на контекст так же, как `useContext`: на всё значение целиком.'
+    explanation: |
+      У контекста нет селекторов: потребитель рендерится при любом изменении значения, даже если читает одно
+      поле. Для редко меняющихся данных это нормально. При частых обновлениях данные разделяют по контекстам
+      так, чтобы вместе лежало то, что меняется вместе. Ещё один приём — разделить данные и функции изменения:
+      функции стабильны и не вызывают рендеров. Если нужна подписка на срез данных, используют хранилище с
+      селекторами (Zustand, Redux, Jotai) поверх `useSyncExternalStore`.
+    links:
+      - https://react.dev/reference/react/useContext#caveats
+      - https://react.dev/reference/react/useSyncExternalStore
+    source: own
+
+  - id: react-context-007
+    level: middle
+    tags: [context, provider, output]
+    question: |
+      Что будет на экране?
+    code: |
+      const Theme = createContext('light');
+
+      function App() {
+        const theme = useContext(Theme);
+        return (
+          <Theme value="dark">
+            <p>{theme}</p>
+          </Theme>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`light`'
+        correct: true
+        why: '`useContext` ищет провайдер выше компонента, который его вызывает. Провайдер, который `App` возвращает в своём JSX, находится ниже `App`, и на его собственный вызов не влияет.'
+      - text: '`dark`'
+        why: '`<p>` находится внутри провайдера, но значение `theme` прочитано в `App`, а для `App` провайдера выше нет.'
+      - text: 'Пустая строка'
+        why: 'При отсутствии провайдера выше `useContext` возвращает значение по умолчанию `light`.'
+      - text: 'Ошибка: контекст читается раньше, чем создан провайдер'
+        why: 'Ошибки нет. Без провайдера выше по дереву используется значение по умолчанию из `createContext`.'
+    explanation: |
+      Провайдер влияет только на компоненты внутри своего поддерева, а компонент, который рендерит
+      провайдер, находится над ним. Поэтому прочитать значение собственного провайдера нельзя: нужен дочерний
+      компонент, который вызовет `useContext`. Отсюда типичный приём: провайдер выносят в отдельный компонент
+      `ThemeProvider`, а читают через хук `useTheme` в потомках. Этот же эффект объясняет ошибку «хук
+      вызван вне провайдера» в тестах, где компонент смонтирован без обёртки.
+    links:
+      - https://react.dev/reference/react/useContext#my-component-doesnt-see-the-value-from-my-provider
+    source: own
+
+  - id: react-context-008
+    level: middle
+    tags: [context, default-value, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const Theme = createContext('light');
+
+      function Label() {
+        console.log('Label', useContext(Theme));
+        return null;
+      }
+
+      function App() {
+        return (
+          <Theme value={undefined}>
+            <Label />
+          </Theme>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`Label undefined`'
+        correct: true
+        why: 'Провайдер есть, и его значение `undefined` передаётся как есть. Значение по умолчанию используется, только когда провайдера выше нет совсем.'
+      - text: '`Label light`'
+        why: 'Значение по умолчанию не подставляется вместо `undefined`. Оно нужно, только если провайдера нет.'
+      - text: '`Label null`'
+        why: 'React не преобразует значения провайдера: что передали, то и получат потребители.'
+      - text: 'Ошибка: значение провайдера не может быть `undefined`'
+        why: 'Провайдер принимает любое значение, включая `undefined`.'
+    explanation: |
+      Значение по умолчанию в `createContext` не работает как значение по умолчанию у параметра функции. Оно не
+      заменяет `undefined`, а используется только при отсутствии провайдера выше по дереву. Это ловушка, когда
+      провайдер получает значение, которое ещё не загружено: потребители получат `undefined`, хотя в
+      `createContext` указано разумное значение. Частый приём — создавать контекст со значением `null` и
+      проверять его в хуке: `if (!ctx) throw new Error('useAuth must be used inside AuthProvider')`.
+    links:
+      - https://react.dev/reference/react/createContext#parameters
+    source: own

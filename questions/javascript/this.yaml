@@ -1,0 +1,388 @@
+# yaml-language-server: $schema=../../schema.json
+topic: javascript
+subtopic: this
+questions:
+  - id: javascript-this-001
+    level: junior
+    tags: [method, lost-this, output]
+    question: |
+      Что произойдёт при выполнении кода?
+    code: |
+      'use strict';
+      const user = {
+        name: 'Аня',
+        getName() {
+          return this.name;
+        },
+      };
+
+      const getName = user.getName;
+      console.log(getName());
+    codeLang: js
+    options:
+      - text: 'Выведется `Аня`'
+        why: 'Метод не «помнит» объект, из которого его взяли. `this` определяется в момент вызова, а здесь вызов без объекта.'
+      - text: 'Выведется `undefined`'
+        why: 'Так было бы, если бы `this` указывал на какой-то объект без `name`. В строгом режиме он равен `undefined`, и чтение свойства падает.'
+      - text: 'Ошибка `TypeError`'
+        correct: true
+        why: 'Функция вызвана без объекта слева от точки, поэтому в строгом режиме `this === undefined`, а `undefined.name` бросает ошибку.'
+      - text: 'Выведется пустая строка'
+        why: 'Пустая строка была бы в браузере без строгого режима: `this` стал бы `window`, а `window.name` — пустая строка. Здесь строгий режим.'
+    explanation: |
+      Для обычных функций `this` определяется тем, как функция вызвана, а не где она объявлена. `user.getName()` —
+      вызов метода, `this` равен `user`. `const getName = user.getName` копирует ссылку на функцию, и вызов
+      `getName()` уже без объекта: в строгом режиме (модули, классы, `'use strict'`) `this` будет `undefined`,
+      в нестрогом — глобальный объект. Та же ловушка возникает при передаче метода колбэком:
+      `setTimeout(user.getName)`, `button.addEventListener('click', obj.handle)`. Лечится через
+      `user.getName.bind(user)` или стрелочную обёртку `() => user.getName()`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/this
+    source: own
+
+  - id: javascript-this-002
+    level: middle
+    tags: [arrow-functions, object-literal, output]
+    question: |
+      Что выведется в консоль, если код выполняется как обычный скрипт на верхнем уровне?
+    code: |
+      const counter = {
+        count: 10,
+        arrow: () => this.count + 1,
+        method() {
+          return this.count + 1;
+        },
+      };
+
+      console.log(counter.arrow(), counter.method());
+    codeLang: js
+    options:
+      - text: '`11 11`'
+        why: 'Стрелочная функция не получает `this` от объекта, на котором её вызвали. Литерал объекта не создаёт своего `this`.'
+      - text: '`NaN 11`'
+        correct: true
+        why: 'У стрелочной функции нет своего `this`: она берёт его из окружения, где объявлена, — здесь это верхний уровень скрипта, глобальный объект. `count` там нет, `undefined + 1` даёт `NaN`.'
+      - text: '`TypeError` при вызове `arrow`'
+        why: 'Ошибка была бы, если бы внешний `this` был `undefined` (в модуле). В обычном скрипте это глобальный объект.'
+      - text: '`11 NaN`'
+        why: 'У обычного метода `this` равен объекту слева от точки, то есть `counter`, поэтому `method` вернёт 11.'
+    explanation: |
+      Стрелочная функция не имеет собственного `this`, `arguments` и `super`: она лексически берёт их из
+      внешней функции или модуля. Фигурные скобки литерала объекта — не область видимости и не функция,
+      поэтому стрелка внутри объекта видит `this` того места, где создан сам объект. В модуле это был бы
+      `undefined` и `TypeError`. Отсюда правило: методы объектов пишут обычными функциями или сокращённым
+      синтаксисом `method() {}`, а стрелки — там, где нужно захватить внешний `this`, например в колбэках внутри
+      методов.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions#cannot_be_used_as_methods
+    source: own
+
+  - id: javascript-this-003
+    level: middle
+    tags: [bind, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function getName() {
+        return this.name;
+      }
+
+      const first = getName.bind({ name: 'first' });
+      const second = first.bind({ name: 'second' });
+
+      console.log(second());
+    codeLang: js
+    options:
+      - text: '`first`'
+        correct: true
+        why: '`bind` создаёт функцию с жёстко зафиксированным `this`. Повторный `bind` оборачивает уже привязанную функцию, но её `this` изменить не может.'
+      - text: '`second`'
+        why: 'Последний `bind` не перекрывает первый: внутренняя функция всё равно вызовет исходную с `this` из первого `bind`.'
+      - text: '`undefined`'
+        why: '`this` привязан к объекту `{ name: "first" }`, поэтому свойство найдётся.'
+      - text: '`TypeError`: нельзя привязать уже привязанную функцию'
+        why: 'Повторный `bind` разрешён и даже может добавить частично применённые аргументы — просто `this` уже не поменяет.'
+    explanation: |
+      `fn.bind(ctx)` возвращает новую «связанную» функцию: при вызове она вызывает исходную с `this = ctx`,
+      игнорируя то, как её вызвали. Если связать её ещё раз, получится обёртка над обёрткой: внешняя
+      передаёт свой `this` во внутреннюю, а та его игнорирует и использует свой. Поэтому выигрывает первый
+      `bind`. Аргументы при этом накапливаются: `f.bind(null, 1).bind(null, 2)` даст вызов `f(1, 2)`. Так же
+      `call` и `apply` бессильны против связанной функции.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
+    source: own
+
+  - id: javascript-this-004
+    level: senior
+    tags: [bind, new, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function Point(x) {
+        this.x = x;
+      }
+
+      const BoundPoint = Point.bind({ x: 'bound' }, 10);
+      const point = new BoundPoint();
+
+      console.log(point.x, point instanceof Point);
+    codeLang: js
+    options:
+      - text: '`bound true`'
+        why: 'При вызове через `new` привязанный `this` игнорируется: `new` всегда создаёт новый объект.'
+      - text: '`10 true`'
+        correct: true
+        why: '`new` побеждает `bind` по `this`: создаётся новый объект с прототипом `Point.prototype`. А частично применённый аргумент 10 сохраняется.'
+      - text: '`10 false`'
+        why: 'Связанная функция при `new` использует `prototype` исходной функции, поэтому `instanceof Point` — `true`.'
+      - text: '`TypeError`: привязанную функцию нельзя вызвать с `new`'
+        why: 'Можно: связанные функции из обычных функций остаются конструкторами.'
+    explanation: |
+      Правила определения `this` применяются по приоритету: `new` → явная привязка `bind` → `call`/`apply` →
+      вызов как метода → обычный вызов. `new` сильнее `bind`: при создании объекта привязанный `this` молча
+      игнорируется, а вот частично применённые аргументы передаются. Это позволяет использовать `bind` для
+      частичного применения аргументов конструктора. Стрелочные функции стоят особняком: у них нет своего
+      `this`, на них не действуют ни `bind`, ни `call`, и с `new` их вызвать нельзя.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind#bound_functions_used_as_constructors
+    source: own
+
+  - id: javascript-this-005
+    level: junior
+    tags: [call, apply]
+    question: |
+      Чем `fn.call(ctx, 1, 2)` отличается от `fn.apply(ctx, [1, 2])`?
+    options:
+      - text: 'Формой аргументов, у `call` списком, у `apply` массивом'
+        correct: true
+        why: 'Оба вызывают функцию сразу с указанным `this`. Мнемоника: apply — array.'
+      - text: 'Тем, что `call` вызывает сразу, а `apply` возвращает функцию'
+        why: 'Новую функцию возвращает `bind`. И `call`, и `apply` вызывают функцию немедленно.'
+      - text: '`apply` работает только со встроенными функциями вроде `Math.max`'
+        why: '`apply` работает с любыми функциями. `Math.max.apply(null, arr)` — просто известный пример.'
+      - text: '`call` не меняет `this`, а `apply` меняет'
+        why: 'Оба принимают `this` первым аргументом и одинаково его устанавливают.'
+    explanation: |
+      `call`, `apply` и `bind` позволяют явно задать `this`. `call(ctx, a, b)` и `apply(ctx, [a, b])` вызывают
+      функцию сразу и отличаются только формой аргументов. `bind(ctx, a)` ничего не вызывает, а возвращает
+      новую функцию с зафиксированным `this` и частью аргументов. Сегодня `apply` нужен реже: вместо
+      `Math.max.apply(null, nums)` пишут `Math.max(...nums)`. Но знание пригодится для заимствования методов:
+      `Array.prototype.slice.call(arguments)`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/call
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/apply
+    source: own
+
+  - id: javascript-this-006
+    level: senior
+    tags: [reference, comma-operator, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      'use strict';
+      const obj = {
+        name: 'obj',
+        who() {
+          return this?.name;
+        },
+      };
+
+      console.log(obj.who(), (obj.who)(), (0, obj.who)());
+    codeLang: js
+    options:
+      - text: '`obj obj obj`'
+        why: 'Оператор запятая вычисляет выражение до значения — голой функции. Связь с объектом при этом теряется.'
+      - text: '`obj undefined undefined`'
+        why: 'Скобки вокруг `obj.who` — просто группировка, они сохраняют ссылку на свойство объекта. Вызов остаётся вызовом метода.'
+      - text: '`obj obj undefined`'
+        correct: true
+        why: '`(obj.who)()` — тот же вызов метода: скобки не меняют ссылку. `(0, obj.who)` вычисляет значение — саму функцию без объекта, и `this` становится `undefined`.'
+      - text: '`undefined obj undefined`'
+        why: 'Обычный вызов `obj.who()` — классический вызов метода с `this === obj`.'
+    explanation: |
+      Спецификация описывает выражение `obj.who` как Reference — ссылку «свойство `who` объекта `obj`». При
+      вызове ссылки объект становится `this`. Группирующие скобки сохраняют Reference, а любые операторы,
+      вычисляющие значение (`,`, `||`, присваивание, тернарный), превращают её в голую функцию. Отсюда трюк
+      `(0, obj.method)()` — его генерируют сборщики, чтобы вызвать импортированную функцию без `this`. И отсюда
+      же баг: `(cond ? obj.a : obj.b)()` вызывает метод без объекта.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Comma_operator
+      - https://tc39.es/ecma262/#sec-reference-record-specification-type
+    source: own
+
+  - id: javascript-this-007
+    level: middle
+    tags: [class-fields, arrow-functions, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      class Button {
+        label = 'ok';
+        arrow = () => this.label;
+        method() {
+          return this?.label;
+        }
+      }
+
+      const button = new Button();
+      const { arrow, method } = button;
+      console.log(arrow(), method());
+    codeLang: js
+    options:
+      - text: '`ok ok`'
+        why: 'Метод из прототипа не привязан к экземпляру: после деструктуризации он вызывается без объекта.'
+      - text: '`ok undefined`'
+        correct: true
+        why: 'Поле-стрелка создаётся в конструкторе для каждого экземпляра и захватывает его `this`. Обычный метод вызван без объекта, а в классах всегда строгий режим, поэтому `this` — `undefined`.'
+      - text: '`undefined undefined`'
+        why: 'Стрелочная функция в поле класса запомнила `this` экземпляра в момент создания, деструктуризация этого не меняет.'
+      - text: '`undefined ok`'
+        why: 'Ровно наоборот: устойчива к извлечению именно стрелка-поле, а не метод прототипа.'
+    explanation: |
+      Методы класса лежат в прототипе и общие для всех экземпляров; `this` у них определяется при вызове. Поле
+      класса со стрелкой — свойство каждого экземпляра: функция создаётся в конструкторе и лексически
+      захватывает `this` создаваемого объекта. Поэтому её можно передавать как колбэк (`onClick={this.handle}`)
+      без `bind`. Цена — отдельная функция на каждый экземпляр, а такой метод нельзя переопределить через
+      прототип или вызвать через `super`. Тело класса всегда в строгом режиме, поэтому потерянный `this` — это
+      `undefined`, а не глобальный объект.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/Public_class_fields#arrow_functions_in_class_fields
+    source: own
+
+  - id: javascript-this-008
+    level: junior
+    tags: [method-call]
+    question: |
+      Чему равен `this` внутри обычной функции, вызванной как `shop.cart.add()`?
+    options:
+      - text: '`shop`'
+        why: '`this` — объект непосредственно слева от последней точки, а не самый внешний объект цепочки.'
+      - text: '`shop.cart`'
+        correct: true
+        why: 'При вызове метода `this` — объект, у которого взяли метод, то есть всё, что стоит перед последней точкой.'
+      - text: 'Функция `add`'
+        why: 'Функция не становится собственным `this`. Это объект, у которого её вызвали.'
+      - text: 'Глобальный объект `window`'
+        why: 'Глобальный объект (или `undefined` в строгом режиме) бывает при вызове без объекта, а здесь объект есть.'
+    explanation: |
+      Простое правило для обычных функций: посмотрите на место вызова. Если перед скобками стоит
+      `что-то.метод`, то `this` — это «что-то», то есть всё перед последней точкой. Если функция вызвана без
+      объекта — `undefined` в строгом режиме и глобальный объект в нестрогом. Если вызов через `new` — новый
+      объект. Если через `call`, `apply` или `bind` — явно указанный объект. Стрелочные функции правилу не
+      подчиняются: их `this` берётся из окружения.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/this#function_context
+    source: own
+
+  - id: javascript-this-009
+    level: senior
+    tags: [arrow-functions, call, new, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const outer = {
+        name: 'outer',
+        make() {
+          return () => this.name;
+        },
+      };
+
+      const arrow = outer.make();
+      console.log(arrow.call({ name: 'other' }));
+
+      try {
+        new arrow();
+      } catch (error) {
+        console.log(error.constructor.name);
+      }
+    codeLang: js
+    options:
+      - text: '`other`, затем `TypeError`'
+        why: '`call` не меняет `this` у стрелочной функции: она всегда использует `this` окружения, в котором создана.'
+      - text: '`outer`, затем `TypeError`'
+        correct: true
+        why: 'Стрелка захватила `this` метода `make`, то есть `outer`, и `call` его не переопределит. Вызвать стрелку через `new` нельзя — у неё нет `[[Construct]]`.'
+      - text: '`outer`, а `new arrow()` создаст пустой объект'
+        why: 'Стрелочные функции не могут быть конструкторами: `new` бросает `TypeError`.'
+      - text: '`undefined`, затем `TypeError`'
+        why: '`this` стрелки — это `this` вызова `outer.make()`, то есть сам `outer`, и у него есть `name`.'
+    explanation: |
+      Стрелочная функция запоминает `this` в момент создания — это `this` окружающей функции. Ни `call`,
+      ни `apply`, ни `bind` его не меняют: первый аргумент просто игнорируется. Стрелки не могут быть
+      конструкторами: у них нет внутреннего метода `[[Construct]]` (и заодно нет свойства `prototype`).
+      Это делает их идеальными для колбэков внутри методов (`items.map((item) => this.format(item))`) и неподходящими для методов объектов, обработчиков, которым
+      нужен `this` элемента, и конструкторов.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions
+    source: own
+
+  - id: javascript-this-010
+    level: middle
+    tags: [event-handlers, dom, no-run]
+    question: |
+      Чему равен `this` в двух обработчиках клика по кнопке?
+    code: |
+      button.addEventListener('click', function () {
+        console.log(this);
+      });
+
+      button.addEventListener('click', () => {
+        console.log(this);
+      });
+    codeLang: js
+    options:
+      - text: 'В обоих — кнопка'
+        why: 'Стрелочная функция не получает `this` от `addEventListener`: она берёт его из окружения, где создана.'
+      - text: 'В первом — кнопка, во втором — `this` внешнего кода'
+        correct: true
+        why: 'Обычной функции браузер передаёт `this`, равный `event.currentTarget`, то есть элементу с обработчиком. У стрелки свой `this` не устанавливается.'
+      - text: 'В первом — объект события, во втором — кнопка'
+        why: 'Объект события приходит первым аргументом, а не через `this`.'
+      - text: 'В обоих — `window`'
+        why: '`addEventListener` вызывает обычный обработчик с `this` элемента, а не глобального объекта.'
+    explanation: |
+      Для обработчиков, добавленных через `addEventListener` или свойство `onclick`, браузер вызывает функцию
+      с `this`, равным `event.currentTarget` — элементу, на котором висит обработчик. У стрелочной функции
+      `this` внешний: в модуле это `undefined`, в методе класса — экземпляр. Надёжнее не полагаться на `this` в
+      обработчиках вовсе и использовать `event.currentTarget` (элемент с обработчиком) или `event.target`
+      (элемент, по которому кликнули, возможно вложенный).
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener#the_value_of_this_within_the_handler
+    source: own
+
+  - id: javascript-this-011
+    level: senior
+    tags: [strict-mode, primitives, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function sloppy() {
+        return typeof this;
+      }
+
+      function strict() {
+        'use strict';
+        return typeof this;
+      }
+
+      console.log(sloppy.call(5), strict.call(5));
+    codeLang: js
+    options:
+      - text: '`number number`'
+        why: 'В нестрогом режиме примитив, переданный как `this`, оборачивается в объект `Number`.'
+      - text: '`object number`'
+        correct: true
+        why: 'Нестрогая функция «упаковывает» примитивный `this` в объект-обёртку, а `null` и `undefined` заменяет глобальным объектом. Строгая получает значение как есть.'
+      - text: '`object object`'
+        why: 'Строгий режим отключает упаковку: `this` остаётся примитивом.'
+      - text: '`number object`'
+        why: 'Ровно наоборот: упаковка — поведение нестрогого режима.'
+    explanation: |
+      В нестрогом режиме `this` у обычной функции всегда объект: примитивы (`5`, `'str'`, `true`) превращаются
+      в обёртки `Number`, `String`, `Boolean`, а `null` и `undefined` — в глобальный объект. Это давало
+      неочевидные утечки: функция, вызванная без объекта, могла писать свойства прямо в `window`. Строгий режим
+      передаёт `this` без изменений: `undefined` остаётся `undefined`, число — числом. Модули и классы всегда
+      работают в строгом режиме.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode#no_this_substitution
+    source: own

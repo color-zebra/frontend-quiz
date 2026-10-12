@@ -1,0 +1,309 @@
+# yaml-language-server: $schema=../../schema.json
+topic: react
+subtopic: events
+questions:
+  - id: react-events-001
+    level: junior
+    tags: [event-handlers, output]
+    question: |
+      Что выведется в консоль при монтировании и после клика по кнопке?
+    code: |
+      function App() {
+        function handleClick() {
+          console.log('handle');
+        }
+        console.log('render');
+        return <button onClick={handleClick()}>Нажми</button>;
+      }
+    codeLang: jsx
+    options:
+      - text: '`render`, `handle` при монтировании, после клика ничего'
+        correct: true
+        why: '`handleClick()` вызывает функцию прямо во время рендера, а в `onClick` попадает её результат — `undefined`. У кнопки нет обработчика, поэтому клик ничего не делает.'
+      - text: '`render` при монтировании, `handle` после клика'
+        why: 'Так было бы с `onClick={handleClick}` — передачей самой функции, без скобок.'
+      - text: '`render`, `handle` при монтировании и `handle` после клика'
+        why: 'В `onClick` передан результат вызова, `undefined`, а не функция. Обработчика у кнопки нет.'
+      - text: 'Ошибка: `onClick` должен получить функцию'
+        why: 'Значение `undefined` для `onClick` допустимо: React просто не вешает обработчик.'
+    explanation: |
+      В `onClick` передают функцию, которую React вызовет при событии: `onClick={handleClick}`. Скобки
+      `handleClick()` вызывают её сразу при рендере. Если такой обработчик меняет состояние, получится
+      бесконечный цикл рендеров. Чтобы передать аргументы, функцию оборачивают: `onClick={() => remove(id)}`.
+      Обработчики событий — правильное место для побочных эффектов, вызванных действием пользователя: запросов,
+      навигации, изменения состояния.
+    links:
+      - https://react.dev/learn/responding-to-events#adding-event-handlers
+    source: own
+
+  - id: react-events-002
+    level: junior
+    tags: [preventDefault, forms, return-false]
+    question: |
+      Почему этот обработчик не отменяет перезагрузку страницы при отправке формы?
+    code: |
+      function Search() {
+        function handleSubmit() {
+          search();
+          return false;
+        }
+        return (
+          <form onSubmit={handleSubmit}>
+            <input name="q" />
+            <button>Найти</button>
+          </form>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: 'React игнорирует возвращаемое значение'
+        correct: true
+        why: 'В React отмена действия браузера возможна только явным `e.preventDefault()`. Возврат `false` из обработчика ничего не делает.'
+      - text: 'Нужно вернуть `true`, а не `false`'
+        why: 'React игнорирует возвращаемое значение обработчиков вообще, любое.'
+      - text: 'Кнопке не хватает атрибута `type="button"`'
+        why: 'Клик по такой кнопке перестанет отправлять форму, но Enter в поле всё равно её отправит, и страница перезагрузится. К тому же это отказ от отправки, а не её отмена.'
+      - text: 'Отправку нужно отменять в `onClick` кнопки'
+        why: 'Отменить можно и в `onSubmit`, но вызовом `e.preventDefault()`. Перенос в `onClick` не исправит возврат `false`.'
+    explanation: |
+      В HTML-атрибутах вроде `onsubmit="return false"` возврат `false` отменял действие по умолчанию. React так
+      не работает: обработчик получает синтетическое событие, и действие отменяет только
+      `e.preventDefault()`. В React 19 для форм есть альтернатива: передать функцию в `action`, и React сам
+      перехватит отправку и передаст в неё `FormData`.
+    links:
+      - https://react.dev/learn/responding-to-events#preventing-default-behavior
+    source: own
+
+  - id: react-events-003
+    level: senior
+    tags: [event-delegation, native-events, stopPropagation, output]
+    question: |
+      Что выведется в консоль после клика по кнопке?
+    code: |
+      function App() {
+        useEffect(() => {
+          document.addEventListener('click', () => console.log('document native'));
+          document.getElementById('root').addEventListener('click', () => console.log('root native'));
+          document.querySelector('button').addEventListener('click', () => console.log('button native'));
+        }, []);
+
+        return (
+          <div
+            onClick={() => console.log('div react')}
+            onClickCapture={() => console.log('div react capture')}
+          >
+            <button onClick={(e) => {
+              console.log('button react');
+              e.stopPropagation();
+            }}>x</button>
+          </div>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`div react capture`, `button native`, `button react`, `root native`'
+        correct: true
+        why: 'React слушает события на корне `#root`: в фазе перехвата он вызывает capture-обработчики, затем событие доходит до кнопки (нативный слушатель), всплывает к корню, и React вызывает `onClick`. `stopPropagation` останавливает и React-всплытие, и нативное всплытие от корня к `document`.'
+      - text: '`div react capture`, `button react`, `button native`, `root native`, `document native`'
+        why: 'React-обработчик кнопки вызывается не на самой кнопке, а когда событие всплывёт до корня, то есть после нативного слушателя кнопки. И до `document` событие не дойдёт.'
+      - text: '`button native`, `div react capture`, `button react`'
+        why: 'Фаза перехвата идёт раньше фазы цели: React вызывает `onClickCapture` при прохождении события через корень сверху вниз, до кнопки. И нативный слушатель на корне тоже сработает.'
+      - text: '`div react capture`, `button native`, `button react`, `div react`, `root native`'
+        why: '`stopPropagation` в React-обработчике останавливает распространение по дереву React, поэтому `onClick` у `div` не вызывается.'
+    explanation: |
+      С React 17 обработчики вешаются на корневой контейнер, а не на каждый элемент (event delegation). Когда
+      нативное событие проходит корень в фазе перехвата, React вызывает `onClickCapture`. Когда оно всплывает
+      к корню, React строит путь по дереву компонентов и вызывает `onClick` снизу вверх. `e.stopPropagation()`
+      в React-обработчике останавливает и этот путь, и нативное событие на корне, поэтому выше корня оно не
+      дойдёт.
+    links:
+      - https://legacy.reactjs.org/blog/2020/08/10/react-v17-rc.html#changes-to-event-delegation
+      - https://react.dev/learn/responding-to-events#event-propagation
+    source: own
+
+  - id: react-events-004
+    level: middle
+    tags: [portals, event-bubbling, output]
+    question: |
+      Модалка рендерится через портал в `#modal-root`, который лежит вне `#root`. Что выведется в консоль после
+      клика по кнопке `ok`?
+    code: |
+      const modalRoot = document.createElement('div');
+      modalRoot.id = 'modal-root';
+      document.body.appendChild(modalRoot);
+
+      function Modal() {
+        return createPortal(<button>ok</button>, modalRoot);
+      }
+
+      function App() {
+        useEffect(() => {
+          document.getElementById('root')
+            .addEventListener('click', () => console.log('root native'));
+        }, []);
+
+        return (
+          <div onClick={() => console.log('div react')}>
+            <Modal />
+          </div>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`div react`'
+        correct: true
+        why: 'React-события всплывают по дереву компонентов, а не по DOM. В дереве React кнопка находится внутри `div`, поэтому `onClick` у `div` срабатывает. А нативное событие всплывает по DOM, где кнопка вне `#root`, и слушатель на корне его не видит.'
+      - text: '`div react`, `root native`'
+        why: 'В DOM кнопка лежит в `#modal-root`, а не в `#root`, поэтому нативное всплытие до `#root` не доходит.'
+      - text: 'Ничего: в DOM кнопка находится вне `div`'
+        why: 'Для React-событий важна иерархия компонентов. Портал меняет место в DOM, но не положение в дереве React.'
+      - text: '`root native`'
+        why: 'Нативное событие всплывает по реальному DOM: от `#modal-root` к `body`, минуя `#root`.'
+    explanation: |
+      Портал (`createPortal(children, container)`) рендерит детей в другой DOM-узел, но они остаются частью
+      дерева React: получают контекст и пропсы, а их события всплывают к React-родителям. Это удобно для
+      модалок, тултипов и выпадающих меню, которым нужно выбраться из `overflow: hidden` или контекста
+      наложения, но которые по смыслу принадлежат компоненту. Обратная сторона: клик внутри модалки
+      срабатывает и в обработчиках родителя, например «закрыть по клику вне». Это нужно учитывать.
+    links:
+      - https://react.dev/reference/react-dom/createPortal#rendering-to-a-different-part-of-the-dom
+    source: own
+
+  - id: react-events-005
+    level: middle
+    tags: [synthetic-events, event-pooling, output]
+    question: |
+      Что выведется в консоль после клика?
+    code: |
+      function App() {
+        function handleClick(e) {
+          setTimeout(() => console.log('later', e.type, e.currentTarget));
+          console.log('now', e.currentTarget.tagName);
+        }
+        return <button onClick={handleClick}>x</button>;
+      }
+    codeLang: jsx
+    options:
+      - text: '`now BUTTON`, затем `later click null`'
+        correct: true
+        why: 'С React 17 события не переиспользуются, и объект доступен после обработчика. Но `currentTarget` осмысленен только во время обработки: после неё React, как и браузер, обнуляет его.'
+      - text: '`now BUTTON`, затем `later click BUTTON`'
+        why: '`currentTarget` указывает на элемент, чей обработчик выполняется сейчас. Когда обработка закончилась, текущего элемента нет, и значение `null`.'
+      - text: '`now BUTTON`, затем ошибка: событие уже очищено'
+        why: 'Так было до React 17: из-за event pooling поля события обнулялись после обработчика. Теперь `e.type` доступен и позже.'
+      - text: '`now BUTTON`, затем `later undefined undefined`'
+        why: 'Свойство `type` у события сохраняется, обнуляется только `currentTarget`.'
+    explanation: |
+      В React 16 и раньше синтетические события переиспользовались (event pooling). После обработчика поля
+      обнулялись, и для асинхронного доступа нужен был `e.persist()`. В React 17 пулинг убрали, объект события
+      можно сохранить и читать позже. Но `currentTarget` по природе привязан к моменту обработки: и в нативных
+      событиях он после этого `null`. Если элемент нужен асинхронно, его сохраняют в переменную сразу:
+      `const button = e.currentTarget`.
+    links:
+      - https://legacy.reactjs.org/blog/2020/08/10/react-v17-rc.html#no-event-pooling
+      - https://developer.mozilla.org/en-US/docs/Web/API/Event/currentTarget
+    source: own
+
+  - id: react-events-006
+    level: middle
+    tags: [onChange, inputs]
+    question: |
+      Когда в React срабатывает `onChange` у `<input type="text">`?
+    options:
+      - text: 'На каждое изменение, как нативное `input`'
+        correct: true
+        why: 'React называет событие `onChange`, но вызывает его на каждое изменение значения: каждую введённую букву, вставку, удаление.'
+      - text: 'При потере фокуса, как нативное `change`'
+        why: 'Нативное `change` у текстового поля действительно срабатывает при потере фокуса, но React-`onChange` устроен иначе и ближе к `input`.'
+      - text: 'При `keydown`, ещё до изменения значения'
+        why: 'На `keydown` значение поля ещё старое. `onChange` срабатывает, когда значение уже изменилось.'
+      - text: 'Только после завершения ввода через IME'
+        why: 'При вводе через IME (например, китайский) промежуточные изменения тоже меняют значение и вызывают `onChange`.'
+    explanation: |
+      `onChange` в React намеренно отличается от нативного `change`: он срабатывает на каждое изменение, чтобы
+      управляемые поля (`value` + `onChange`) могли обновлять состояние посимвольно. Нативное `change` для
+      текстовых полей происходит только при потере фокуса после изменения. Если нужно именно такое поведение,
+      используют `onBlur`. Для тяжёлой реакции на ввод (поиск, валидация на сервере) добавляют debounce или
+      `useDeferredValue`.
+    links:
+      - https://react.dev/reference/react-dom/components/input#props
+    source: own
+
+  - id: react-events-008
+    level: senior
+    tags: [native-events, stopPropagation, output]
+    question: |
+      Что выведется в консоль после клика по кнопке?
+    code: |
+      function App() {
+        const buttonRef = useRef(null);
+
+        useEffect(() => {
+          buttonRef.current.addEventListener('click', (e) => {
+            console.log('native');
+            e.stopPropagation();
+          });
+        }, []);
+
+        return (
+          <div onClickCapture={() => console.log('div capture')}>
+            <button ref={buttonRef} onClick={() => console.log('react')}>x</button>
+          </div>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`div capture`, `native`'
+        correct: true
+        why: 'Capture-обработчики React вызываются, когда событие проходит корень сверху вниз, до кнопки. Затем нативный слушатель кнопки останавливает всплытие, событие не доходит до корня, и React не вызывает `onClick`.'
+      - text: '`div capture`, `native`, `react`'
+        why: 'React-обработчик `onClick` вызывается, только когда событие всплывёт до корня. Нативный `stopPropagation` на кнопке этого не допускает.'
+      - text: '`native`'
+        why: 'Фаза перехвата прошла раньше: React вызвал `onClickCapture`, когда событие спускалось через корень к кнопке.'
+      - text: '`div capture`, `react`, `native`'
+        why: 'Нативный слушатель на элементе срабатывает раньше React-обработчика этого элемента: React ждёт, пока событие всплывёт до корня.'
+    explanation: |
+      React-обработчики фазы всплытия вызываются слушателем на корневом контейнере. Если нативный код на пути
+      между элементом и корнем остановит всплытие, React о событии не узнает. Так ломаются React-обработчики
+      рядом со сторонними виджетами, которые вызывают `stopPropagation`. Capture-фаза при этом уже прошла,
+      поэтому `onClickCapture` сработает. Если нужно перехватить событие раньше чужого кода, используют
+      React-обработчики фазы перехвата или нативные слушатели с `capture: true`.
+    links:
+      - https://legacy.reactjs.org/blog/2020/08/10/react-v17-rc.html#changes-to-event-delegation
+      - https://developer.mozilla.org/en-US/docs/Web/API/Event/stopPropagation
+    source: own
+
+  - id: react-events-009
+    level: senior
+    tags: [onScroll, bubbling, react-17]
+    question: |
+      Пользователь прокручивает вложенный блок с `overflow: auto`. Сработает ли `onScroll` у внешнего `div`?
+    code: |
+      function App() {
+        return (
+          <div onScroll={() => console.log('outer')}>
+            <div style={{ height: 200, overflow: 'auto' }} onScroll={() => console.log('inner')}>
+              {/* длинное содержимое */}
+            </div>
+          </div>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: 'Нет: в React 17 и новее `onScroll` не всплывает'
+        correct: true
+        why: 'Нативное событие `scroll` на элементах не всплывает, и с React 17 React повторяет это поведение. Сработает только обработчик прокручиваемого элемента.'
+      - text: 'Да: все React-события всплывают по дереву'
+        why: 'Большинство всплывает, но `onScroll` — исключение: с React 17 он ведёт себя как нативный `scroll`.'
+      - text: 'Да, но только если внешний `div` тоже прокручивается'
+        why: 'Обработчик внешнего блока сработает только от его собственной прокрутки. Прокрутка вложенного блока до него не доходит.'
+      - text: 'Нет: React вообще не поддерживает `onScroll`'
+        why: '`onScroll` поддерживается и срабатывает на элементе, который прокручивают.'
+    explanation: |
+      В React 16 `onScroll` всплывал, хотя в браузере `scroll` не всплывает, и это давало путаницу: родитель
+      получал события прокрутки детей. В React 17 поведение привели к нативному. Если нужно ловить прокрутку
+      любого потомка, используют фазу перехвата: `onScrollCapture`. Ещё одно расхождение с нативными событиями:
+      `onFocus` и `onBlur` в React всплывают, потому что реализованы через `focusin` и `focusout`.
+    links:
+      - https://legacy.reactjs.org/blog/2020/08/10/react-v17-rc.html#other-breaking-changes
+    source: own

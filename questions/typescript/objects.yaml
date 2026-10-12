@@ -1,0 +1,342 @@
+# yaml-language-server: $schema=../../schema.json
+topic: typescript
+subtopic: objects
+questions:
+  - id: typescript-objects-001
+    level: junior
+    tags: [interface, declaration-merging]
+    question: |
+      Что произойдёт при компиляции?
+    code: |
+      interface User {
+        name: string;
+      }
+
+      interface User {
+        age: number;
+      }
+
+      const user: User = { name: 'Ann' };
+    codeLang: ts
+    options:
+      - text: 'Ошибка в `user`: не хватает свойства `age`'
+        correct: true
+        why: 'Одноимённые интерфейсы в одной области видимости сливаются в один, и `User` требует и `name`, и `age`.'
+      - text: 'Ошибка во втором объявлении: `User` уже объявлен'
+        why: 'Повторное объявление запрещено для `type`, а интерфейсы специально разрешено объявлять несколько раз.'
+      - text: 'Компилируется: второе объявление заменило первое'
+        why: 'Объявления не заменяют, а дополняют друг друга. К тому же, если бы `User` содержал только `age`, литерал с `name` тоже не прошёл бы проверку.'
+      - text: 'Компилируется: добавленные свойства необязательны'
+        why: 'Свойства из всех объявлений сохраняют свои модификаторы. `age` объявлено без `?`, значит обязательно.'
+    explanation: |
+      Слияние объявлений (declaration merging) — особенность интерфейсов: несколько `interface` с одним именем
+      объединяются в один тип. Так библиотеки и проекты расширяют чужие типы: добавляют поля в `Window`, в
+      `Request` из Express, в тему styled-components. Обратная сторона — случайное совпадение имени с глобальным
+      интерфейсом молча расширит его. `type` так не умеет: повторное объявление алиаса — ошибка
+      `Duplicate identifier`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/declaration-merging.html#merging-interfaces
+    source: own
+
+  - id: typescript-objects-002
+    level: middle
+    tags: [optional-properties, undefined]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются?
+    code: |
+      interface WithOptional { note?: string }
+      interface WithUndefined { note: string | undefined }
+
+      const a: WithOptional = {};  // A
+      const b: WithUndefined = {}; // B
+    codeLang: ts
+    options:
+      - text: 'Только B'
+        correct: true
+        why: '`note?: string` разрешает не указывать свойство вовсе. `note: string | undefined` требует, чтобы ключ был в объекте, пусть и со значением `undefined`.'
+      - text: 'Только A'
+        why: 'Необязательное свойство можно пропустить, поэтому пустой объект подходит под `WithOptional`.'
+      - text: 'A и B'
+        why: 'Для `WithOptional` пустой объект корректен: знак `?` и означает, что свойства может не быть.'
+      - text: 'Ни одна'
+        why: 'Тип `string | undefined` разрешает значение `undefined`, но не отсутствие ключа: свойство всё равно обязательное.'
+    explanation: |
+      Необязательное свойство `note?: string` и обязательное `note: string | undefined` при чтении выглядят
+      одинаково: оба дают `string | undefined`. Различие — при создании объекта. Необязательное можно не
+      указывать, обязательное нужно перечислить явно, даже со значением `undefined`. Второй вариант полезен,
+      когда важно не забыть поле: например, в объекте изменений, где каждое поле нужно осознанно заполнить. В
+      рантайме различие тоже есть: `'note' in obj` и `Object.keys` видят ключ со значением `undefined`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/objects.html#optional-properties
+    source: own
+
+  - id: typescript-objects-003
+    level: junior
+    tags: [readonly]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются?
+    code: |
+      interface Config {
+        readonly tags: string[];
+      }
+
+      const config: Config = { tags: ['a'] };
+      config.tags.push('b'); // A
+      config.tags = [];      // B
+    codeLang: ts
+    options:
+      - text: 'Только B'
+        correct: true
+        why: '`readonly` запрещает присвоить свойству новое значение, но не защищает содержимое массива. `push` меняет массив, а не свойство.'
+      - text: 'Только A'
+        why: '`push` не записывает в свойство `tags`, а меняет сам массив, на который оно ссылается. Это `readonly` не запрещает.'
+      - text: 'A и B'
+        why: 'Модификатор неглубокий: массив внутри свойства остаётся изменяемым, пока сам он не объявлен как `readonly string[]`.'
+      - text: 'Ни одна'
+        why: 'Присваивание `config.tags = []` записывает в свойство, помеченное `readonly`, и это ошибка компиляции.'
+    explanation: |
+      `readonly` у свойства запрещает только присваивание этому свойству. Вложенные объекты и массивы остаются
+      изменяемыми: модификатор неглубокий. Чтобы запретить и `push`, массив объявляют как
+      `readonly tags: readonly string[]` или `ReadonlyArray<string>`. Для глубокой неизменяемости пишут свой
+      тип `DeepReadonly` или используют `as const` для литералов. Всё это только проверки компилятора: в
+      рантайме объект остаётся изменяемым, если не вызвать `Object.freeze`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/objects.html#readonly-properties
+    source: own
+
+  - id: typescript-objects-004
+    level: middle
+    tags: [index-signature]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются?
+    code: |
+      interface Dictionary {
+        [key: string]: number;
+        count: number;  // A
+        label: string;  // B
+      }
+    codeLang: ts
+    options:
+      - text: 'Только B'
+        correct: true
+        why: 'Индексная сигнатура описывает любой строковый ключ, включая `label`. Поэтому типы всех именованных свойств должны с ней совпадать, а `string` не подходит под `number`.'
+      - text: 'A и B'
+        why: 'Именованное свойство с типом, совместимым с индексной сигнатурой, разрешено. `count: number` корректно.'
+      - text: 'Только A'
+        why: 'Свойство `count` совпадает по типу с сигнатурой. Конфликт у `label`: его тип `string` не входит в `number`.'
+      - text: 'Ни одна'
+        why: 'Обращение `dict["label"]` по сигнатуре должно давать `number`, а свойство объявлено строкой. Компилятор считает это противоречием.'
+    explanation: |
+      Индексная сигнатура `[key: string]: T` говорит: «по любому строковому ключу лежит `T`». Именованные
+      свойства — тоже строковые ключи, поэтому их типы должны быть совместимы с `T`. Чтобы смешать разные
+      типы, расширяют сигнатуру до объединения `number | string` или выносят словарь в отдельное поле:
+      `{ label: string; values: Record<string, number> }`. Второй способ обычно чище: сигнатура
+      с объединением заставляет сужать тип при каждом чтении.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/objects.html#index-signatures
+    source: own
+
+  - id: typescript-objects-005
+    level: senior
+    tags: [interface-vs-type, index-signature, implicit-index-signature]
+    question: |
+      Какая строка, отмеченная буквой, не скомпилируется?
+    code: |
+      type Meta = Record<string, string>;
+
+      interface HeadersInterface { accept: string }
+      type HeadersType = { accept: string };
+
+      const fromInterface: HeadersInterface = { accept: 'json' };
+      const fromType: HeadersType = { accept: 'json' };
+
+      const a: Meta = fromInterface; // A
+      const b: Meta = fromType;      // B
+    codeLang: ts
+    options:
+      - text: 'Только A'
+        correct: true
+        why: 'Для объектного типа, объявленного через `type`, TypeScript выводит неявную индексную сигнатуру, а для интерфейса — нет. Интерфейс можно дополнить слиянием объявлений, поэтому компилятор не уверен, что все его свойства строковые.'
+      - text: 'Только B'
+        why: 'Наоборот: неявная индексная сигнатура есть у типа-алиаса, поэтому строка B компилируется.'
+      - text: 'A и B'
+        why: 'У типа-алиаса с одними строковыми свойствами есть неявная индексная сигнатура, и его можно присвоить `Record<string, string>`.'
+      - text: 'Ни одна'
+        why: 'Интерфейс могут расширить другие объявления, в том числе нестроковыми полями. Поэтому неявной индексной сигнатуры у него нет, и строка A — ошибка.'
+    explanation: |
+      Одно из немногих практических различий `interface` и `type`. Тип-литерал объекта, объявленный через
+      `type`, закрыт: все его свойства известны, и компилятор может проверить их на совместимость с индексной
+      сигнатурой (implicit index signature). Интерфейс открыт для слияния объявлений, поэтому такой вывод для
+      него не делается. На практике это всплывает при передаче объекта в функцию, принимающую
+      `Record<string, unknown>`: с интерфейсом получаем ошибку `Index signature is missing`. Решения — объявить
+      тип через `type`, добавить в интерфейс явную сигнатуру или скопировать объект: `{ ...headers }`.
+    links:
+      - https://github.com/microsoft/TypeScript/issues/15300
+      - https://www.typescriptlang.org/docs/handbook/2/objects.html#index-signatures
+    source: own
+
+  - id: typescript-objects-006
+    level: senior
+    tags: [intersection, extends, never]
+    question: |
+      Что сообщит компилятор и чему равен тип `Id`?
+    code: |
+      type A = { id: string };
+      type B = { id: number };
+
+      type C = A & B;
+      type Id = C['id'];
+
+      interface D extends A {
+        id: number;
+      }
+    codeLang: ts
+    options:
+      - text: 'Ошибку в объявлении `D`, а `Id` равен `never`'
+        correct: true
+        why: '`extends` проверяет совместимость сразу и сообщает о конфликте `string` и `number`. Пересечение не проверяется: свойство получает тип `string & number`, а такого значения не бывает.'
+      - text: 'Ошибку в объявлении `C`, а `D` компилируется'
+        why: 'Наоборот: пересечение с конфликтующими свойствами молча даёт `never`, а `extends` с несовместимым свойством — ошибка.'
+      - text: 'Ошибок нет, `Id` равен `string | number`'
+        why: 'Пересечение типов пересекает и типы свойств: `string & number`, то есть `never`. А `D` даёт ошибку.'
+      - text: 'Ошибки в `C` и в `D`, `Id` не вычисляется'
+        why: 'Объявление `C` корректно: пересечение с невозможным свойством — допустимый тип, просто непригодный для значений.'
+    explanation: |
+      `interface X extends Y` и `type X = Y & Z` похожи, но обрабатывают конфликты по-разному. `extends`
+      проверяет, что новое свойство совместимо с унаследованным, и сразу сообщает об ошибке. Пересечение
+      ничего не проверяет: типы одноимённых свойств пересекаются, и при конфликте получается `never`. Ошибка
+      всплывёт позже, при попытке создать объект, и будет непонятной. Если конфликтуют литералы-дискриминанты
+      (`{ kind: 'a' } & { kind: 'b' }`), весь тип сразу сворачивается в `never`. Ещё одно отличие:
+      компилятор кэширует отношения между интерфейсами, поэтому `extends` быстрее для больших иерархий.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/objects.html#interface-extension-vs-intersection
+    source: own
+
+  - id: typescript-objects-007
+    level: middle
+    tags: [readonly-array, compatibility]
+    question: |
+      Что произойдёт при компиляции?
+    code: |
+      function sum(values: number[]) {
+        return values.reduce((a, b) => a + b, 0);
+      }
+
+      const prices: readonly number[] = [10, 20];
+      sum(prices);
+    codeLang: ts
+    options:
+      - text: 'Ошибка в вызове `sum`'
+        correct: true
+        why: 'У `number[]` есть `push`, `sort` и другие изменяющие методы, а у `readonly number[]` их нет. Функция с параметром `number[]` могла бы изменить массив, поэтому компилятор не разрешает передать неизменяемый.'
+      - text: 'Компилируется: `reduce` не изменяет массив'
+        why: 'Компилятор проверяет сигнатуру функции, а не её тело. Параметр объявлен изменяемым, и этого достаточно для ошибки.'
+      - text: 'Ошибка в объявлении `prices`'
+        why: 'Изменяемый литерал массива можно присвоить `readonly`-типу: ограничивать возможности разрешено.'
+      - text: 'Компилируется: `readonly` у массивов проверяется только при записи'
+        why: 'Для массивов и кортежей `readonly` учитывается и при присваивании: `readonly T[]` нельзя отдать туда, где ждут `T[]`.'
+    explanation: |
+      `readonly T[]` (или `ReadonlyArray<T>`) — тип массива без изменяющих методов. Передать изменяемый массив
+      туда, где ждут неизменяемый, можно, а наоборот — нет: получатель мог бы изменить массив. Поэтому
+      функции, которые только читают массив, стоит объявлять с параметром `readonly T[]`: тогда их можно
+      вызывать с любыми массивами, включая результаты `as const`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/objects.html#the-readonlyarray-type
+    source: own
+
+  - id: typescript-objects-008
+    level: junior
+    tags: [optional-chaining, optional-properties]
+    question: |
+      Какой тип у `city`?
+    code: |
+      interface User {
+        name: string;
+        address?: { city: string };
+      }
+
+      function cityOf(user: User) {
+        const city = user.address?.city;
+        return city;
+      }
+    codeLang: ts
+    options:
+      - text: '`string | undefined`'
+        correct: true
+        why: '`address` может отсутствовать. Тогда `?.` прерывает цепочку и возвращает `undefined`, иначе — строку из `city`.'
+      - text: '`string`'
+        why: 'Если `address` нет, выражение вернёт `undefined`, и компилятор добавляет его в тип.'
+      - text: '`undefined`'
+        why: 'Это только один из исходов. Если `address` есть, выражение вернёт строку, поэтому тип — объединение.'
+      - text: '`{ city: string } | undefined`'
+        why: 'Это тип `user.address`. Выражение читает из него `city`, поэтому результат — строка или `undefined`.'
+    explanation: |
+      Необязательное свойство `address?: T` при чтении имеет тип `T | undefined`, и обращение `user.address.city`
+      без проверки — ошибка `'user.address' is possibly 'undefined'`. Оператор `?.` (optional chaining)
+      останавливает вычисление, если слева `null` или `undefined`, и возвращает `undefined`. Компилятор
+      учитывает это в типе результата. Дальше обычно подставляют значение по умолчанию через `??`:
+      `user.address?.city ?? 'Не указан'`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#optional-chaining
+    source: own
+
+  - id: typescript-objects-009
+    level: senior
+    tags: [exactOptionalPropertyTypes, optional-properties]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются с флагом `exactOptionalPropertyTypes`?
+    code: |
+      // @exactOptionalPropertyTypes: true
+      interface Settings {
+        theme?: 'light' | 'dark';
+      }
+
+      const a: Settings = {};                   // A
+      const b: Settings = { theme: undefined }; // B
+      const c: Settings = { theme: 'dark' };    // C
+    codeLang: ts
+    options:
+      - text: 'Только B'
+        correct: true
+        why: 'С этим флагом `?` означает «свойства может не быть», но не «в нём может лежать `undefined`». Явное `undefined` нужно разрешать в типе: `theme?: "light" | "dark" | undefined`.'
+      - text: 'A и B'
+        why: 'Флаг не делает свойство обязательным: пустой объект по-прежнему подходит.'
+      - text: 'Ни одна'
+        why: 'Без флага так и есть, но с ним явная запись `undefined` в необязательное свойство — ошибка.'
+      - text: 'B и C'
+        why: '`"dark"` — допустимое значение, флаг на него не влияет.'
+    explanation: |
+      По умолчанию `prop?: T` означает `T | undefined` и при чтении, и при записи. Но для кода разница есть:
+      `{ ...defaults, ...settings }` с явным `theme: undefined` перезапишет значение по умолчанию на
+      `undefined`. Флаг `exactOptionalPropertyTypes` различает «нет
+      свойства» и «свойство равно `undefined`». Он не входит в `strict` и ломает много существующего кода,
+      поэтому включают его осознанно, чаще в библиотеках.
+    links:
+      - https://www.typescriptlang.org/tsconfig/#exactOptionalPropertyTypes
+    source: own
+
+  - id: typescript-objects-010
+    level: middle
+    tags: [interface-vs-type, union]
+    question: |
+      Что можно описать через `type`, но нельзя через `interface`?
+    options:
+      - text: 'Объединение типов, например `string | number`'
+        correct: true
+        why: 'Интерфейс всегда описывает объектный тип. Объединения, кортежи, примитивы, условные и mapped-типы выражаются только через `type`.'
+      - text: 'Объект с методами и необязательными полями'
+        why: 'Это основное назначение интерфейса: методы, `?`, `readonly` и индексные сигнатуры в нём доступны.'
+      - text: 'Тип, расширяющий другой объектный тип'
+        why: 'Интерфейс расширяют через `extends`, и он может наследовать даже от `type`, если тот объектный.'
+      - text: 'Тип функции с сигнатурой вызова'
+        why: 'Интерфейс умеет и это: `interface Fn { (x: number): string }` описывает вызываемый объект.'
+    explanation: |
+      Для описания объектов `interface` и `type` почти взаимозаменяемы. Главное различие: только `type` может
+      быть объединением, кортежем, примитивом, условным, mapped- или template literal типом, а только
+      `interface` поддерживает слияние объявлений. Есть и более тонкие отличия в совместимости и в том, как
+      обрабатываются конфликты свойств. Распространённое
+      соглашение: `interface` для объектов и публичных API, которые могут расширять, `type` для всего
+      остального. Главное — единообразие в проекте.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#differences-between-type-aliases-and-interfaces
+    source: own

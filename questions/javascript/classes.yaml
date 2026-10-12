@@ -1,0 +1,400 @@
+# yaml-language-server: $schema=../../schema.json
+topic: javascript
+subtopic: classes
+questions:
+  - id: javascript-classes-001
+    level: junior
+    tags: [hoisting, tdz, output]
+    question: |
+      Что произойдёт при выполнении кода?
+    code: |
+      const user = new User('Аня');
+
+      class User {
+        constructor(name) {
+          this.name = name;
+        }
+      }
+    codeLang: js
+    options:
+      - text: 'Создастся объект `{ name: "Аня" }`'
+        why: 'Классы не поднимаются так, как function declaration: до строки объявления ими пользоваться нельзя.'
+      - text: 'Ошибка `ReferenceError`'
+        correct: true
+        why: 'Объявление класса ведёт себя как `let`: имя существует, но до строки объявления находится во временной мёртвой зоне.'
+      - text: 'Ошибка `TypeError`: `User` — не конструктор'
+        why: '`TypeError` был бы, если бы `User` существовал, но не являлся функцией-конструктором. Здесь обращение к имени вообще запрещено.'
+      - text: 'Создастся объект с `name: undefined`'
+        why: 'Конструктор не выполнится: выражение `new User` падает раньше, на чтении имени `User`.'
+    explanation: |
+      Объявления классов поднимаются как `let` и `const`: имя регистрируется в области видимости, но до
+      выполнения строки `class` находится в TDZ. Поэтому класс нужно объявить до первого использования. Это
+      отличие от функций-конструкторов, которые поднимаются целиком. Сделано это намеренно: при `class B
+      extends A` выражение `A` вычисляется при объявлении, и поднятие класса до этого момента дало бы
+      противоречия.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/class#description
+    source: own
+
+  - id: javascript-classes-002
+    level: middle
+    tags: [private-fields, encapsulation]
+    question: |
+      Что произойдёт при попытке прочитать приватное поле снаружи класса?
+    code: |
+      class Wallet {
+        #balance = 100;
+        get balance() {
+          return this.#balance;
+        }
+      }
+
+      const wallet = new Wallet();
+      console.log(wallet.#balance);
+    codeLang: js
+    options:
+      - text: 'Выведется `100`, приватность — лишь соглашение'
+        why: 'Приватность `#`-полей обеспечивает сам язык, это не соглашение вроде `_balance`.'
+      - text: 'Выведется `undefined`'
+        why: '`undefined` выводится при чтении несуществующего обычного свойства. Здесь код вообще не запустится.'
+      - text: 'Скрипт не запустится из-за `SyntaxError`'
+        correct: true
+        why: 'Обращение к `#balance` вне тела класса — синтаксическая ошибка. Её ловит парсер ещё до выполнения, поэтому не выполнится и первая строка.'
+      - text: 'Ошибка `TypeError` во время выполнения'
+        why: '`TypeError` бывает при обращении к `#поле` внутри класса у объекта, у которого такого поля нет. Снаружи класса ошибка ловится раньше — при разборе.'
+    explanation: |
+      Поля и методы с `#` — настоящая приватность на уровне языка. Имя `#balance` существует только внутри тела
+      класса, и любое упоминание снаружи — `SyntaxError` при разборе кода. Приватные поля не видны через
+      `Object.keys`, `JSON.stringify`, Proxy и отладку объекта средствами языка (DevTools их показывают).
+      Проверить, есть ли у объекта приватное поле, можно внутри класса через `#balance in obj` — это brand
+      check.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/Private_properties
+    source: own
+
+  - id: javascript-classes-003
+    level: middle
+    tags: [static, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      class Counter {
+        static created = 0;
+        constructor() {
+          Counter.created++;
+        }
+      }
+
+      const counter = new Counter();
+      new Counter();
+      console.log(Counter.created, counter.created);
+    codeLang: js
+    options:
+      - text: '`2 2`'
+        why: 'Статические свойства принадлежат самому классу, а не экземплярам. Через экземпляр их не прочитать.'
+      - text: '`2 undefined`'
+        correct: true
+        why: 'Статическое поле лежит на функции-конструкторе `Counter`. В цепочке прототипов экземпляра его нет, поэтому `counter.created` — `undefined`.'
+      - text: '`1 1`'
+        why: 'Счётчик общий для всех экземпляров, и конструктор вызывался дважды.'
+      - text: '`0 undefined`'
+        why: 'Конструктор увеличивает `Counter.created` при каждом создании объекта, значение меняется.'
+    explanation: |
+      `static` создаёт свойство или метод самого класса: `Counter.created`, `Array.isArray`, `Promise.all`. Их
+      используют для фабрик (`User.fromJSON(data)`), констант, кэшей и счётчиков. Экземпляры наследуют от
+      `Counter.prototype`, а статические члены лежат на функции `Counter`, поэтому через экземпляр не видны.
+      При наследовании статические члены тоже наследуются: `class Child extends Counter` получит
+      `Child.created` через цепочку прототипов конструкторов.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/static
+    source: own
+
+  - id: javascript-classes-004
+    level: senior
+    tags: [class-fields, initialization-order, super, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      class Base {
+        constructor() {
+          console.log('base:', this.name);
+        }
+      }
+
+      class Child extends Base {
+        name = 'child';
+        constructor() {
+          super();
+          console.log('child:', this.name);
+        }
+      }
+
+      new Child();
+    codeLang: js
+    options:
+      - text: '`base: child`, `child: child`'
+        why: 'Поля производного класса инициализируются только после возврата из `super()`. Во время конструктора `Base` поля ещё нет.'
+      - text: '`base: undefined`, `child: child`'
+        correct: true
+        why: 'Сначала `super()` выполняет конструктор `Base`, и в этот момент поле `name` ещё не создано. Сразу после `super()` инициализируются поля `Child`.'
+      - text: '`base: undefined`, `child: undefined`'
+        why: 'После возврата из `super()` поля производного класса уже инициализированы, поэтому во втором `console.log` значение есть.'
+      - text: '`ReferenceError`: нельзя обращаться к `this` в конструкторе `Base`'
+        why: 'В базовом конструкторе `this` доступен сразу. Запрет на `this` до `super()` действует только в конструкторе производного класса.'
+    explanation: |
+      Порядок создания экземпляра производного класса: вызов `super()` → инициализация полей базового класса →
+      тело конструктора базового класса → возврат в производный → инициализация полей производного класса →
+      продолжение его конструктора. Поэтому базовый конструктор не видит полей наследника. Это источник
+      реальных багов, когда базовый класс вызывает в конструкторе переопределённый метод, а тот обращается к
+      ещё не созданному полю наследника.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/Public_class_fields#description
+    source: own
+
+  - id: javascript-classes-005
+    level: senior
+    tags: [class-fields, overridden-method, constructor, output]
+    question: |
+      Что произойдёт при выполнении кода?
+    code: |
+      class Store {
+        constructor() {
+          this.init();
+        }
+        init() {}
+      }
+
+      class TodoStore extends Store {
+        items = [];
+        init() {
+          this.items.push('первая задача');
+        }
+      }
+
+      const store = new TodoStore();
+      console.log(store.items);
+    codeLang: js
+    options:
+      - text: 'Выведется `[ "первая задача" ]`'
+        why: '`init` вызывается из конструктора `Store`, а поле `items` наследника к этому моменту ещё не создано.'
+      - text: 'Выведется `[]`'
+        why: 'До вывода дело не дойдёт: вызов `init` упадёт раньше, на `push` у `undefined`.'
+      - text: 'Ошибка `TypeError` при вызове `push`'
+        correct: true
+        why: 'Конструктор `Store` вызывает переопределённый `init` наследника, но поля `TodoStore` инициализируются только после `super()`. В этот момент `this.items` ещё `undefined`.'
+      - text: 'Вызовется пустой `init` базового класса, выведется `[]`'
+        why: 'Вызов метода через `this` всегда находит переопределённую версию в прототипе наследника, даже из конструктора базового класса.'
+    explanation: |
+      Вызов переопределяемых методов из конструктора базового класса — известная ловушка. Метод ищется по
+      цепочке прототипов от реального экземпляра, поэтому выполнится версия наследника. Но поля наследника
+      инициализируются только после `super()`, и метод работает с недостроенным объектом. Даже если бы `init`
+      не упал, присваивание `items = []` после `super()` затёрло бы всё, что он успел записать. Безопаснее не
+      вызывать переопределяемые методы из конструктора или вынести инициализацию в отдельный явный вызов.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/Public_class_fields#description
+    source: own
+
+  - id: javascript-classes-006
+    level: middle
+    tags: [super, this, constructor]
+    question: |
+      Что произойдёт при создании `new Admin()`?
+    code: |
+      class User {
+        constructor() {
+          this.role = 'user';
+        }
+      }
+
+      class Admin extends User {
+        constructor() {
+          this.level = 10;
+          super();
+        }
+      }
+
+      new Admin();
+    codeLang: js
+    options:
+      - text: 'Объект создастся с `level: 10` и `role: "user"`'
+        why: 'Конструктор производного класса не может обращаться к `this` до вызова `super()`.'
+      - text: 'Ошибка `ReferenceError` на `this.level`'
+        correct: true
+        why: 'В производном классе `this` создаётся базовым конструктором и не существует до вызова `super()`. Обращение к нему раньше — `ReferenceError`.'
+      - text: 'Объект создастся без `role`, потому что `super()` вызван после'
+        why: 'До вызова `super()` дело не дойдёт: ошибка случится на первой строке конструктора.'
+      - text: 'Ошибка `SyntaxError` при объявлении класса'
+        why: 'Синтаксически код допустим, ошибка возникает при выполнении конструктора.'
+    explanation: |
+      В производном классе объект `this` создаёт не он сам, а базовый конструктор: `super()` вызывает
+      родительский конструктор, и только после этого `this` становится доступен. Поэтому до `super()` нельзя
+      читать и писать `this`, а если в производном классе есть свой конструктор, `super()` в нём обязателен.
+      Если конструктор не объявлен, используется неявный `constructor(...args) { super(...args); }`. Так
+      устроено, чтобы корректно наследовать встроенные классы вроде `Array` и `HTMLElement`, которые сами
+      создают свои экземпляры.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/super
+    source: own
+
+  - id: javascript-classes-007
+    level: junior
+    tags: [methods, enumerable, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      class Point {
+        constructor(x, y) {
+          this.x = x;
+          this.y = y;
+        }
+        length() {
+          return Math.hypot(this.x, this.y);
+        }
+      }
+
+      console.log(Object.keys(new Point(3, 4)), typeof Point);
+    codeLang: js
+    options:
+      - text: '`[ "x", "y", "length" ] class`'
+        why: 'Методы лежат в прототипе и неперечисляемы, а `typeof` для классов возвращает `"function"` — отдельного типа `"class"` нет.'
+      - text: '`[ "x", "y" ] function`'
+        correct: true
+        why: 'Собственные свойства — только поля из конструктора. Методы класса лежат в `Point.prototype`. Класс — это функция-конструктор.'
+      - text: '`[ "x", "y" ] class`'
+        why: 'У `typeof` нет результата `"class"`. Класс в рантайме — функция.'
+      - text: '`[ "x", "y", "length" ] function`'
+        why: '`Object.keys` возвращает только собственные перечисляемые свойства экземпляра. Методы — в прототипе и к тому же неперечисляемые.'
+    explanation: |
+      Класс — синтаксис поверх функций-конструкторов и прототипов. `class Point` создаёт функцию `Point`, а
+      методы из тела класса попадают в `Point.prototype` и помечаются как неперечисляемые. Поэтому они общие
+      для всех экземпляров и не появляются в `Object.keys`, `for...in` и `JSON.stringify`. Отличия классов от
+      обычных конструкторов: их нельзя вызвать без `new`, тело всегда в строгом режиме, до строки объявления класс
+      в TDZ, методы неперечисляемы.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes
+    source: own
+
+  - id: javascript-classes-008
+    level: middle
+    tags: [getters, setters, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      class Temperature {
+        #celsius = 0;
+        get fahrenheit() {
+          return this.#celsius * 1.8 + 32;
+        }
+        set fahrenheit(value) {
+          this.#celsius = (value - 32) / 1.8;
+        }
+      }
+
+      const t = new Temperature();
+      t.fahrenheit = 212;
+      console.log(t.fahrenheit, Object.keys(t));
+    codeLang: js
+    options:
+      - text: '`212 [ "fahrenheit" ]`'
+        why: 'Присваивание ушло в сеттер, а не создало свойство. Геттер и сеттер лежат в прототипе, а приватное поле не видно через `Object.keys`.'
+      - text: '`212 []`'
+        correct: true
+        why: 'Сеттер записал 100 °C в приватное поле, геттер пересчитал его обратно в 212 °F. Собственных перечисляемых свойств у объекта нет.'
+      - text: '`32 []`'
+        why: 'Присваивание вызвало сеттер и изменило `#celsius`, поэтому геттер вернёт уже не начальное значение.'
+      - text: '`undefined [ "fahrenheit" ]`'
+        why: 'У класса есть геттер `fahrenheit`, он вычисляет значение при каждом чтении.'
+    explanation: |
+      Геттеры и сеттеры — свойства-аксессоры: снаружи выглядят как поле, а при чтении и записи выполняют код.
+      В классах они попадают в прототип, как методы. Это удобно для вычисляемых значений и валидации при
+      записи, а в паре с приватными полями — для контролируемого доступа. Важно: геттер вычисляется при каждом
+      обращении, поэтому тяжёлые вычисления в нём лучше кэшировать. И у свойства с одним геттером без сеттера
+      запись молча игнорируется (в строгом режиме — `TypeError`).
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get
+    source: own
+
+  - id: javascript-classes-009
+    level: senior
+    tags: [extends-builtin, species, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      class Stack extends Array {
+        peek() {
+          return this[this.length - 1];
+        }
+      }
+
+      const stack = Stack.from([1, 2, 3]);
+      const doubled = stack.map((n) => n * 2);
+      console.log(doubled instanceof Stack, doubled.peek());
+    codeLang: js
+    options:
+      - text: '`false`, затем `TypeError`'
+        why: '`map` у наследника `Array` создаёт результат через конструктор `this.constructor`, то есть тоже `Stack`.'
+      - text: '`true 6`'
+        correct: true
+        why: 'Методы массивов вроде `map` и `filter` создают новый массив через `Symbol.species` конструктора, по умолчанию — тот же класс. Поэтому у результата есть метод `peek`.'
+      - text: '`true 3`'
+        why: '`doubled` — новый массив `[2, 4, 6]`, и последний элемент у него 6.'
+      - text: '`false 6`'
+        why: 'Если у результата есть `peek`, значит он экземпляр `Stack`, и `instanceof` вернёт `true`.'
+    explanation: |
+      Встроенные классы можно наследовать через `extends`, и производные экземпляры ведут себя как настоящие
+      массивы, включая особое поведение `length`. Методы, создающие новый массив (`map`, `filter`, `slice`,
+      `concat`), используют `this.constructor[Symbol.species]`, поэтому возвращают экземпляр того же подкласса.
+      Переопределить это можно статическим геттером `static get [Symbol.species]() { return Array; }`. На
+      практике наследование от `Array` встречается редко, но механизм `Symbol.species` полезно знать для
+      понимания встроенных классов и `Promise`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/species
+    source: own
+
+  - id: javascript-classes-010
+    level: middle
+    tags: [super-method, inheritance, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      class Animal {
+        speak() {
+          return 'звук';
+        }
+      }
+
+      class Dog extends Animal {
+        speak() {
+          return `${super.speak()} → гав`;
+        }
+      }
+
+      class Puppy extends Dog {
+        speak() {
+          return `${super.speak()} → тяв`;
+        }
+      }
+
+      console.log(new Puppy().speak());
+    codeLang: js
+    options:
+      - text: '`тяв`'
+        why: '`super.speak()` вызывает версию метода из родителя, и она тоже вызывает свой `super`. Цепочка проходит по всем уровням.'
+      - text: '`гав → тяв`'
+        why: 'Метод `Dog` тоже вызывает `super.speak()`, поэтому в начале будет ещё и `звук`.'
+      - text: '`звук → гав → тяв`'
+        correct: true
+        why: 'Каждый `super.speak()` вызывает метод ближайшего родителя по иерархии, начиная с того класса, где метод объявлен. Результаты собираются снизу вверх.'
+      - text: 'Бесконечная рекурсия: `super` у `this` снова указывает на `Dog`'
+        why: '`super` в методе привязан к классу, где метод объявлен (через `[[HomeObject]]`), а не к `this`. Поэтому рекурсии нет.'
+    explanation: |
+      `super.method()` вызывает метод из прототипа родительского класса. Важная деталь: `super` определяется
+      не через `this`, а через внутреннее поле метода `[[HomeObject]]` — объект, где метод объявлен. Поэтому в
+      цепочке наследования `super` в методе `Dog` всегда указывает на `Animal.prototype`, даже когда метод
+      вызван на экземпляре `Puppy`. Иначе многоуровневое наследование уходило бы в бесконечную рекурсию.
+      Обратная сторона: метод с `super`, скопированный в другой объект, продолжает ссылаться на старый
+      `[[HomeObject]]`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/super
+      - https://javascript.info/class-inheritance#super-internals-homeobject
+    source: own

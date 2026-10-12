@@ -1,0 +1,323 @@
+# yaml-language-server: $schema=../../schema.json
+topic: javascript
+subtopic: arrays
+questions:
+  - id: javascript-arrays-001
+    level: junior
+    tags: [sort, comparator, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      console.log([10, 1, 5, 100].sort());
+    codeLang: js
+    options:
+      - text: '`[ 1, 5, 10, 100 ]`'
+        why: 'Без функции сравнения `sort` сравнивает элементы как строки, а не как числа.'
+      - text: '`[ 1, 10, 100, 5 ]`'
+        correct: true
+        why: 'По умолчанию элементы приводятся к строкам и сортируются посимвольно: `"10"` и `"100"` начинаются с `"1"`, поэтому идут раньше `"5"`.'
+      - text: '`[ 100, 10, 5, 1 ]`'
+        why: 'Сортировка по умолчанию — по возрастанию строк, а не по убыванию чисел.'
+      - text: '`[ 10, 1, 5, 100 ]`'
+        why: 'Строковый порядок `"1" < "10" < "100" < "5"` отличается от исходного, поэтому массив изменится.'
+    explanation: |
+      `Array.prototype.sort` без аргумента превращает элементы в строки и сравнивает их по кодам UTF-16. Для чисел
+      это даёт «алфавитный» порядок. Числа сортируют с компаратором: `arr.sort((a, b) => a - b)` — функция должна
+      вернуть отрицательное число, ноль или положительное. Ещё две детали: `sort` меняет исходный массив
+      (неизменяющая версия — `toSorted`), а сортировка стабильна с ES2019 — равные элементы сохраняют порядок.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort
+    source: own
+
+  - id: javascript-arrays-002
+    level: middle
+    tags: [map, parseInt, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      console.log(['1', '2', '3'].map(parseInt));
+    codeLang: js
+    options:
+      - text: '`[ 1, 2, 3 ]`'
+        why: '`map` передаёт в колбэк три аргумента: элемент, индекс и массив. `parseInt` воспринимает индекс как основание системы счисления.'
+      - text: '`[ 1, NaN, NaN ]`'
+        correct: true
+        why: 'Вызовы: `parseInt("1", 0)` — основание 0 означает «по умолчанию», 1; `parseInt("2", 1)` — основание 1 недопустимо, `NaN`; `parseInt("3", 2)` — в двоичной системе нет цифры 3, `NaN`.'
+      - text: '`[ NaN, NaN, NaN ]`'
+        why: 'Первый вызов идёт с основанием 0, а это значит «определить автоматически», то есть десятичная система.'
+      - text: '`[ "1", "2", "3" ]`'
+        why: '`parseInt` возвращает числа или `NaN`, строк в результате не будет.'
+    explanation: |
+      `map` вызывает колбэк с тремя аргументами `(element, index, array)`. Функции, у которых есть
+      необязательные параметры, могут неожиданно их получить: у `parseInt` второй параметр — основание
+      системы счисления. Безопасный вариант — явная стрелка `map((s) => parseInt(s, 10))` или `map(Number)`
+      (у `Number` один параметр). Та же ловушка у передачи методов в колбэки без обёртки: лишние аргументы
+      могут поменять поведение функции.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map#using_parseint_with_map
+    source: own
+
+  - id: javascript-arrays-003
+    level: junior
+    tags: [mutation, immutability]
+    question: |
+      Какой из методов **не** меняет исходный массив?
+    options:
+      - text: '`sort`'
+        why: '`sort` сортирует массив на месте и возвращает тот же массив.'
+      - text: '`reverse`'
+        why: '`reverse` переворачивает массив на месте.'
+      - text: '`toSorted`'
+        correct: true
+        why: '`toSorted` (ES2023) возвращает отсортированную копию, исходный массив не трогает. Есть и `toReversed`, `toSpliced`, `with`.'
+      - text: '`splice`'
+        why: '`splice` удаляет и вставляет элементы прямо в исходный массив.'
+    explanation: |
+      Мутирующие методы массивов: `push`, `pop`, `shift`, `unshift`, `splice`, `sort`, `reverse`, `fill`,
+      `copyWithin`. Немутирующие возвращают новый массив: `map`, `filter`, `slice`, `concat`, `flat`, а с ES2023 —
+      `toSorted`, `toReversed`, `toSpliced` и `with(index, value)`. В React и Redux мутация состояния — частая
+      ошибка: `state.items.sort()` меняет массив, на который ссылаются другие компоненты, а сравнение по ссылке
+      не замечает изменения. Поэтому в таких местах берут немутирующие версии.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array#copying_methods_and_mutating_methods
+    source: own
+
+  - id: javascript-arrays-004
+    level: junior
+    tags: [length, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const items = [1, 2, 3, 4, 5];
+      items.length = 2;
+      console.log(items, items[3]);
+    codeLang: js
+    options:
+      - text: '`[ 1, 2, 3, 4, 5 ] 4`'
+        why: '`length` у массива — не просто счётчик: уменьшение `length` удаляет элементы с конца.'
+      - text: '`[ 1, 2 ] undefined`'
+        correct: true
+        why: 'Запись меньшего значения в `length` обрезает массив, и элементы с индексами 2 и выше удаляются.'
+      - text: '`[ 1, 2 ] 4`'
+        why: 'Элементы за новой длиной действительно удаляются, а не просто скрываются.'
+      - text: '`TypeError`: `length` только для чтения'
+        why: 'У массивов `length` доступен для записи. Только у строк и некоторых объектов он read-only.'
+    explanation: |
+      `length` массива связан с элементами: при уменьшении лишние элементы удаляются, при увеличении появляются
+      «дыры» (пустые слоты). Поэтому `arr.length = 0` — быстрый способ очистить массив на месте, и все ссылки на
+      него увидят пустой массив. В отличие от `arr = []`, который создаёт новый массив, а старый не трогает.
+      Обычно для ясности очищают через `splice(0)` или просто заменяют массив новым.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/length
+    source: own
+
+  - id: javascript-arrays-005
+    level: senior
+    tags: [holes, array-constructor, map, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const viaMap = Array(3).map((_, i) => i);
+      const viaFrom = Array.from({ length: 3 }, (_, i) => i);
+
+      console.log(viaMap.length, 0 in viaMap, viaFrom);
+    codeLang: js
+    options:
+      - text: '`3 true [ 0, 1, 2 ]`'
+        why: '`Array(3)` создаёт массив из трёх пустых слотов, и `map` их пропускает: колбэк ни разу не вызывается.'
+      - text: '`3 false [ 0, 1, 2 ]`'
+        correct: true
+        why: '`map` не вызывает колбэк для пустых слотов, и результат тоже состоит из дыр: длина 3, но индекса 0 нет. `Array.from` проходит по `length` и вызывает функцию для каждого индекса.'
+      - text: '`0 false [ 0, 1, 2 ]`'
+        why: 'Длина у массива из пустых слотов — 3. Отсутствуют сами элементы, а не длина.'
+      - text: '`3 false [ undefined, undefined, undefined ]`'
+        why: '`Array.from` вызывает функцию-отображение для каждого индекса от 0 до `length - 1`, она возвращает индекс.'
+    explanation: |
+      `Array(n)` создаёт разреженный массив: `length` равен n, а элементов нет вовсе (дыры, empty slots). Большинство
+      методов перебора (`forEach`, `map`, `filter`, `some`, `reduce`) пропускают дыры, поэтому `Array(3).map(...)`
+      возвращает те же дыры. `for...of`, spread и `Array.from` читают дыры как `undefined`. Для генерации
+      последовательности используют `Array.from({ length: n }, fn)` или `[...Array(n).keys()]`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Indexed_collections#sparse_arrays
+    source: own
+
+  - id: javascript-arrays-006
+    level: middle
+    tags: [reduce, initial-value]
+    question: |
+      Что произойдёт при вызове `[].reduce((sum, x) => sum + x)`?
+    options:
+      - text: 'Вернётся `0`'
+        why: 'Ноль вернулся бы, если бы передали начальное значение: `reduce(fn, 0)`. Без него у пустого массива нет первого элемента.'
+      - text: 'Вернётся `undefined`'
+        why: '`reduce` без начального значения на пустом массиве не возвращает `undefined`, а бросает ошибку.'
+      - text: 'Ошибка `TypeError`'
+        correct: true
+        why: 'Без начального значения аккумулятором становится первый элемент. В пустом массиве его нет, и `reduce` бросает `TypeError`.'
+      - text: 'Вернётся `NaN`'
+        why: '`NaN` получился бы при сложении с `undefined`, но колбэк здесь вообще не вызывается.'
+    explanation: |
+      `reduce(callback, initialValue)`: если начальное значение передано, обход начинается с первого элемента, а
+      аккумулятор равен `initialValue`. Если не передано — аккумулятор равен первому элементу, а обход начинается
+      со второго. На пустом массиве без начального значения это невозможно, отсюда `TypeError`. На массиве из
+      одного элемента без начального значения колбэк не вызывается вообще. Правило: всегда передавайте начальное
+      значение, оно же задаёт тип результата.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce
+    source: own
+
+  - id: javascript-arrays-007
+    level: middle
+    tags: [map, keys, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const visits = new Map();
+      const page = { url: '/home' };
+
+      visits.set(page, 1);
+      visits.set({ url: '/home' }, 2);
+      visits.set('1', 'строка').set(1, 'число');
+
+      console.log(visits.size, visits.get(page), visits.get(1));
+    codeLang: js
+    options:
+      - text: '`3 1 строка`'
+        why: '`Map` не приводит ключи к строкам: `"1"` и `1` — разные ключи.'
+      - text: '`4 1 число`'
+        correct: true
+        why: 'Объекты-ключи сравниваются по ссылке, поэтому два похожих объекта — два ключа. Строка `"1"` и число `1` тоже различаются. Всего четыре ключа.'
+      - text: '`3 2 число`'
+        why: 'Два объекта с одинаковым содержимым — разные объекты. `Map` сравнивает ключи по ссылке, а не по содержимому.'
+      - text: '`2 2 число`'
+        why: 'Ни объекты, ни `"1"` с `1` не схлопываются в один ключ.'
+    explanation: |
+      `Map` — словарь с ключами любого типа. Ключи сравниваются алгоритмом SameValueZero: примитивы — по
+      значению (но `1` и `"1"` разные), объекты — по ссылке. Поэтому найти запись можно только по тому же
+      объекту, а не по похожему. В отличие от обычного объекта, `Map` сохраняет порядок вставки для всех
+      ключей, знает свой размер (`size`), итерируется напрямую и не имеет унаследованных ключей вроде
+      `toString`. `set` возвращает сам `Map`, поэтому вызовы можно сцеплять.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map
+    source: own
+
+  - id: javascript-arrays-008
+    level: junior
+    tags: [set, dedupe, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      console.log([...new Set([1, '1', 1, NaN, NaN, {}, {}])].length);
+    codeLang: js
+    options:
+      - text: '`3`'
+        why: 'Строка `"1"` и число `1` разные, а два литерала `{}` — два разных объекта.'
+      - text: '`4`'
+        why: 'Каждый литерал `{}` создаёт новый объект, и `Set` хранит оба.'
+      - text: '`5`'
+        correct: true
+        why: 'Уникальные значения: `1`, `"1"`, `NaN` (Set считает `NaN` равным себе) и два разных объекта.'
+      - text: '`7`'
+        why: 'Повторы `1` и `NaN` удаляются: `Set` хранит только уникальные значения.'
+    explanation: |
+      `Set` хранит уникальные значения по тому же правилу SameValueZero, что и ключи `Map`: `NaN` равен
+      `NaN`, `0` равен `-0`, объекты сравниваются по ссылке. Поэтому `[...new Set(arr)]` — короткий способ убрать
+      дубликаты примитивов, но не объектов с одинаковым содержимым: их уникализируют по ключу через `Map`.
+      С 2024 года у `Set` есть методы множеств: `union`, `intersection`, `difference` и другие.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set
+    source: own
+
+  - id: javascript-arrays-009
+    level: middle
+    tags: [sort, comparator, bug]
+    question: |
+      Почему компаратор `(a, b) => a > b` в `sort` — ошибка, хотя иногда «работает»?
+    options:
+      - text: 'Boolean не даёт отрицательного числа для «меньше»'
+        correct: true
+        why: 'Без отрицательных значений алгоритм не узнаёт, что `a` меньше `b`. Результат зависит от реализации сортировки и данных, и на части входов порядок будет неверным.'
+      - text: 'Компаратор должен вернуть строку `"before"` или `"after"`'
+        why: 'Компаратор возвращает число: отрицательное — `a` раньше, положительное — `b` раньше, ноль — равны.'
+      - text: '`sort` не принимает стрелочные функции'
+        why: 'Компаратором может быть любая функция, включая стрелочную.'
+      - text: 'Нужно `a < b`, а `a > b` сортирует по убыванию'
+        why: 'Обе версии возвращают boolean и одинаково некорректны: нет значения для «меньше».'
+    explanation: |
+      Спецификация требует от компаратора согласованного результата: `< 0`, если `a` должен идти раньше, `> 0`, если
+      позже, и `0` при равенстве. Boolean приводится к 1 или 0, и сортировка никогда не получает «меньше». В старых
+      Chrome и Firefox это иногда случайно срабатывало, а в нынешнем V8 такой компаратор вообще не меняет
+      порядок: `[3, 1, 2].sort((a, b) => a > b)` остаётся `[3, 1, 2]`.
+      Правильно: `(a, b) => a - b` для чисел, `(a, b) => a.localeCompare(b)` для строк, а для объектов — по
+      нужному полю.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#comparefn
+    source: own
+
+  - id: javascript-arrays-010
+    level: junior
+    tags: [find, filter, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const users = [
+        { id: 1, active: false },
+        { id: 2, active: true },
+        { id: 3, active: true },
+      ];
+
+      console.log(users.find((u) => u.active).id, users.filter((u) => u.active).length, users.find((u) => u.id === 9));
+    codeLang: js
+    options:
+      - text: '`2 2 undefined`'
+        correct: true
+        why: '`find` возвращает первый подходящий элемент или `undefined`. `filter` возвращает новый массив всех подходящих элементов.'
+      - text: '`3 2 undefined`'
+        why: '`find` останавливается на первом совпадении, а это пользователь с id 2.'
+      - text: '`2 2 null`'
+        why: 'Если ничего не найдено, `find` возвращает `undefined`, а не `null`.'
+      - text: '`2 2 -1`'
+        why: '`-1` при отсутствии возвращает `findIndex`, а `find` — `undefined`.'
+    explanation: |
+      Методы поиска различаются результатом: `find` — первый элемент или `undefined`, `findIndex` — индекс или
+      `-1`, `filter` — массив всех совпадений (возможно, пустой), `some` — boolean, `findLast` и `findLastIndex` —
+      то же с конца. `find` и `some` прекращают обход на первом совпадении, а `filter` всегда проходит весь
+      массив. Поэтому для проверки «есть ли хоть один» правильнее `some`, а не `filter(...).length > 0`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/find
+    source: own
+
+  - id: javascript-arrays-011
+    level: middle
+    tags: [groupBy, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const orders = [
+        { id: 1, status: 'new' },
+        { id: 2, status: 'done' },
+        { id: 3, status: 'new' },
+      ];
+
+      const grouped = Object.groupBy(orders, (order) => order.status);
+      console.log(Object.keys(grouped), grouped.new.map((o) => o.id));
+    codeLang: js
+    options:
+      - text: '`[ "new", "done" ] [ 1, 3 ]`'
+        correct: true
+        why: '`Object.groupBy` создаёт объект, где ключ — результат колбэка, а значение — массив элементов этой группы в исходном порядке.'
+      - text: '`[ "done", "new" ] [ 1, 3 ]`'
+        why: 'Ключи групп создаются в порядке первого появления: сначала встретился `new`, потом `done`.'
+      - text: '`[ "new", "done" ] [ 3 ]`'
+        why: 'В группу попадают все подходящие элементы, а не только последний.'
+      - text: '`TypeError`: у массивов нет `groupBy`'
+        why: 'Это статический метод `Object.groupBy`, а не метод массива. Он поддерживается современными браузерами и Node 21+.'
+    explanation: |
+      `Object.groupBy(items, callback)` (ES2024) группирует элементы по ключу, который возвращает колбэк, и даёт
+      объект с прототипом `null`: `{ new: [...], done: [...] }`. Если ключами должны быть объекты или нужно
+      сохранить типы ключей, есть `Map.groupBy`, возвращающий `Map`. Раньше то же делали через `reduce` или
+      `lodash.groupBy`. Метод не стал методом массива (`Array.prototype.group`) из-за конфликтов с кодом старых
+      сайтов.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/groupBy
+    source: own

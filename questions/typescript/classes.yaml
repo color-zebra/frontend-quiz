@@ -1,0 +1,418 @@
+# yaml-language-server: $schema=../../schema.json
+topic: typescript
+subtopic: classes
+questions:
+  - id: typescript-classes-001
+    level: junior
+    tags: [parameter-properties]
+    question: |
+      Какому коду эквивалентно это объявление класса?
+    code: |
+      class User {
+        constructor(public name: string, private age: number) {}
+      }
+    codeLang: ts
+    options:
+      - text: 'Классу с полями экземпляра `name` и `age`'
+        correct: true
+        why: 'Модификатор доступа у параметра конструктора (parameter property) объявляет поле и присваивает ему значение аргумента. В JavaScript получится `this.name = name; this.age = age`.'
+      - text: 'Классу с конструктором из двух параметров, но без полей'
+        why: 'Без модификатора так и было бы. `public` и `private` у параметров превращают их в поля экземпляра.'
+      - text: 'Классу, где снаружи доступны и `name`, и `age`'
+        why: '`private age` создаёт поле, обращение к которому снаружи класса компилятор запрещает. Снаружи доступен только `name`.'
+      - text: 'Классу со статическими полями `name` и `age`'
+        why: 'Parameter properties создают поля экземпляра: у каждого объекта свои значения. Статические поля объявляются через `static`.'
+    explanation: |
+      Parameter properties — сокращение TypeScript: модификатор `public`, `private`, `protected` или `readonly`
+      перед параметром конструктора объявляет одноимённое поле и присваивает ему аргумент. Это убирает
+      повторение «объявить поле, принять параметр, присвоить». Это не просто стирание типов: компилятор
+      генерирует присваивания в JavaScript, поэтому в части проектов от такого синтаксиса отказываются в
+      пользу явных полей.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/classes.html#parameter-properties
+    source: own
+
+  - id: typescript-classes-002
+    level: middle
+    tags: [private, type-erasure, output]
+    question: |
+      Что произойдёт?
+    code: |
+      class Wallet {
+        private secret = 1;
+      }
+
+      const wallet = new Wallet();
+      console.log(wallet['secret'], Object.keys(wallet), JSON.stringify(wallet));
+    codeLang: ts
+    options:
+      - text: 'Скомпилируется и выведет `1 [ "secret" ] {"secret":1}`'
+        correct: true
+        why: '`private` — проверка компилятора, в JavaScript это обычное свойство: оно видно в `Object.keys` и сериализуется. А доступ через квадратные скобки компилятор специально пропускает как лазейку.'
+      - text: 'Скомпилируется и выведет `undefined [] {}`'
+        why: '`private` не скрывает свойство в рантайме: после компиляции модификатор стирается, поле остаётся обычным.'
+      - text: 'Ошибка компиляции на `wallet["secret"]`'
+        why: 'Обращение `wallet.secret` было бы ошибкой, а через строку в квадратных скобках проверка `private` не выполняется.'
+      - text: 'Скомпилируется и выведет `1 [] {}`'
+        why: 'Свойство `secret` обычное и перечисляемое, поэтому оно попадает и в `Object.keys`, и в `JSON.stringify`.'
+    explanation: |
+      `private` в TypeScript — только проверка компилятора. После компиляции поле становится обычным свойством:
+      его видно в `Object.keys`, `JSON.stringify`, в отладчике и через `as any`. Даже без приведения проверку
+      можно обойти доступом `obj["secret"]`: компилятор оставил эту лазейку, например для тестов. Если нужна
+      настоящая приватность, используют поля JavaScript `#secret`: их обеспечивает движок, и снаружи класса
+      они недоступны никак. Выбор зависит от задачи: `private` удобнее для сериализации и тестов, `#` даёт
+      настоящую инкапсуляцию.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/classes.html#caveats
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/Private_properties
+    source: own
+  - id: typescript-classes-003
+    level: junior
+    tags: [abstract]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются?
+    code: |
+      abstract class Shape {
+        abstract area(): number;
+        describe() {
+          return `Площадь: ${this.area()}`;
+        }
+      }
+
+      class Square extends Shape {
+        constructor(private size: number) {
+          super();
+        }
+        area() {
+          return this.size ** 2;
+        }
+      }
+
+      const a = new Shape();          // A
+      const b: Shape = new Square(2); // B
+    codeLang: ts
+    options:
+      - text: 'Только A'
+        correct: true
+        why: 'Экземпляр абстрактного класса создать нельзя: у него есть нереализованные методы. Переменной типа `Shape` можно присвоить экземпляр наследника, который их реализовал.'
+      - text: 'Только B'
+        why: 'Абстрактный класс годится как тип переменной, а `Square` его наследует. Ошибка в строке A: `new` у абстрактного класса запрещён.'
+      - text: 'A и B'
+        why: 'Строка B корректна: `Square` реализовал `area` и совместим с `Shape`.'
+      - text: 'Ни одна'
+        why: 'Компилятор запрещает `new` у абстрактного класса, поэтому строка A — ошибка.'
+    explanation: |
+      Абстрактный класс — заготовка для наследников. Он может содержать готовую логику (`describe`) и
+      абстрактные члены без реализации (`area`), которые наследник обязан реализовать, иначе он тоже должен
+      быть `abstract`. Создать экземпляр абстрактного класса нельзя. В отличие от интерфейса, абстрактный класс
+      существует в рантайме и может хранить код и состояние. Сам запрет `new` — только проверка компилятора:
+      в JavaScript ключевого слова `abstract` нет.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/classes.html#abstract-classes-and-members
+    source: own
+
+  - id: typescript-classes-004
+    level: middle
+    tags: [implements, contextual-typing]
+    question: |
+      Что сообщит компилятор в режиме `strict`?
+    code: |
+      interface Checkable {
+        check(name: string): boolean;
+      }
+
+      class NameChecker implements Checkable {
+        check(s) {
+          return s.toLowerCase() === 'ok';
+        }
+      }
+    codeLang: ts
+    options:
+      - text: 'Параметр `s` неявно имеет тип `any`'
+        correct: true
+        why: '`implements` только проверяет класс на соответствие интерфейсу, но не передаёт типы в его члены. У параметра `s` нет аннотации, и `noImplicitAny` сообщает об ошибке.'
+      - text: 'Ничего: `s` получит тип `string` из интерфейса'
+        why: 'Многие так ожидают, но типы из `implements` не выводятся. Параметры методов нужно аннотировать явно.'
+      - text: 'Класс не реализует метод `check` из интерфейса'
+        why: 'Метод с нужным именем есть, и с `s: any` он формально совместим с интерфейсом. Ошибка только в неявном `any`.'
+      - text: 'Классу с `implements` нужен явный конструктор'
+        why: 'Конструктор не обязателен ни для `implements`, ни для обычных классов.'
+    explanation: |
+      `implements` — проверка, а не наследование типов. Компилятор сверяет, что класс совместим с интерфейсом,
+      но тип класса строится только из его собственного кода. Поэтому параметры методов не получают типы из
+      интерфейса, а необязательное свойство интерфейса не появляется в классе само. В этом отличие от
+      `extends`, где класс действительно получает члены родителя. Совместимость при этом структурная: объект
+      класса без `implements` тоже можно передать туда, где ждут `Checkable`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/classes.html#cautions
+    source: own
+
+  - id: typescript-classes-005
+    level: senior
+    tags: [class-fields, useDefineForClassFields, declare]
+    question: |
+      Что сообщит компилятор при `target: ES2022`?
+    code: |
+      class Animal {
+        sound = 'generic';
+      }
+
+      class Dog extends Animal {
+        sound!: string;
+      }
+    codeLang: ts
+    options:
+      - text: 'Ошибку: поле `sound` в `Dog` перезапишет поле родителя'
+        correct: true
+        why: 'При `target` ES2022 и новее включён `useDefineForClassFields`, и объявление поля без инициализатора создаёт его заново со значением `undefined`. Компилятор предупреждает и предлагает `declare sound: string`, чтобы только уточнить тип.'
+      - text: 'Ничего: `!` говорит, что поле уже инициализировано'
+        why: '`!` отключает проверку инициализации, но не отменяет само объявление поля. В рантайме поле всё равно будет создано заново.'
+      - text: 'Ошибку: поле с `!` нельзя объявлять в наследнике'
+        why: '`!` в наследнике разрешён. Ошибка TS2612 о другом: объявление без инициализатора перезапишет поле родителя.'
+      - text: 'Ничего: строка лишь уточняет тип поля'
+        why: 'Только уточнение типа — это `declare sound: string`. Без `declare` поле реально объявляется в JavaScript.'
+    explanation: |
+      Поля классов в JavaScript создаются через `Object.defineProperty` при конструировании объекта, и
+      объявление `sound;` без значения записывает `undefined`. Раньше TypeScript компилировал поля в
+      присваивания и пропускал объявления без инициализатора, поэтому такой код работал. С флагом
+      `useDefineForClassFields` (по умолчанию для `target` ES2022 и новее) поведение совпадает со стандартом, и
+      `new Dog().sound` стал бы `undefined`. Чтобы только сузить тип унаследованного поля, используют
+      `declare sound: 'woof'`: такое объявление не попадает в JavaScript.
+    links:
+      - https://www.typescriptlang.org/tsconfig/#useDefineForClassFields
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#the-usedefineforclassfields-flag-and-the-declare-property-modifier
+    source: own
+
+  - id: typescript-classes-006
+    level: junior
+    tags: [readonly]
+    question: |
+      Какая строка, отмеченная буквой, не скомпилируется?
+    code: |
+      class Point {
+        readonly x: number;
+
+        constructor(x: number) {
+          this.x = x;   // A
+        }
+
+        move() {
+          this.x += 1;  // B
+        }
+      }
+
+      const p = new Point(1);
+      console.log(p.x); // C
+    codeLang: ts
+    options:
+      - text: 'B'
+        correct: true
+        why: '`readonly`-поле можно присвоить при объявлении или в конструкторе. В обычном методе запись в него запрещена.'
+      - text: 'A'
+        why: 'Конструктор — единственное место после объявления, где `readonly`-полю можно задать значение.'
+      - text: 'C'
+        why: '`readonly` запрещает только запись, читать поле можно откуда угодно.'
+      - text: 'Ни одна'
+        why: 'Метод `move` пытается изменить `readonly`-поле после создания объекта, это ошибка компиляции.'
+    explanation: |
+      `readonly` у поля класса разрешает присваивание только в объявлении и в конструкторе, дальше поле только
+      для чтения. Это проверка компилятора, в рантайме поле обычное. В отличие от `const`, `readonly` относится к
+      свойству, а не к переменной.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/classes.html#readonly
+    source: own
+
+  - id: typescript-classes-007
+    level: senior
+    tags: [protected, access-modifiers]
+    question: |
+      Скомпилируется ли метод `compare`?
+    code: |
+      class Base {
+        protected id = 1;
+      }
+
+      class Child extends Base {
+        compare(other: Base) {
+          return this.id === other.id;
+        }
+      }
+    codeLang: ts
+    options:
+      - text: 'Нет: `other.id` доступно только через экземпляр `Child`'
+        correct: true
+        why: 'Наследник может читать `protected`-члены только у объектов своего класса или его потомков. `other` объявлен как `Base`: это может быть объект другого наследника, к его `id` у `Child` доступа нет.'
+      - text: 'Да: `Child` наследует `Base` и видит его `protected`-поля'
+        why: '`Child` видит `protected`-поля у себя (`this.id`), но не у произвольного `Base`, который может оказаться экземпляром другой ветки иерархии.'
+      - text: 'Нет: `protected`-поля недоступны наследникам вовсе'
+        why: 'Доступ из наследника — это и есть назначение `protected`. Ошибка только в обращении через переменную типа `Base`.'
+      - text: 'Да: оба объекта созданы из классов одной иерархии'
+        why: 'Компилятор проверяет тип переменной `other`, а не происхождение объекта. Для `Base` доступ из `Child` закрыт.'
+    explanation: |
+      `protected` открывает член для самого класса и наследников, но с уточнением: наследник обращается к нему
+      только через ссылку на свой класс. Иначе любой наследник мог бы читать защищённые данные чужих
+      наследников, просто приняв их как `Base`. Если параметр объявить как `Child`, ошибка исчезнет. У
+      `private` правило проще: член доступен внутри объявившего класса, в том числе у других экземпляров этого
+      класса.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/classes.html#cross-hierarchy-protected-access
+    source: own
+
+  - id: typescript-classes-008
+    level: middle
+    tags: [typeof, constructor-type, instance-type]
+    question: |
+      Какая функция, отмеченная буквой, не скомпилируется?
+    code: |
+      class User {
+        name = 'Ann';
+      }
+
+      function createA(Ctor: typeof User) { // A
+        return new Ctor();
+      }
+
+      function createB(Ctor: User) {        // B
+        return new Ctor();
+      }
+    codeLang: ts
+    options:
+      - text: 'B'
+        correct: true
+        why: 'Имя класса в позиции типа означает тип экземпляра: объект с полем `name`. Вызвать его через `new` нельзя. Тип самого класса-конструктора — `typeof User`.'
+      - text: 'A'
+        why: '`typeof User` — тип конструктора со статическими членами и сигнатурой `new () => User`, поэтому `new Ctor()` разрешён.'
+      - text: 'Обе'
+        why: 'Функция A корректна: `typeof User` описывает сам класс, а его можно вызвать через `new`.'
+      - text: 'Ни одна'
+        why: 'Тип `User` описывает экземпляр, у которого нет сигнатуры конструктора. `new Ctor()` в B — ошибка.'
+    explanation: |
+      Объявление класса создаёт сразу два: значение (функцию-конструктор) и тип (форму экземпляра). Имя `User` в
+      позиции типа означает экземпляр, `typeof User` — сам класс со статическими полями и сигнатурой `new`.
+      Для фабрик, DI-контейнеров и миксинов, принимающих любой класс, используют тип конструктора
+      `new (...args: any[]) => T`. Утилиты `InstanceType<typeof User>` и `ConstructorParameters<typeof User>`
+      достают тип экземпляра и параметры конструктора.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/generics.html#using-class-types-in-generics
+      - https://www.typescriptlang.org/docs/handbook/utility-types.html#instancetypetype
+    source: own
+
+  - id: typescript-classes-009
+    level: middle
+    tags: [override, noImplicitOverride]
+    question: |
+      Зачем писать `override` перед методом наследника?
+    code: |
+      class Base {
+        greet() {}
+      }
+
+      class Child extends Base {
+        override great() {}
+      }
+    codeLang: ts
+    options:
+      - text: 'Компилятор проверит, что такой метод есть у родителя'
+        correct: true
+        why: 'Здесь опечатка: `great` вместо `greet`. С `override` компилятор сообщает, что в базовом классе такого метода нет, и подсказывает правильное имя.'
+      - text: 'Без `override` метод родителя не будет переопределён'
+        why: 'В JavaScript одноимённый метод наследника переопределяет родительский всегда. `override` ничего не меняет в рантайме, это проверка компилятора.'
+      - text: 'Метод с `override` нельзя переопределить дальше'
+        why: 'Запрета на дальнейшее переопределение (`final`) в TypeScript нет. `override` только подтверждает, что метод переопределяет родительский.'
+      - text: 'Метод станет вызывать родительский через `super`'
+        why: 'Вызов родительской реализации нужно писать явно: `super.greet()`. `override` его не добавляет.'
+    explanation: |
+      `override` (TypeScript 4.3) явно помечает метод как переопределение. Компилятор проверяет, что метод с
+      таким именем есть в базовом классе. Это ловит опечатки и ситуации, когда метод родителя переименовали, а
+      наследник продолжает «переопределять» несуществующее. С флагом `noImplicitOverride` слово становится
+      обязательным, и компилятор сообщает о каждом методе, который переопределяет родительский без пометки.
+      В рантайме `override` стирается.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-3.html#override-and-the---noimplicitoverride-flag
+    source: own
+
+  - id: typescript-classes-010
+    level: senior
+    tags: [polymorphic-this, fluent-api]
+    question: |
+      Какая цепочка вызовов, отмеченная буквой, не скомпилируется?
+    code: |
+      class QueryA {
+        where(filter: string) {
+          return this;
+        }
+      }
+      class SubA extends QueryA {
+        limit(count: number) {
+          return this;
+        }
+      }
+
+      class QueryB {
+        where(filter: string): QueryB {
+          return this;
+        }
+      }
+      class SubB extends QueryB {
+        limit(count: number) {
+          return this;
+        }
+      }
+
+      new SubA().where('active').limit(10); // X
+      new SubB().where('active').limit(10); // Y
+    codeLang: ts
+    options:
+      - text: 'Только Y'
+        correct: true
+        why: 'Для `return this` без аннотации выводится полиморфный тип `this`: у экземпляра `SubA` метод `where` возвращает `SubA`. Явная аннотация `: QueryB` фиксирует базовый класс, и `limit` теряется.'
+      - text: 'Только X'
+        why: 'Тип `this` подстраивается под класс, у которого вызван метод, поэтому `where` у `SubA` возвращает `SubA` с методом `limit`.'
+      - text: 'X и Y'
+        why: 'В цепочке X возвращаемый тип `where` — полиморфный `this`, и после него доступен `limit`.'
+      - text: 'Ни одна'
+        why: 'В QueryB возвращаемый тип явно указан как `QueryB`, а у него нет метода `limit`.'
+    explanation: |
+      Внутри класса `this` можно использовать как тип: он означает «тип объекта, у которого вызван метод». Для
+      `return this` без аннотации компилятор выводит именно его. Благодаря этому методы-построители
+      (fluent API, builder) возвращают точный тип наследника, и цепочки не обрываются. Если явно указать
+      базовый класс в возвращаемом типе, полиморфизм пропадёт. Тип `this` используют и в параметрах, например
+      `equals(other: this)`, и в type guard: `isLeaf(): this is Leaf`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/classes.html#this-types
+    source: own
+
+  - id: typescript-classes-011
+    level: junior
+    tags: [strictPropertyInitialization, definite-assignment]
+    question: |
+      Какие поля, отмеченные буквами, вызовут ошибку в режиме `strict`?
+    code: |
+      class User {
+        name: string;        // A
+        age: number = 0;     // B
+        email!: string;      // C
+
+        constructor() {}
+      }
+    codeLang: ts
+    options:
+      - text: 'Только A'
+        correct: true
+        why: 'Флаг `strictPropertyInitialization` требует, чтобы поле без `undefined` в типе получило значение при объявлении или в конструкторе. У `name` нет ни того, ни другого. `!` у `email` отключает проверку.'
+      - text: 'A и C'
+        why: 'Знак `!` после имени поля (definite assignment assertion) говорит компилятору, что поле будет заполнено где-то ещё, и ошибки нет.'
+      - text: 'Ни одно'
+        why: 'В режиме `strict` поле `name: string` без инициализации — ошибка: при чтении там окажется `undefined`, хотя тип обещает строку.'
+      - text: 'A, B и C'
+        why: 'Поле `age` инициализировано при объявлении, проверка для него выполнена.'
+    explanation: |
+      Флаг `strictPropertyInitialization` (входит в `strict`) ловит поля, которые объявлены, но могут остаться
+      `undefined`. Исправить можно тремя способами: задать значение при объявлении, присвоить в конструкторе
+      или расширить тип до `string | undefined`. Знак `!` (definite assignment assertion) отключает проверку для
+      поля: так помечают поля, которые заполняет фреймворк, например через декоратор или метод `init`. Как и
+      любое утверждение, `!` — обещание компилятору, и при ошибке в рантайме будет `undefined`.
+    links:
+      - https://www.typescriptlang.org/tsconfig/#strictPropertyInitialization
+      - https://www.typescriptlang.org/docs/handbook/2/classes.html#--strictpropertyinitialization
+    source: own

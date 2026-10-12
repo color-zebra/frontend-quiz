@@ -1,0 +1,417 @@
+# yaml-language-server: $schema=../../schema.json
+topic: typescript
+subtopic: generics
+questions:
+  - id: typescript-generics-001
+    level: junior
+    tags: [generics, type-arguments, inference]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются?
+    code: |
+      function first<T>(items: T[]): T | undefined {
+        return items[0];
+      }
+
+      const a = first([1, 2]);                     // A
+      const b = first<string>([1, 2]);             // B
+      const c = first<number | string>([1, 'x']);  // C
+    codeLang: ts
+    options:
+      - text: 'Только B'
+        correct: true
+        why: 'Если аргумент типа указан явно, вывода нет: `T` становится `string`, и массив чисел ему не подходит. В A `T` выводится из массива как `number`, в C явно задано объединение, под которое подходят оба элемента.'
+      - text: 'B и C'
+        why: 'Явный аргумент `number | string` разрешает и числа, и строки, поэтому массив `[1, "x"]` подходит.'
+      - text: 'Только A'
+        why: 'Указывать аргумент типа не обязательно: компилятор выведет `T = number` из переданного массива.'
+      - text: 'Ни одна'
+        why: 'Явный `<string>` перекрывает вывод, и числа в массиве не подходят под `string[]`.'
+    explanation: |
+      Параметр типа можно вывести или указать явно. Обычно его выводят из аргументов: `first([1, 2])` даёт
+      `T = number`. Явный аргумент типа (`first<string>(...)`) отключает вывод и заставляет проверять аргументы
+      по указанному типу. Он нужен, когда вывести тип не из чего или вывод даёт не то: пустой массив,
+      `new Map<string, number>()`, `new Set<User>()`. Указывать явно то, что компилятор и так
+      выведет, не стоит: это лишний шум.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/generics.html#working-with-generic-type-variables
+    source: own
+  - id: typescript-generics-002
+    level: junior
+    tags: [generics, constraints]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются?
+    code: |
+      function lengthA<T>(value: T) {
+        return value.length; // A
+      }
+
+      function lengthB<T extends { length: number }>(value: T) {
+        return value.length; // B
+      }
+
+      lengthB('abc');        // C
+      lengthB(42);           // D
+    codeLang: ts
+    options:
+      - text: 'A и D'
+        correct: true
+        why: 'Без ограничения `T` может быть чем угодно, и `length` есть не у всех типов. С `extends { length: number }` обращение разрешено, но вызвать функцию можно только со значением, у которого есть `length`. У строки есть, у числа нет.'
+      - text: 'Только A'
+        why: 'Ограничение проверяется и при вызове: число не подходит под `{ length: number }`, поэтому строка D тоже ошибка.'
+      - text: 'A и C'
+        why: 'У строки есть свойство `length: number`, она подходит под ограничение.'
+      - text: 'Только D'
+        why: 'Строка A — ошибка: у неограниченного `T` компилятор не знает ни одного свойства.'
+    explanation: |
+      Неограниченный параметр типа может оказаться любым типом, поэтому внутри функции с ним почти ничего нельзя
+      делать. Ограничение `T extends X` (constraint) работает в две стороны. Внутри функции оно разрешает всё,
+      что есть у `X`. При вызове оно проверяет, что аргумент подходит под `X`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints
+    source: own
+
+  - id: typescript-generics-003
+    level: middle
+    tags: [generics, keyof, indexed-access]
+    question: |
+      Какой тип у `age`?
+    code: |
+      function getProp<T, K extends keyof T>(obj: T, key: K): T[K] {
+        return obj[key];
+      }
+
+      const user = { name: 'Ann', age: 30 };
+      const age = getProp(user, 'age');
+    codeLang: ts
+    options:
+      - text: '`number`'
+        correct: true
+        why: '`K` выводится как литерал `"age"`, и `T[K]` — тип свойства `age` в объекте, то есть `number`.'
+      - text: '`string | number`'
+        why: 'Так было бы при `T[keyof T]`. Здесь `K` — конкретный ключ, и индексный доступ берёт тип одного свойства.'
+      - text: '`unknown`'
+        why: 'Возвращаемый тип `T[K]` вычисляется из выведенных `T` и `K`, а не остаётся неизвестным.'
+      - text: '`"age"`'
+        why: 'Это тип ключа `K`. Функция возвращает значение свойства, тип которого — `T[K]`.'
+    explanation: |
+      Связка `K extends keyof T` и возвращаемого `T[K]` — основа типобезопасного доступа к свойствам. `keyof T`
+      ограничивает ключ существующими свойствами: `getProp(user, 'email')` не скомпилируется. Литеральный тип
+      ключа выводится из аргумента, а индексный доступ `T[K]` даёт тип именно этого свойства. Так же
+      типизированы `pick`, `sortBy` и аналоги из lodash, поля форм в React Hook Form и запросы в ORM.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/generics.html#using-type-parameters-in-generic-constraints
+    source: own
+
+  - id: typescript-generics-004
+    level: middle
+    tags: [generics, inference]
+    question: |
+      Что произойдёт при компиляции?
+    code: |
+      function pair<T>(first: T, second: T) {
+        return [first, second];
+      }
+
+      pair(1, 'a');
+    codeLang: ts
+    options:
+      - text: 'Ошибка на `"a"`: `T` выведен как `number`'
+        correct: true
+        why: 'У `T` два кандидата, `number` и `string`, и общего супертипа среди них нет. Объединение кандидатов компилятор сам не строит, он берёт первый и проверяет по нему остальные аргументы.'
+      - text: 'Компилируется, `T` — `number | string`'
+        why: 'Компилятор не объединяет кандидатов: это скрыло бы ошибки там, где аргументы должны быть одного типа. Объединение можно указать явно: `pair<number | string>(1, "a")`.'
+      - text: 'Компилируется, `T` — `unknown`'
+        why: '`unknown` выводится, только когда кандидатов нет совсем. Здесь их два.'
+      - text: 'Ошибка на `1`: `T` выведен как `string`'
+        why: 'Первым кандидатом идёт первый аргумент, поэтому `T` — `number`, и ошибка у второго аргумента.'
+    explanation: |
+      Когда параметр типа встречается в нескольких аргументах, компилятор собирает кандидатов и ищет среди них
+      «лучший общий тип». Если один кандидат — супертип остальных, выбирается он. Если нет, объединение не
+      строится: выбирается первый кандидат, и остальные аргументы проверяются по нему. Это осознанное
+      решение: дженерик `pair<T>(a: T, b: T)` выражает «оба аргумента одного типа», и смешение типов, скорее
+      всего, ошибка. Если смешение нужно, параметр указывают явно или заводят два параметра `<A, B>`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/type-inference.html#best-common-type
+    source: own
+
+  - id: typescript-generics-005
+    level: senior
+    tags: [const-type-parameters, inference]
+    question: |
+      Какие типы у `a` и `b`?
+    code: |
+      function routes<const T extends readonly string[]>(paths: T) {
+        return paths;
+      }
+
+      function routesPlain<T extends readonly string[]>(paths: T) {
+        return paths;
+      }
+
+      const a = routes(['/home', '/about']);
+      const b = routesPlain(['/home', '/about']);
+    codeLang: ts
+    options:
+      - text: '`readonly ["/home", "/about"]` и `string[]`'
+        correct: true
+        why: 'Модификатор `const` у параметра типа (TypeScript 5.0) заставляет выводить тип аргумента так, будто к нему приписали `as const`. Без него массив литералов расширяется до `string[]`.'
+      - text: '`string[]` и `string[]`'
+        why: 'С `const` у параметра типа литералы не расширяются, и массив становится `readonly`-кортежем.'
+      - text: '`readonly ["/home", "/about"]` в обоих случаях'
+        why: 'Ограничение `readonly string[]` не включает вывод в стиле `as const`. Без модификатора `const` массив литералов выводится как `string[]`.'
+      - text: '`("/home" | "/about")[]` и `string[]`'
+        why: 'Модификатор `const` сохраняет и литералы, и позиции: получается кортеж, а не массив объединения.'
+    explanation: |
+      Раньше, чтобы функция получила точные литеральные типы аргумента, вызывающему приходилось писать
+      `as const`. Модификатор `const` у параметра типа (`<const T>`, TypeScript 5.0) переносит это решение в
+      объявление функции: литерал-аргумент выводится как с `as const`. Это удобно для построителей роутов,
+      конфигов и схем, где из переданных значений строятся типы. От ограничения зависит изменяемость
+      результата: с `readonly string[]` получится `readonly`-кортеж, а с `string[]` — изменяемый кортеж
+      `["/home", "/about"]`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-0.html#const-type-parameters
+    source: own
+
+  - id: typescript-generics-006
+    level: senior
+    tags: [NoInfer, inference]
+    question: |
+      Какие вызовы, отмеченные буквами, не скомпилируются?
+    code: |
+      function createMachine<T extends string>(states: T[], initial: NoInfer<T>) {}
+      function createMachinePlain<T extends string>(states: T[], initial: T) {}
+
+      createMachine(['idle', 'loading'], 'done');      // A
+      createMachinePlain(['idle', 'loading'], 'done'); // B
+    codeLang: ts
+    options:
+      - text: 'Только A'
+        correct: true
+        why: '`NoInfer<T>` запрещает использовать этот аргумент как источник вывода. `T` выводится только из `states`, и `"done"` не входит в `"idle" | "loading"`. Без `NoInfer` `"done"` тоже становится кандидатом, и `T` расширяется.'
+      - text: 'Только B'
+        why: 'В вызове B `"done"` участвует в выводе: `T` становится `"idle" | "loading" | "done"`, и ошибки нет.'
+      - text: 'A и B'
+        why: 'Без `NoInfer` второй аргумент тоже служит источником вывода и расширяет `T`, поэтому вызов B компилируется.'
+      - text: 'Ни одна'
+        why: 'С `NoInfer` `T` выводится только из массива состояний, и `"done"` проверяется по уже выведенному типу. Строка A — ошибка.'
+    explanation: |
+      Компилятор выводит параметр типа из всех аргументов, где он встречается. Иногда это нежелательно: значение
+      по умолчанию или начальное состояние должно проверяться по списку, а не расширять его. Утилита
+      `NoInfer<T>` (TypeScript 5.4) помечает позицию, из которой выводить нельзя. До её появления писали второй
+      параметр типа: `<T extends string, I extends T>`. Типичные случаи — машины состояний, `initialValue` в
+      селектах и вкладках, ключ по умолчанию в словаре.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-4.html#the-noinfer-utility-type
+    source: own
+
+  - id: typescript-generics-007
+    level: senior
+    tags: [generics, constraints, narrowing]
+    question: |
+      Почему компилятор сообщает об ошибке в строке `return value.trim()`?
+    code: |
+      function normalize<T extends string | number>(value: T): T {
+        if (typeof value === 'string') {
+          return value.trim();
+        }
+        return value;
+      }
+    codeLang: ts
+    options:
+      - text: '`T` может быть более узким типом, чем `string`'
+        correct: true
+        why: 'Если вызвать `normalize("a ")`, `T` будет литералом `"a "`, а `trim()` вернёт `"a"`, то есть просто `string`. Обещание вернуть `T` нарушено, поэтому `string` нельзя присвоить `T`.'
+      - text: 'Сужение `typeof` не действует на параметры-дженерики'
+        why: 'Действует: внутри `if` тип `value` — `T & string`, поэтому вызов `trim()` разрешён. Ошибка именно в возвращаемом типе.'
+      - text: 'В дженерике любой `return` требует приведения `as T`'
+        why: 'Не любой: последняя строка `return value` компилируется, потому что `value` имеет тип `T`. Ошибка только там, где возвращается новое значение типа `string`.'
+      - text: '`trim()` возвращает `string | undefined`'
+        why: '`trim()` всегда возвращает строку. Проблема в том, что строка — не обязательно `T`.'
+    explanation: |
+      Ограничение `T extends string | number` задаёт верхнюю границу, а не сам тип. `T` может быть любым его
+      подтипом: литералом `"a"`, объединением литералов, брендированной строкой. Поэтому новое значение типа
+      `string` нельзя вернуть как `T`: компилятор сообщает «`T` could be instantiated with a different subtype».
+      Варианты исправления. Можно не обещать `T`, а вернуть общий тип (`string | number`). Можно описать связь
+      перегрузками. Условный тип `T extends string ? string : number` в сигнатуре тоже выражает связь, но
+      реализация всё равно потребует `as`: TypeScript не проверяет тело функции против условного возвращаемого
+      типа. Приведение `as T` — обход проверки.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-constraints
+    source: own
+
+  - id: typescript-generics-008
+    level: junior
+    tags: [generics, inference, collections]
+    question: |
+      Какой тип у `ids`?
+    code: |
+      const ids = new Set();
+      ids.add(1);
+      ids.add('a');
+    codeLang: ts
+    options:
+      - text: '`Set<unknown>`'
+        correct: true
+        why: 'Конструктору не передали ни аргумента типа, ни начальных значений, выводить `T` не из чего, а у выбранной перегрузки конструктора нет значения по умолчанию для `T`. Подставляется `unknown`, и последующие `add` его уже не меняют.'
+      - text: '`Set<number | string>`'
+        why: 'Тип объекта определяется при создании, а вызовы `add` после него не влияют. Чтобы получить этот тип, пишут `new Set<number | string>()`.'
+      - text: '`Set<any>`'
+        why: 'Для `Set` в стандартной библиотеке выводится `unknown`. А вот `new Map()` без аргументов действительно даёт `Map<any, any>`, из-за другого объявления конструктора.'
+      - text: '`Set<never>`'
+        why: '`never` — тип без значений, в такой `Set` ничего нельзя было бы добавить. Когда вывести параметр типа не из чего, подставляется его значение по умолчанию, а если его нет — `unknown`.'
+    explanation: |
+      Параметр типа выводится из аргументов. Если выводить не из чего, подставляется значение по умолчанию
+      (`<T = any>`), а если его нет — `unknown` (или ограничение, если `unknown` под него не подходит). У
+      `Set` есть перегрузка конструктора без значения по умолчанию, она и даёт `unknown`.
+      Для пустых коллекций указывайте тип явно: `new Set<number>()`, `new Map<string, User>()`. Иначе получите
+      `unknown`, с которым ничего нельзя сделать, или, как в
+      случае `new Map()`, молчаливый `any`. В отличие от `let x;` и `const arr = []`, у объектов-коллекций тип не
+      «развивается» по последующим вызовам.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-types
+    source: own
+
+  - id: typescript-generics-009
+    level: middle
+    tags: [generics, constraints]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются?
+    code: |
+      function withIdGeneric<T extends { id: number }>(item: T) {
+        return item;
+      }
+
+      function withIdPlain(item: { id: number }) {
+        return item;
+      }
+
+      const user = { id: 1, name: 'Ann' };
+      withIdGeneric(user).name; // A
+      withIdPlain(user).name;   // B
+    codeLang: ts
+    options:
+      - text: 'Только B'
+        correct: true
+        why: 'Функция без дженерика возвращает объявленный тип параметра `{ id: number }`, и свойства `name` в нём нет. Дженерик возвращает точный тип аргумента со всеми полями.'
+      - text: 'Только A'
+        why: '`T` выводится как полный тип `user`, включая `name`. Ограничение только проверяет наличие `id`.'
+      - text: 'A и B'
+        why: 'В дженерике `T` — это тип самого аргумента, а не его ограничение. Поэтому `name` в результате остаётся.'
+      - text: 'Ни одна'
+        why: 'Функция без дженерика возвращает значение с типом `{ id: number }`: компилятор забывает о лишних полях аргумента.'
+    explanation: |
+      Ограничение `T extends X` и параметр типа `X` проверяют одно и то же, но результат разный. Параметр с типом
+      `X` «сужает» значение до `X`, и вся остальная информация теряется. Параметр типа `T` с ограничением
+      сохраняет точный тип аргумента, и его можно вернуть или передать дальше. Правило: если тип аргумента
+      должен «пройти насквозь» и появиться в результате, нужен дженерик. Если функция только использует
+      аргумент, дженерик лишний, и достаточно обычного типа.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/functions.html#type-parameters-should-appear-twice
+    source: own
+
+  - id: typescript-generics-010
+    level: senior
+    tags: [generics, rest-parameters, tuples, no-run]
+    question: |
+      Какие вызовы, отмеченные буквами, не скомпилируются?
+    code: |
+      function call<A extends unknown[], R>(fn: (...args: A) => R, ...args: A): R {
+        return fn(...args);
+      }
+
+      const repeat = (count: number, text: string) => text.repeat(count);
+
+      call(repeat, 2, 'x'); // X
+      call(repeat, 2);      // Y
+      call(repeat, 2, 3);   // Z
+    codeLang: ts
+    options:
+      - text: 'Y и Z'
+        correct: true
+        why: 'Параметр типа `A` выводится из функции как кортеж `[count: number, text: string]`. Остальные аргументы `call` проверяются по нему: в Y не хватает строки, в Z вместо строки число.'
+      - text: 'Только Z'
+        why: 'Кортеж `A` фиксирует и типы, и количество: без второго аргумента вызов Y не проходит.'
+      - text: 'Только Y'
+        why: 'Позиции кортежа проверяются по типам, и число в позиции `text: string` — ошибка.'
+      - text: 'Ни один'
+        why: 'Если `A` выведен как кортеж из функции, аргументы `call` должны ему соответствовать. Y и Z не соответствуют.'
+    explanation: |
+      Rest-параметр с типом-параметром `...args: A`, где `A extends unknown[]`, выводится как кортеж. Это
+      позволяет связать аргументы одной функции с параметрами другой: так типизированы `call`, `bind`,
+      `setTimeout` с аргументами, обёртки `debounce` и `memoize`. Утилита `Parameters<F>` работает на том же
+      механизме. До появления вариативных кортежей (TypeScript 3.0 и 4.0) такие функции описывали десятком
+      перегрузок на 1, 2, 3… аргумента.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-0.html#rest-parameters-with-tuple-types
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-0.html#variadic-tuple-types
+    source: own
+
+  - id: typescript-generics-011
+    level: middle
+    tags: [generics, type-arguments, inference, no-run]
+    question: |
+      Что произойдёт при компиляции последней строки?
+    code: |
+      interface User { id: number }
+
+      declare function fetchJson<TResponse, TBody>(url: string, body: TBody): Promise<TResponse>;
+
+      fetchJson<User>('/api/users', { name: 'Ann' });
+    codeLang: ts
+    options:
+      - text: 'Ошибка: параметров типа два, а указан один'
+        correct: true
+        why: 'Если аргументы типа указаны явно, их нужно указать все, у которых нет значения по умолчанию. Частичного вывода, когда `TResponse` задан, а `TBody` выводится, в TypeScript нет.'
+      - text: 'Компилируется: `TBody` выведется из второго аргумента'
+        why: 'Вывод работает только когда аргументы типа не указаны вовсе. Указав один, вы отключили вывод остальных.'
+      - text: 'Компилируется: `TBody` станет `unknown`'
+        why: '`unknown` подставился бы, только если бы у `TBody` было значение по умолчанию `= unknown`. Без него это ошибка числа аргументов типа.'
+      - text: 'Ошибка: `declare function` нельзя вызывать'
+        why: '`declare` описывает функцию, реализация которой есть где-то ещё. Вызывать её можно, проверка проходит по объявленной сигнатуре.'
+    explanation: |
+      Аргументы типа либо выводятся все, либо указываются явно, промежуточного варианта нет. Это
+      давний запрос (partial type argument inference), до сих пор не реализованный. Обходные пути такие.
+      Значения по умолчанию у параметров типа: `<TResponse, TBody = unknown>`. Каррирование:
+      `fetchJson<User>()('/api', body)`, где второй вызов выводит свой параметр. Перенос
+      типа ответа в аргумент: `fetchJson('/api', body, userSchema)`. Последний способ популярен: схема
+      валидации заодно проверяет ответ в рантайме.
+    links:
+      - https://github.com/microsoft/TypeScript/issues/26242
+      - https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-parameter-defaults
+    source: own
+
+  - id: typescript-generics-012
+    level: middle
+    tags: [generic-signature, generic-type]
+    question: |
+      Чем отличаются типы `IdA` и `IdB`?
+    code: |
+      type IdA<T> = (value: T) => T;
+      type IdB = <T>(value: T) => T;
+
+      const a: IdA<number> = (value) => value;
+      const b: IdB = (value) => value;
+
+      const x = a(5);
+      const y = b('hi');
+    codeLang: ts
+    options:
+      - text: 'У `IdA` тип `T` задаётся в аннотации, у `IdB` — при вызове'
+        correct: true
+        why: '`IdA<T>` — дженерик-тип: `T` фиксируется, когда пишут `IdA<number>`, и функция `a` принимает только числа. `IdB` — тип дженерик-функции: `T` выводится заново при каждом вызове, поэтому `b("hi")` даёт `"hi"`.'
+      - text: 'Ничем: это две записи одного и того же типа'
+        why: 'Отличаются: в `IdA` параметр типа принадлежит псевдониму, в `IdB` — сигнатуре функции. `a("hi")` не скомпилируется, а `b("hi")` — да.'
+      - text: '`IdB` нельзя использовать без явного указания `T`'
+        why: 'Наоборот, `IdB` нельзя написать как `IdB<string>`: у псевдонима нет параметров. `T` выводится из аргумента при вызове.'
+      - text: 'У `IdA` тип `T` выводится из аргумента, у `IdB` — из аннотации'
+        why: 'Перепутано: в `IdA` `T` задаётся при объявлении переменной, в `IdB` выводится при вызове.'
+    explanation: |
+      Положение параметра типа определяет, кто и когда его выбирает. В `type F<T> = (x: T) => T` параметр
+      принадлежит псевдониму: его указывают один раз, получая конкретный тип функции. В
+      `type F = <T>(x: T) => T` параметр принадлежит сигнатуре: значение такого типа — полиморфная функция,
+      которая работает с любым `T`, и тип выбирается при каждом вызове. Это различие важно при описании
+      колбэков и API: `useState<T>` — дженерик-функция, а `Dispatch<SetStateAction<T>>` — дженерик-тип,
+      где `T` уже зафиксирован.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/generics.html#generic-types
+    source: own

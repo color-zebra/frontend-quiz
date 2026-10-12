@@ -1,0 +1,325 @@
+# yaml-language-server: $schema=../../schema.json
+topic: css
+subtopic: flexbox
+questions:
+  - id: css-flexbox-001
+    level: junior
+    tags: [axes, justify-content, align-items]
+    question: |
+      Во flex-контейнере с `flex-direction: column` нужно прижать элементы к правому краю. Какое свойство это
+      сделает?
+    options:
+      - text: '`justify-content: flex-end`'
+        why: '`justify-content` работает по главной оси, а при `column` она вертикальная. Элементы прижмутся к низу.'
+      - text: '`align-items: flex-end`'
+        correct: true
+        why: 'При `flex-direction: column` поперечная ось горизонтальная, и именно `align-items` выравнивает по ней.'
+      - text: '`text-align: right`'
+        why: '`text-align` выравнивает строчный контент внутри элементов, но не сами flex-элементы.'
+      - text: '`float: right` у элементов'
+        why: 'У flex-элементов `float` не действует.'
+    explanation: |
+      У flex-контейнера две оси. Главная (main axis) задаётся `flex-direction`: при `row` она горизонтальная,
+      при `column` — вертикальная. Поперечная (cross axis) перпендикулярна ей. `justify-content` распределяет
+      элементы вдоль главной оси, `align-items` выравнивает их по поперечной. Поэтому смена направления
+      «меняет местами» эффект этих свойств, и это частый источник путаницы.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_flexible_box_layout/Basic_concepts_of_flexbox
+    source: own
+
+  - id: css-flexbox-002
+    level: junior
+    tags: [flex-shorthand]
+    question: |
+      Что означает запись `flex: 1`?
+    options:
+      - text: '`flex-grow: 1; flex-shrink: 1; flex-basis: 0%`'
+        correct: true
+        why: 'Одно число в `flex` задаёт grow, а shrink становится 1 и basis — 0%. Элементы делят всё место пропорционально grow, без учёта размера содержимого.'
+      - text: '`flex-grow: 1` и больше ничего не меняется'
+        why: 'Сокращённая запись сбрасывает и остальные части: basis становится 0%, а не `auto`, как по умолчанию.'
+      - text: '`flex-grow: 1; flex-shrink: 0; flex-basis: auto`'
+        why: 'Это похоже на `flex: 1 0 auto`. С `flex: 1` элемент может сжиматься, а базовый размер — ноль.'
+      - text: 'Элемент занимает ровно одну долю, как `1fr` в grid'
+        why: 'Похоже по смыслу, но `fr` — единица grid. Во flex это пропорция роста от нулевой основы, и на неё влияет минимальный размер содержимого.'
+    explanation: |
+      Свойство `flex` — сокращение для `flex-grow`, `flex-shrink` и `flex-basis`. Значения-ключи:
+      `flex: initial` = `0 1 auto` (по умолчанию), `flex: auto` = `1 1 auto`, `flex: none` = `0 0 auto`,
+      `flex: 1` = `1 1 0%`. Разница между `flex: 1` и `flex: auto` важна: с нулевой основой элементы делят
+      всё место поровну (по grow), а с `auto` сначала получают ширину по содержимому, и делится только остаток.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/flex
+    source: own
+
+  - id: css-flexbox-003
+    level: middle
+    tags: [flex-basis, flex-auto]
+    question: |
+      В строке три элемента с текстом разной длины. Как изменится раскладка при замене `flex: 1` на
+      `flex: auto`?
+    options:
+      - text: 'Ничего не изменится, это синонимы'
+        why: 'Отличие — во `flex-basis`: 0% против `auto`. Это меняет, от какой ширины считается раздача свободного места.'
+      - text: 'Элементы с длинным текстом станут шире остальных'
+        correct: true
+        why: '`flex: auto` = `1 1 auto`: основа — размер содержимого. С `flex: 1` основа нулевая, и всё место делится поровну.'
+      - text: 'С `flex: auto` все элементы станут одинаковой ширины'
+        why: 'Одинаковые ширины как раз даёт `flex: 1` (если содержимое помещается).'
+      - text: 'С `flex: auto` элементы перестанут растягиваться'
+        why: 'Растягиваться перестанут при `flex: none`. У `flex: auto` grow равен 1.'
+    explanation: |
+      Flex-раскладка идёт в два шага. Сначала каждый элемент получает базовый размер (`flex-basis`), затем
+      свободное место раздаётся пропорционально `flex-grow` (или нехватка — пропорционально `flex-shrink`).
+      При `flex-basis: 0%` базовые размеры нулевые, и всё место делится по grow — получаются равные колонки.
+      При `flex-basis: auto` база — ширина содержимого, и делится только остаток, поэтому элемент с длинным
+      текстом остаётся шире.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_flexible_box_layout/Controlling_ratios_of_flex_items_along_the_main_axis
+    source: own
+
+  - id: css-flexbox-004
+    level: senior
+    tags: [min-width, overflow, text-overflow]
+    question: |
+      Длинное имя без пробелов ломает раскладку: блок `.info` вылезает за контейнер, хотя у него `flex: 1`,
+      а многоточие у `.name` не появляется. Что поможет?
+    code: |
+      <div class="row">
+        <img class="avatar" src="a.png" alt="">
+        <div class="info">
+          <p class="name">очень_длинное_имя_пользователя_без_пробелов</p>
+        </div>
+        <button>Удалить</button>
+      </div>
+
+      <style>
+        .row { display: flex; width: 300px; }
+        .info { flex: 1; }
+        .name { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+      </style>
+    codeLang: html
+    options:
+      - text: '`flex-shrink: 1` для `.info`'
+        why: '`flex: 1` уже содержит `flex-shrink: 1`. Сжиматься элементу мешает не shrink, а минимальный размер.'
+      - text: '`min-width: 0` для `.info`'
+        correct: true
+        why: 'У flex-элемента минимальная ширина по умолчанию `auto` — не меньше содержимого, а содержимое здесь — строка без переносов. `min-width: 0` разрешает сжатие, и `.name` сможет обрезать текст.'
+      - text: '`width: 100%` для `.info`'
+        why: 'С `flex: 1` основа и так 0%, `width` в неё не входит. `width: 100%` лишь ограничит автоматический минимум шириной контейнера (300px): многоточие появится, но вместе с аватаром и кнопкой `.info` всё равно вылезет за контейнер.'
+      - text: '`flex-wrap: wrap` для `.row`'
+        why: 'Перенос отправит элементы на новые строки, а длинное слово всё равно не сожмётся.'
+    explanation: |
+      У flex-элементов `min-width: auto` (в колонке — `min-height: auto`) значит «не меньше минимальной ширины
+      содержимого». Длинное слово без пробелов, `white-space: nowrap`, широкая таблица или `pre` внутри делают
+      эту ширину большой. Элемент отказывается сжиматься и выталкивает соседей, а вложенному блоку с
+      `text-overflow: ellipsis` нечего обрезать: он и так получил всю ширину текста. Решение — `min-width: 0`
+      на flex-элементе. Автоматический минимум не действует и у flex-элемента, который сам является
+      скролл-контейнером (`overflow` не `visible`), поэтому с обрезкой прямо на flex-элементе проблема не
+      возникает. Но обычно текст обрезают во вложенном блоке, как здесь.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/min-width#auto
+      - https://css-tricks.com/flexbox-truncated-text/
+    source: own
+
+  - id: css-flexbox-005
+    level: middle
+    tags: [flex-shrink, images]
+    question: |
+      В строке аватар 48×48 и длинный текст. На узком экране аватар сплющивается. Как это исправить?
+    code: |
+      .row { display: flex; }
+      .avatar { width: 48px; height: 48px; }
+    codeLang: css
+    options:
+      - text: '`.avatar { flex-shrink: 0; }`'
+        correct: true
+        why: 'По умолчанию flex-элементы могут сжиматься (`flex-shrink: 1`). Ноль запрещает сжатие, и аватар сохранит 48px.'
+      - text: '`.avatar { flex-grow: 0; }`'
+        why: '`flex-grow` и так равен 0 по умолчанию. Он отвечает за растяжение, а не за сжатие.'
+      - text: '`.avatar { max-width: 48px; }`'
+        why: '`max-width` ограничивает рост, а аватар, наоборот, сжимается.'
+      - text: '`.row { flex-wrap: nowrap; }`'
+        why: '`nowrap` — значение по умолчанию. Именно из-за него всё помещается в одну строку и сжимается.'
+    explanation: |
+      Значение по умолчанию `flex: 0 1 auto`: элемент не растёт, но может сжиматься, если места не хватает.
+      Нехватка распределяется между элементами пропорционально `flex-shrink`, умноженному на базовый
+      размер. Картинки, иконки и аватары обычно должны оставаться фиксированными, поэтому им ставят
+      `flex-shrink: 0` (или `flex: none`). Без явного `height` аватар ещё и вытянулся бы по высоте
+      строки: по умолчанию `align-items: stretch` растягивает элемент.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/flex-shrink
+    source: own
+
+  - id: css-flexbox-006
+    level: middle
+    tags: [margin-auto]
+    question: |
+      В шапке логотип и три ссылки меню. Как одной строкой прижать последнюю ссылку «Войти» к правому краю,
+      оставив остальные слева?
+    code: |
+      <header class="header">
+        <a class="logo">Logo</a>
+        <a>Каталог</a>
+        <a>Доставка</a>
+        <a class="login">Войти</a>
+      </header>
+      <style>.header { display: flex; }</style>
+    codeLang: html
+    options:
+      - text: '`.login { margin-left: auto; }`'
+        correct: true
+        why: 'Во flex-раскладке `auto`-margin забирает всё свободное место по своей стороне и отталкивает элемент к противоположному краю.'
+      - text: '`.login { float: right; }`'
+        why: 'Во flex-контейнере `float` игнорируется.'
+      - text: '`.header { justify-content: space-between; }`'
+        why: 'Так все элементы распределятся по ширине с равными промежутками, а не только последний уедет вправо.'
+      - text: '`.login { align-self: flex-end; }`'
+        why: '`align-self` выравнивает по поперечной оси, то есть по вертикали в строке.'
+    explanation: |
+      Во flex и grid `margin: auto` работает по-особому: перед раздачей места по `justify-content` свободное
+      пространство уходит auto-отступам. `margin-left: auto` у элемента отодвигает его и всё, что после
+      него, к правому краю. `margin: auto` со всех сторон центрирует элемент в контейнере. Это короче и
+      гибче, чем оборачивать группы элементов в дополнительные блоки.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_box_alignment/Box_alignment_in_flexbox#using_auto_margins_for_main_axis_alignment
+    source: own
+
+  - id: css-flexbox-007
+    level: middle
+    tags: [align-items, stretch]
+    question: |
+      Карточки в строке получились одной высоты, хотя текста в них разное количество. Почему, если высоту
+      никто не задавал?
+    code: |
+      .cards { display: flex; }
+      .card { padding: 16px; border: 1px solid; }
+    codeLang: css
+    options:
+      - text: 'Браузер выравнивает высоту всех блоков с одинаковым классом'
+        why: 'Классы на раскладку не влияют. Высоту выравнивает правило flex-контейнера.'
+      - text: 'Срабатывает `align-items: stretch` по умолчанию'
+        correct: true
+        why: 'Строка flex-контейнера высотой с самый высокий элемент, а `stretch` тянет остальные до неё.'
+      - text: 'Flex-элементы всегда получают высоту контейнера'
+        why: 'Не всегда: если задать элементу `height` или выравнивание вроде `align-items: flex-start`, растяжения не будет.'
+      - text: 'Это заслуга одинакового `padding` у карточек'
+        why: '`padding` одинаков у всех карточек и не объясняет, почему они выровнялись по самой высокой.'
+    explanation: |
+      Значение по умолчанию `align-items: stretch` растягивает каждый элемент по поперечной оси на всю
+      высоту строки, если у него не задан размер по этой оси. Отсюда удобные карточки одинаковой высоты
+      «из коробки». Обратная сторона: картинка или кнопка во flex-строке неожиданно вытягивается. Тогда ставят
+      `align-items: center` или `flex-start` контейнеру либо `align-self` конкретному элементу.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/align-items
+    source: own
+
+  - id: css-flexbox-008
+    level: senior
+    tags: [flex-grow, calculation]
+    question: |
+      Какой ширины станут пустые элементы A и B?
+    code: |
+      .row { display: flex; width: 600px; }
+      .a { flex: 1 1 200px; }
+      .b { flex: 2 1 100px; }
+    codeLang: css
+    options:
+      - text: 'A — 200px, B — 400px'
+        why: 'Это пропорция grow 1 : 2, применённая к итоговой ширине. Но grow делит только свободное место, а основы у элементов разные.'
+      - text: 'A — 300px, B — 300px'
+        correct: true
+        why: 'Свободно 600 − 200 − 100 = 300px. Оно делится по grow 1 : 2, то есть +100 и +200. Итого 300 и 300: элемент с grow 2 вовсе не шире.'
+      - text: 'A — 400px, B — 200px'
+        why: 'Так получилось бы, если бы свободное место делили обратно пропорционально grow: A получил бы две трети, B — треть.'
+      - text: 'A — 350px, B — 250px'
+        why: 'Свободные 300px поделены поровну, по 150px. Но делятся они пропорционально grow: A получает треть, B — две трети.'
+    explanation: |
+      Алгоритм растяжения: сначала каждый элемент получает `flex-basis`, затем считается свободное место
+      (ширина контейнера минус сумма основ и отступов). Оно распределяется пропорционально `flex-grow`: здесь
+      300 × 1/3 = 100 для A и 300 × 2/3 = 200 для B, и ширины выравниваются. Важно, что пропорция действует на свободное место, а не на
+      итоговую ширину. Поэтому `flex-grow: 2` не делает элемент вдвое шире соседа, если основы разные.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_flexible_box_layout/Controlling_ratios_of_flex_items_along_the_main_axis
+    source: own
+
+  - id: css-flexbox-009
+    level: senior
+    tags: [flex-shrink, calculation]
+    question: |
+      Какой ширины станут пустые элементы A и B?
+    code: |
+      .row { display: flex; width: 500px; }
+      .a { flex: 0 1 600px; }
+      .b { flex: 0 1 200px; }
+    codeLang: css
+    options:
+      - text: 'A — 450px, B — 50px'
+        why: 'Это результат, если делить нехватку поровну (по 150px). Но сжатие учитывает ещё и размер основы.'
+      - text: 'A — 375px, B — 125px'
+        correct: true
+        why: 'Не хватает 300px. Доли сжатия — shrink × basis: 600 и 200, то есть 3 : 1. A теряет 225, B — 75.'
+      - text: 'A — 300px, B — 200px'
+        why: 'Так было бы, если бы сжимался только больший элемент. Но оба имеют `flex-shrink: 1`.'
+      - text: 'A — 600px, B — 200px, элементы вылезут за контейнер'
+        why: 'Вылезли бы при `flex-shrink: 0`. Здесь сжатие разрешено.'
+    explanation: |
+      Сжатие считается иначе, чем растяжение. Нехватка места (сумма основ минус ширина контейнера) делится
+      пропорционально произведению `flex-shrink × flex-basis`. Так большие элементы теряют больше в
+      абсолютных пикселях, но в процентах все сжимаются одинаково (здесь каждый — на 37,5%). Если бы
+      делили поровну, маленькие элементы быстро сжимались бы до нуля. Оговорка: сжатие останавливается на
+      минимальном размере, а у элементов с содержимым он по умолчанию равен ширине содержимого. Поэтому в
+      задаче элементы пустые.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/flex-shrink
+      - https://www.w3.org/TR/css-flexbox-1/#resolve-flexible-lengths
+    source: own
+
+  - id: css-flexbox-010
+    level: junior
+    tags: [gap]
+    question: |
+      Как сделать отступ 16px между flex-элементами, но не по краям контейнера?
+    options:
+      - text: '`gap: 16px` у контейнера'
+        correct: true
+        why: '`gap` задаёт расстояние только между соседними элементами и строками, края контейнера он не трогает.'
+      - text: '`margin: 16px` у каждого элемента'
+        why: 'Отступы появятся и у крайних элементов, а между соседними во flex они ещё и сложатся в 32px.'
+      - text: '`padding: 16px` у контейнера'
+        why: '`padding` даст отступ как раз по краям, а между элементами промежутка не будет.'
+      - text: '`justify-content: space-between`'
+        why: 'Расстояние получится, но оно зависит от ширины контейнера, а не равно 16px.'
+    explanation: |
+      Свойство `gap` (`row-gap`, `column-gap`) пришло из grid и поддерживается flex во всех современных
+      браузерах. Оно задаёт промежутки только между элементами и рядами, поэтому больше не нужны хаки вроде
+      `.item + .item { margin-left }` или отрицательных отступов у контейнера. При переносе строк (`flex-wrap`)
+      `row-gap` задаёт расстояние между рядами.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/gap
+    source: own
+
+  - id: css-flexbox-011
+    level: junior
+    tags: [centering, flexbox, grid]
+    question: |
+      Какой способ отцентрирует блок неизвестного размера по горизонтали и вертикали внутри родителя?
+    options:
+      - text: '`display: grid; place-items: center;` у родителя'
+        correct: true
+        why: '`place-items` выравнивает элемент внутри его ячейки по обеим осям сразу. Работает при любом размере ребёнка, родителю нужна только высота.'
+      - text: '`margin: 0 auto;` у блока'
+        why: 'Это центрирует только по горизонтали, и только блок с заданной шириной. Вертикальный `auto`-отступ в обычном потоке равен нулю.'
+      - text: '`text-align: center; vertical-align: middle;` у родителя'
+        why: '`text-align` центрирует строчный контент по горизонтали, а `vertical-align` для обычного блока не действует.'
+      - text: '`position: absolute; top: 50%; left: 50%;` у блока'
+        why: 'Так в центр встанет левый верхний угол блока, а не сам блок. Нужно ещё `transform: translate(-50%, -50%)`.'
+    explanation: |
+      Современные способы центрирования: grid с `place-items: center`, flex с `justify-content: center;
+      align-items: center`, или `margin: auto` у ребёнка внутри flex- или grid-контейнера — там auto-отступы
+      работают и по вертикали. Для абсолютно позиционированного элемента — `inset: 0; margin: auto` при
+      известных размерах или `top: 50%; left: 50%; transform: translate(-50%, -50%)` при неизвестных. Во всех
+      вертикальных вариантах у родителя должна быть высота, иначе центрировать не в чем.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/place-items
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/Layout_cookbook/Center_an_element
+    source: own

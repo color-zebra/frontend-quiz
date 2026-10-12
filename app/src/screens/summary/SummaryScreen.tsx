@@ -1,0 +1,114 @@
+import clsx from "clsx";
+import type { CSSProperties } from "react";
+import { getTopicTitles } from "../../data/titles";
+import type { QuestionBank } from "../../data/types";
+import { getMistakeIds, type SessionAnswer } from "../../features/session/session";
+import { countQuestions } from "../../shared/lib/plural";
+import { Brand } from "../../shared/ui/Brand";
+import { Button } from "../../shared/ui/Button";
+import { Card, SectionLabel } from "../../shared/ui/Card";
+import glass from "../../shared/ui/glass.module.css";
+import { Icon } from "../../shared/ui/Icon";
+import { LevelBadge } from "../../shared/ui/LevelBadge";
+import { Markdown } from "../../shared/ui/Markdown";
+import { Screen, TopBar } from "../../shared/ui/Screen";
+import { ScreenTitle } from "../../shared/ui/ScreenTitle";
+import styles from "./SummaryScreen.module.css";
+
+interface SummaryScreenProps {
+  bank: QuestionBank;
+  answers: readonly SessionAnswer[];
+  onRetryMistakes: (ids: string[]) => void;
+  onOpenQuestion: (id: string) => void;
+  onHome: () => void;
+}
+
+function getTopicStats(bank: QuestionBank, answers: readonly SessionAnswer[]) {
+  const stats = new Map<string, { title: string; correct: number; total: number }>();
+  for (const answer of answers) {
+    const question = bank.byId.get(answer.questionId);
+    if (!question) continue;
+    const entry = stats.get(question.topic) ?? { title: getTopicTitles(bank, question).topicTitle, correct: 0, total: 0 };
+    entry.total++;
+    if (answer.correct) entry.correct++;
+    stats.set(question.topic, entry);
+  }
+  return [...stats.values()];
+}
+
+export function SummaryScreen({ bank, answers, onRetryMistakes, onOpenQuestion, onHome }: SummaryScreenProps) {
+  const correct = answers.filter((a) => a.correct).length;
+  const percent = answers.length ? Math.round((correct / answers.length) * 100) : 0;
+  const mistakeIds = getMistakeIds(answers);
+  const topicStats = getTopicStats(bank, answers);
+
+  return (
+    <Screen>
+      <TopBar>
+        <Brand />
+      </TopBar>
+
+      <ScreenTitle title="Сессия завершена" subtitle={`Отвечено ${countQuestions(answers.length)}`} />
+
+      <section className={clsx(styles.score, glass.glass)}>
+        <div className={styles.ringWrap}>
+          <div className={styles.ring} style={{ "--p": `${percent}%` } as CSSProperties} />
+          <div className={styles.ringText}>
+            <b>
+              {correct} / {answers.length}
+            </b>
+            <span>{percent}% верно</span>
+          </div>
+        </div>
+      </section>
+
+      {topicStats.length > 1 && (
+        <Card label="По темам">
+          <div className={styles.stats}>
+            {topicStats.map((s) => (
+              <div key={s.title} className={styles.stat}>
+                <span>{s.title}</span>
+                <span className={styles.bar}>
+                  <span style={{ width: `${(s.correct / s.total) * 100}%` }} />
+                </span>
+                <span className={styles.val}>
+                  {s.correct}/{s.total}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <div className={styles.mistakes}>
+        <SectionLabel>{mistakeIds.length ? `Ошибки · ${mistakeIds.length}` : "Ошибок нет"}</SectionLabel>
+        {mistakeIds.length === 0 && <p className={styles.clean}>Все ответы верные — можно брать уровень посложнее.</p>}
+        {mistakeIds.map((id) => {
+          const question = bank.byId.get(id);
+          if (!question) return null;
+          const { topicTitle, subtopicTitle } = getTopicTitles(bank, question);
+          return (
+            <button key={id} type="button" className={clsx(styles.mistake, glass.glass)} onClick={() => onOpenQuestion(id)}>
+              <span className={styles.mistakeMeta}>
+                <LevelBadge level={question.level} /> {topicTitle} · {subtopicTitle}
+              </span>
+              <Markdown text={question.question} inline className={styles.mistakeText} />
+              <Icon name="chevronRight" className={styles.chevron} />
+            </button>
+          );
+        })}
+      </div>
+
+      <div className={styles.buttons}>
+        {mistakeIds.length > 0 && (
+          <Button icon="refresh" onClick={() => onRetryMistakes(mistakeIds)}>
+            Прорешать ошибки · {mistakeIds.length}
+          </Button>
+        )}
+        <Button variant={mistakeIds.length ? "secondary" : "primary"} onClick={onHome}>
+          На главную
+        </Button>
+      </div>
+    </Screen>
+  );
+}

@@ -1,0 +1,354 @@
+# yaml-language-server: $schema=../../schema.json
+topic: javascript
+subtopic: scope
+questions:
+  - id: javascript-scope-001
+    level: junior
+    tags: [var, hoisting, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      console.log(total);
+      var total = 5;
+    codeLang: js
+    options:
+      - text: '`5`'
+        why: 'Поднимается только объявление переменной, но не присваивание. Значение 5 появится, когда выполнится вторая строка.'
+      - text: '`undefined`'
+        correct: true
+        why: 'Объявление `var total` поднимается в начало области видимости и инициализируется значением `undefined`. Присваивание остаётся на своём месте.'
+      - text: '`ReferenceError`'
+        why: 'Ошибка была бы для `let` и `const` или для необъявленной переменной. `var` к моменту чтения уже существует.'
+      - text: '`null`'
+        why: 'Неинициализированные переменные в JavaScript равны `undefined`, а не `null`.'
+    explanation: |
+      Перед выполнением кода движок проходит по области видимости и регистрирует все объявления. Это называют
+      hoisting (поднятием). Переменные `var` сразу получают значение `undefined`, поэтому их можно читать
+      до строки объявления. Код ведёт себя так, будто написано `var total; console.log(total); total = 5;`.
+      Это источник тихих багов, поэтому в современном коде используют `let` и `const`: их тоже регистрируют
+      заранее, но читать до объявления нельзя.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Glossary/Hoisting
+    source: own
+
+  - id: javascript-scope-002
+    level: middle
+    tags: [let, tdz, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      console.log(limit);
+      let limit = 10;
+    codeLang: js
+    options:
+      - text: '`10`'
+        why: 'Строка с присваиванием ещё не выполнилась, значение 10 взяться неоткуда.'
+      - text: '`undefined`'
+        why: 'Так ведёт себя `var`. У `let` до объявления нет даже значения `undefined`.'
+      - text: '`ReferenceError`'
+        correct: true
+        why: 'Переменная `let` уже существует, но находится во временной мёртвой зоне до строки объявления. Обращение к ней бросает `ReferenceError: Cannot access before initialization`.'
+      - text: '`null`'
+        why: 'Ни `let`, ни `var` не получают `null` автоматически.'
+    explanation: |
+      `let`, `const` и `class` тоже регистрируются при входе в область видимости (поэтому формально они
+      «поднимаются»), но не инициализируются. Промежуток от начала блока до строки объявления называется
+      временной мёртвой зоной (temporal dead zone, TDZ): любое обращение к переменной в нём — ошибка. Это
+      специально сделанное поведение, чтобы раннее чтение переменной было явной ошибкой, а не тихим
+      `undefined`, как у `var`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/let#temporal_dead_zone_tdz
+    source: own
+
+  - id: javascript-scope-003
+    level: senior
+    tags: [tdz, shadowing, block-scope, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      let level = 'outer';
+      {
+        console.log(level);
+        let level = 'inner';
+      }
+    codeLang: js
+    options:
+      - text: '`outer`'
+        why: 'Внутренняя переменная уже существует с начала блока и затеняет внешнюю. До объявления к ней обращаться нельзя.'
+      - text: '`inner`'
+        why: 'Присваивание `inner` ещё не выполнилось, и значения у внутренней переменной пока нет.'
+      - text: '`undefined`'
+        why: '`undefined` до объявления даёт только `var`. Переменная `let` в TDZ не имеет никакого значения.'
+      - text: '`ReferenceError`'
+        correct: true
+        why: '`let level` во внутреннем блоке регистрируется при входе в блок и затеняет внешнюю. На первой строке блока она ещё в TDZ, и чтение бросает ошибку.'
+    explanation: |
+      Затенение (shadowing) действует на весь блок, а не с места объявления. Как только в блоке есть `let level`,
+      имя `level` внутри блока относится к внутренней переменной от первой до последней строки. Внешняя
+      недоступна даже до строки объявления, а внутренняя ещё не инициализирована — получается TDZ. Если бы
+      внутри был `var`, это вызвало бы синтаксическую ошибку повторного объявления на уровне функции, а без
+      внутреннего объявления вывелось бы `outer`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/let#temporal_dead_zone_tdz
+    source: own
+
+  - id: javascript-scope-004
+    level: middle
+    tags: [function-declaration, function-expression, hoisting, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      console.log(typeof declared, typeof expressed);
+
+      function declared() {}
+      var expressed = function () {};
+    codeLang: js
+    options:
+      - text: '`function function`'
+        why: 'Function expression присваивается переменной во время выполнения. До этой строки `expressed` — просто `var` со значением `undefined`.'
+      - text: '`function undefined`'
+        correct: true
+        why: 'Function declaration поднимается целиком, вместе с телом. У `var expressed` поднимается только объявление, а функция будет присвоена позже.'
+      - text: '`undefined undefined`'
+        why: 'Объявление функции `function declared() {}` доступно во всей области видимости, даже до своей строки.'
+      - text: '`ReferenceError`'
+        why: '`typeof` не бросает ошибок для переменных `var` и необъявленных имён. Обе переменные к тому же объявлены.'
+    explanation: |
+      Function declaration (`function name() {}` как отдельная инструкция) поднимается полностью: её можно
+      вызывать выше по коду. Function expression (`const f = function () {}` или стрелка) — это значение,
+      которое присваивается при выполнении строки. С `var` до этого переменная равна `undefined`, с
+      `let`/`const` — находится в TDZ. Поэтому вызов `expressed()` до присваивания даст `TypeError: expressed is
+      not a function`, а для `const` — `ReferenceError`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/function#function_declaration_hoisting
+    source: own
+
+  - id: javascript-scope-005
+    level: senior
+    tags: [typeof, tdz, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      console.log(typeof notDeclaredAnywhere);
+      console.log(typeof declaredLater);
+      let declaredLater = 1;
+    codeLang: js
+    options:
+      - text: '`undefined`, `undefined`'
+        why: 'Для необъявленного имени `typeof` действительно безопасен, но переменная в TDZ — особый случай.'
+      - text: '`undefined`, затем `ReferenceError`'
+        correct: true
+        why: '`typeof` у несуществующего имени возвращает `"undefined"`. Но `declaredLater` существует и находится в TDZ, и даже `typeof` к ней обращаться нельзя.'
+      - text: '`ReferenceError` на первой строке'
+        why: '`typeof` не бросает ошибку для необъявленных идентификаторов — на этом основаны проверки вроде `typeof window === "undefined"`.'
+      - text: '`undefined`, `number`'
+        why: 'Присваивание ещё не произошло, а обращение к переменной в TDZ — ошибка, а не `"number"`.'
+    explanation: |
+      `typeof` исторически безопасен для любых имён: `typeof window === 'undefined'` — классическая проверка
+      окружения. Но с появлением `let` и `const` у этого правила есть исключение: если переменная объявлена
+      в текущей области, но строка объявления ещё не выполнена, `typeof` бросает `ReferenceError`, как и любое
+      другое обращение. Так TDZ защищает от использования переменной раньше времени.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/typeof#interaction_with_undeclared_and_uninitialized_variables
+    source: own
+
+  - id: javascript-scope-006
+    level: junior
+    tags: [block-scope, var, let, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      if (true) {
+        var a = 1;
+        let b = 2;
+      }
+      console.log(a, typeof b);
+    codeLang: js
+    options:
+      - text: '`1 number`'
+        why: '`let` ограничен блоком `if`: снаружи переменной `b` нет.'
+      - text: '`1 undefined`'
+        correct: true
+        why: '`var` не знает о блоках и видна во всей функции или скрипте. `let` видна только внутри фигурных скобок, снаружи `typeof b` даёт `"undefined"`.'
+      - text: '`undefined undefined`'
+        why: '`var a` объявлена в блоке, но блок для неё не граница: после выполнения `if` она равна 1.'
+      - text: '`ReferenceError`'
+        why: 'К `a` обращаться можно, а снаружи блока `b` просто не существует — `typeof` для такого имени ошибку не бросает.'
+    explanation: |
+      У `var` функциональная область видимости: границей служит только функция (или весь скрипт). Блоки `if`,
+      `for`, `{}` для неё прозрачны. `let` и `const` ограничены ближайшим блоком в фигурных скобках. Поэтому
+      `let` в цикле не «утекает» наружу, а переменная `var` внутри `if` видна во всей функции. Это одна из
+      главных причин, почему `var` в современном коде не используют.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/var#description
+    source: own
+
+  - id: javascript-scope-007
+    level: junior
+    tags: [const, immutability]
+    question: |
+      Какая из строк вызовет ошибку?
+    code: |
+      const settings = { theme: 'dark' };
+      settings.theme = 'light';   // 1
+      settings.lang = 'ru';       // 2
+      delete settings.lang;       // 3
+      settings = {};              // 4
+    codeLang: js
+    options:
+      - text: 'Строка 1 — нельзя менять свойства константы'
+        why: '`const` запрещает переприсвоить переменную, но объект, на который она указывает, остаётся изменяемым.'
+      - text: 'Строка 2 — нельзя добавлять новые свойства'
+        why: 'Добавлять свойства можно. Запретить это может `Object.freeze` или `Object.preventExtensions`, но не `const`.'
+      - text: 'Строка 3 — нельзя удалять свойства'
+        why: 'Удалять свойства тоже можно, если объект не заморожен и не запечатан.'
+      - text: 'Строка 4 — нельзя переприсвоить константу'
+        correct: true
+        why: '`const` фиксирует связь имени со значением. Новый объект присвоить нельзя: `TypeError: Assignment to constant variable`.'
+    explanation: |
+      `const` защищает переменную, а не значение. Переменная навсегда указывает на один и тот же объект, но
+      сам объект можно менять: свойства, элементы массива. Для неизменяемости значения нужен `Object.freeze`
+      (поверхностно, вложенные объекты остаются изменяемыми) или неизменяемые структуры данных. В
+      TypeScript для этого есть `readonly` и `as const`, но это проверка компилятора, а не рантайма.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/const
+    source: own
+
+  - id: javascript-scope-008
+    level: senior
+    tags: [global-object, var, let, output]
+    question: |
+      Что выведется в консоль, если код выполняется как обычный скрипт на верхнем уровне?
+    code: |
+      var fromVar = 1;
+      let fromLet = 2;
+
+      console.log(globalThis.fromVar, globalThis.fromLet);
+    codeLang: js
+    options:
+      - text: '`1 2`'
+        why: 'Глобальные `let` и `const` не становятся свойствами глобального объекта.'
+      - text: '`1 undefined`'
+        correct: true
+        why: 'Глобальный `var` создаёт свойство глобального объекта (`window` в браузере). Глобальные `let` и `const` живут в отдельной декларативной области и в `window` не попадают.'
+      - text: '`undefined undefined`'
+        why: 'Это было бы верно в ES-модуле, где у каждого модуля своя область видимости. В обычном скрипте `var` попадает в глобальный объект.'
+      - text: '`undefined 2`'
+        why: 'Ровно наоборот: свойством глобального объекта становится именно `var`.'
+    explanation: |
+      В глобальной области обычного скрипта `var` и function declaration становятся свойствами глобального
+      объекта. Отсюда коллизии: `var name = 1` в браузере перезапишет `window.name`, а скрипты на одной
+      странице мешают друг другу. `let`, `const` и `class` на верхнем уровне тоже глобальные — видны во
+      всех скриптах страницы, — но хранятся отдельно и в `window` не попадают. В модулях (`type="module"`) у
+      каждого файла своя область, и ни одно объявление не становится глобальным свойством.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/let#description
+    source: own
+
+  - id: javascript-scope-009
+    level: senior
+    tags: [hoisting, function-declaration, var, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      var item = 1;
+      function item() {}
+
+      console.log(typeof item);
+    codeLang: js
+    options:
+      - text: '`function`'
+        why: 'Function declaration действительно инициализируется раньше, но строка `var item = 1` выполняется после и перезаписывает значение.'
+      - text: '`number`'
+        correct: true
+        why: 'При поднятии имя `item` получает функцию. Затем при выполнении кода срабатывает присваивание `item = 1`, и переменная становится числом.'
+      - text: '`undefined`'
+        why: 'Ни одно из двух объявлений не оставляет переменную в значении `undefined` к моменту `console.log`.'
+      - text: '`SyntaxError` из-за повторного объявления'
+        why: 'Для `var` и функций повторное объявление разрешено. Ошибка была бы, если бы одно из объявлений было через `let` или `const`.'
+    explanation: |
+      При поднятии function declaration сразу получает значение-функцию, а `var` с тем же именем не мешает:
+      повторное объявление `var` ничего не сбрасывает. Но присваивание `= 1` остаётся на своём месте и
+      выполняется в обычном порядке, перезаписывая функцию. Без присваивания (`var item;`) переменная
+      осталась бы функцией. С `let item = 1` код вообще не запустился бы: повторное объявление имени,
+      уже занятого функцией, — синтаксическая ошибка.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/function#hoisting
+    source: own
+
+  - id: javascript-scope-010
+    level: middle
+    tags: [hoisting, shadowing, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      var label = 'global';
+
+      function show() {
+        console.log(label);
+        var label = 'local';
+      }
+
+      show();
+    codeLang: js
+    options:
+      - text: '`global`'
+        why: 'Внутри функции есть своё объявление `var label`. Оно поднимается в начало функции и затеняет глобальное.'
+      - text: '`local`'
+        why: 'Присваивание `local` выполняется после `console.log`, к этому моменту значение ещё не записано.'
+      - text: '`undefined`'
+        correct: true
+        why: 'Локальная `var label` поднимается в начало функции со значением `undefined` и затеняет глобальную. На момент `console.log` присваивание ещё не выполнено.'
+      - text: '`ReferenceError`'
+        why: 'Для `var` обращения до объявления допустимы и дают `undefined`. Ошибка была бы для `let`.'
+    explanation: |
+      Поднятие работает в каждой функции отдельно: все `var`, объявленные где угодно в теле, существуют с
+      первой строки функции и равны `undefined`. Поэтому локальная переменная затеняет глобальную с тем же
+      именем по всей функции, даже выше своей строки. Классический вопрос с собеседований и реальный
+      источник ошибок в старом коде. С `let label` вместо `var` вывод сменился бы на `ReferenceError` — ошибка
+      стала бы явной.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Glossary/Hoisting
+    source: own
+
+  - id: javascript-scope-011
+    level: middle
+    tags: [implicit-global, strict-mode, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function sloppy() {
+        counter = 5;
+      }
+      function strict() {
+        'use strict';
+        total = 5;
+      }
+
+      sloppy();
+      console.log(counter);
+      try {
+        strict();
+      } catch (error) {
+        console.log(error.constructor.name);
+      }
+    codeLang: js
+    options:
+      - text: '`ReferenceError`, `ReferenceError`'
+        why: 'В нестрогом режиме присваивание необъявленной переменной не бросает ошибку, а молча создаёт глобальную.'
+      - text: '`5`, `ReferenceError`'
+        correct: true
+        why: 'Нестрогая функция создала глобальную переменную `counter`. В строгом режиме присваивание необъявленному имени запрещено и бросает `ReferenceError`.'
+      - text: '`5`, затем ничего'
+        why: 'Строгий режим не пропускает присваивание необъявленной переменной молча, он бросает исключение.'
+      - text: '`undefined`, `ReferenceError`'
+        why: 'Присваивание в нестрогом режиме создаёт переменную со значением 5, а не `undefined`.'
+    explanation: |
+      Присваивание необъявленному имени в нестрогом режиме создаёт свойство глобального объекта. Достаточно
+      опечатки (`totla = 5`) или забытого `let`, и функция тихо засоряет глобальную область, а ошибка
+      проявится где-то далеко. Строгий режим превращает это в `ReferenceError`. Модули, классы и код,
+      собранный современными сборщиками, работают в строгом режиме, поэтому сегодня ловушка встречается в
+      основном в старых скриптах.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode#assigning_to_undeclared_variables
+    source: own

@@ -1,0 +1,106 @@
+.banner {
+  margin: 0;
+  padding: 12px 14px;
+  border-color: var(--bad);
+  color: var(--text-2);
+  font-size: 13.5px;
+}
+
+.fileButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.hint {
+  margin: -4px 0 0;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.message {
+  margin: 0;
+  color: var(--ok);
+  font-size: 13.5px;
+}
+
+.error {
+  color: var(--bad);
+}
+
+.empty {
+  margin: 24px 0 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 14px 48px 14px 14px;
+  color: var(--text);
+  text-align: left;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.question {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: 13px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.text {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 15px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+}
+
+.date {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.chevron {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  color: var(--muted);
+  transform: translateY(-50%);
+}
+
+.orphan {
+  border-style: dashed;
+}
+
+.orphanLabel {
+  color: var(--bad);
+  font-size: 11.5px;
+  font-weight: 600;
+}

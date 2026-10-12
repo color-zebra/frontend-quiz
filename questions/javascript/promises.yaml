@@ -1,0 +1,353 @@
+# yaml-language-server: $schema=../../schema.json
+topic: javascript
+subtopic: promises
+questions:
+  - id: javascript-promises-001
+    level: junior
+    tags: [states, resolve, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const promise = new Promise((resolve, reject) => {
+        resolve('first');
+        resolve('second');
+        reject(new Error('fail'));
+      });
+
+      promise
+        .then((value) => console.log(value))
+        .catch((error) => console.log(error.message));
+    codeLang: js
+    options:
+      - text: '`first`'
+        correct: true
+        why: 'Промис меняет состояние один раз. Первый `resolve` переводит его в fulfilled, а последующие вызовы `resolve` и `reject` игнорируются.'
+      - text: '`second`'
+        why: 'Второй `resolve` уже ничего не меняет: состояние промиса окончательно зафиксировано первым вызовом.'
+      - text: '`first`, затем `fail`'
+        why: 'Промис не может быть одновременно выполнен и отклонён. `reject` после `resolve` молча игнорируется.'
+      - text: '`fail`'
+        why: 'Отклонение пришло последним, но к этому моменту промис уже выполнен, и `reject` ничего не меняет.'
+    explanation: |
+      У промиса три состояния: pending (ожидание), fulfilled (выполнен) и rejected (отклонён). Переход из
+      pending происходит один раз и навсегда: промис «запоминает» результат, и все подписчики, даже
+      подписавшиеся позже, получают одно и то же значение. Повторные вызовы `resolve` и `reject` не бросают
+      ошибок, они просто игнорируются. Код в executor после `resolve` продолжает выполняться — `resolve` не
+      работает как `return`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
+    source: own
+
+  - id: javascript-promises-002
+    level: middle
+    tags: [chaining, catch, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      Promise.reject(new Error('boom'))
+        .catch((error) => {
+          console.log('catch', error.message);
+          return 'recovered';
+        })
+        .then((value) => console.log('then', value));
+    codeLang: js
+    options:
+      - text: '`catch boom`'
+        why: 'После `catch` цепочка продолжается. Значение, которое вернул обработчик, передаётся в следующий `then`.'
+      - text: '`catch boom`, `then recovered`'
+        correct: true
+        why: '`catch` обработал ошибку и вернул значение. Промис, который возвращает `catch`, выполняется этим значением, и цепочка идёт дальше по успешной ветке.'
+      - text: '`catch boom`, `then undefined`'
+        why: '`then` получил бы `undefined`, если бы `catch` ничего не вернул. Здесь он вернул строку.'
+      - text: '`catch boom`, затем необработанная ошибка'
+        why: 'Ошибка обработана в `catch`. Чтобы цепочка осталась отклонённой, нужно бросить ошибку снова через `throw`.'
+    explanation: |
+      Каждый `then`, `catch` и `finally` возвращает новый промис. Его судьба зависит от обработчика: вернул
+      значение — новый промис выполнен этим значением; бросил исключение — отклонён этой ошибкой; вернул
+      промис — повторяет его состояние. `catch` — это `then(undefined, onRejected)`: обработав ошибку, он
+      переводит цепочку обратно в успешное состояние. Если ошибку нужно лишь залогировать и передать дальше,
+      в `catch` пишут `throw error`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises#chaining
+    source: own
+
+  - id: javascript-promises-003
+    level: senior
+    tags: [then, non-function, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      Promise.resolve(1)
+        .then(2)
+        .then(Promise.resolve(3))
+        .then((value) => console.log(value));
+    codeLang: js
+    options:
+      - text: '`1`'
+        correct: true
+        why: 'Аргументы `then`, которые не являются функциями, игнорируются, и значение проходит сквозь них. До последнего `then` доходит исходная единица.'
+      - text: '`2`'
+        why: '`then(2)` не подставляет значение 2: `then` ожидает функцию, а не значение. Число игнорируется.'
+      - text: '`3`'
+        why: 'Промис, переданный в `then` вместо функции, тоже игнорируется. Он не «подменяет» значение цепочки.'
+      - text: 'TypeError: аргумент `then` должен быть функцией'
+        why: 'Ошибки нет: по спецификации нефункциональные аргументы молча заменяются на функцию, пропускающую значение дальше.'
+    explanation: |
+      Сигнатура `then(onFulfilled, onRejected)`. Если аргумент не функция, вместо него используется
+      «прозрачный» обработчик: для успеха — `x => x`, для ошибки — `e => { throw e }`. Поэтому `then(2)` и
+      `then(Promise.resolve(3))` ничего не делают, и значение 1 доходит до конца. Задача популярна на
+      собеседованиях, а в реальном коде ошибка выглядит так: `then(doSomething())` вместо
+      `then(() => doSomething())` — функция вызывается сразу, а в `then` уходит её результат.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/then#parameters
+    source: own
+
+  - id: javascript-promises-004
+    level: middle
+    tags: [then, onRejected, catch]
+    question: |
+      Чем `p.then(onSuccess, onError)` отличается от `p.then(onSuccess).catch(onError)`?
+    options:
+      - text: 'Ничем, второй вариант — просто более читаемая запись первого'
+        why: 'Разница есть: она проявляется, когда ошибка возникает внутри `onSuccess`.'
+      - text: 'Во втором варианте `onError` поймает и ошибку, брошенную внутри `onSuccess`'
+        correct: true
+        why: '`catch` подписан на промис, который вернул `then(onSuccess)`. Если `onSuccess` бросит исключение, этот промис отклонится, и `catch` его поймает. Второй аргумент `then` следит только за `p`.'
+      - text: 'В первом варианте `onError` вызывается и при успехе, и при ошибке'
+        why: '`onError` вызывается только при отклонении `p`. При успехе вызывается `onSuccess`.'
+      - text: 'Во втором варианте `onError` не сработает, если отклонён сам `p`'
+        why: 'Сработает: отклонение `p` пройдёт сквозь `then(onSuccess)` без обработчика ошибок и попадёт в `catch`.'
+    explanation: |
+      Второй аргумент `then` и последующий `catch` подписываются на разные промисы. `then(a, b)`: оба
+      обработчика следят за исходным `p`, и ошибку из `a` обработчик `b` уже не увидит — она уйдёт дальше
+      по цепочке, а без других обработчиков станет unhandled rejection. `then(a).catch(b)`: `b` следит за
+      результатом `then(a)`, то есть ловит и ошибки `p`, и ошибки внутри `a`. Обычно второй вариант
+      безопаснее. Первый полезен, когда нужно обработать только ошибку `p`, не смешивая её с ошибками
+      обработчика.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch
+    source: own
+
+  - id: javascript-promises-005
+    level: middle
+    tags: [promise-all, fail-fast]
+    question: |
+      Как поведёт себя `Promise.all`, если второй из трёх промисов отклонится через 100 мс, а остальные
+      выполнятся через секунду?
+    options:
+      - text: 'Отклонится через 100 мс, остальные продолжат работу'
+        correct: true
+        why: '`Promise.all` отклоняется при первой же ошибке (fail-fast) — здесь ошибкой второго промиса. Остальные операции при этом не отменяются: промисы не умеют отменяться сами.'
+      - text: 'Дождётся всех трёх и отклонится через секунду с массивом ошибок'
+        why: 'Ждать всех и собирать результаты умеет `Promise.allSettled`. `Promise.all` отклоняется сразу.'
+      - text: 'Отклонится через 100 мс и отменит остальные запросы'
+        why: 'Промисы не управляют операциями, которые их создали. Чтобы отменить `fetch`, нужен `AbortController`.'
+      - text: 'Выполнится через секунду с `undefined` на месте ошибки'
+        why: 'Так `Promise.all` не делает. Значения с пропусками даёт `Promise.allSettled`, но в виде объектов `{ status, reason }`.'
+    explanation: |
+      Четыре комбинатора промисов: `Promise.all` — все успешны (массив значений в исходном порядке) или
+      первая ошибка; `Promise.allSettled` — ждёт всех и даёт массив `{ status, value | reason }`;
+      `Promise.race` — первый завершившийся, успешно или с ошибкой; `Promise.any` — первый успешный, а если
+      отклонились все — `AggregateError`. Ни один из них не отменяет «проигравшие» операции. Если нужно
+      прервать лишние запросы, их запускают с общим `AbortController` и вызывают `abort()`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/allSettled
+    source: own
+
+  - id: javascript-promises-006
+    level: middle
+    tags: [promise-any, aggregate-error, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      Promise.any([
+        Promise.reject(new Error('A')),
+        Promise.reject(new Error('B')),
+      ]).catch((error) => console.log(error.constructor.name, error.errors.length));
+    codeLang: js
+    options:
+      - text: '`Error 1`'
+        why: '`Promise.any` не отклоняется первой ошибкой: он ждёт, пока отклонятся все, и только тогда сообщает об этом.'
+      - text: '`AggregateError 2`'
+        correct: true
+        why: 'Если отклонились все промисы, `Promise.any` отклоняется `AggregateError`, где в поле `errors` лежат все причины по порядку.'
+      - text: '`Error 2`'
+        why: 'Ошибки не склеиваются в обычный `Error`. Для набора причин есть отдельный тип `AggregateError`.'
+      - text: 'Ничего: `Promise.any` с одними ошибками зависнет'
+        why: 'Он завершится, как только отклонится последний промис из списка.'
+    explanation: |
+      `Promise.any` — противоположность `Promise.all`: ему нужен хотя бы один успех. Первый выполненный промис
+      сразу даёт результат, а ошибки игнорируются, пока остаётся шанс на успех. Если отклонились все,
+      результатом будет `AggregateError` — встроенный тип ошибки со свойством `errors`, массивом всех причин в
+      исходном порядке. Пустой массив сразу даёт `AggregateError`. Применение — запросить данные с нескольких
+      зеркал и взять первый удачный ответ.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/any
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AggregateError
+    source: own
+
+  - id: javascript-promises-007
+    level: senior
+    tags: [finally, output]
+    question: |
+      Что выведет каждая из двух цепочек?
+    code: |
+      Promise.resolve('data')
+        .finally(() => 'ignored')
+        .then((value) => console.log('1:', value));
+
+      Promise.resolve('data')
+        .finally(() => { throw new Error('from finally'); })
+        .catch((error) => console.log('2:', error.message));
+    codeLang: js
+    options:
+      - text: 'Цепочка 1 — `1: ignored`, цепочка 2 — `2: data`'
+        why: 'Возвращаемое значение `finally` не подменяет результат цепочки. А вот брошенная в нём ошибка — подменяет.'
+      - text: 'Цепочка 1 — `1: data`, цепочка 2 — `2: from finally`'
+        correct: true
+        why: '`finally` пропускает исходный результат дальше, игнорируя возвращённое значение. Но если он бросает исключение, цепочка отклоняется этой ошибкой.'
+      - text: 'Цепочка 1 — `1: data`, цепочка 2 ничего не выведет'
+        why: 'Исключение в `finally` отклоняет промис, и следующий `catch` его ловит.'
+      - text: 'Цепочка 1 — `1: ignored`, цепочка 2 — `2: from finally`'
+        why: 'Обычное возвращаемое значение `finally` всегда игнорируется: обработчик вызывается без аргументов и не должен влиять на результат.'
+    explanation: |
+      `finally` нужен для уборки, которая не зависит от исхода: скрыть спиннер, закрыть соединение. Поэтому
+      обработчик не получает аргументов, а его обычное возвращаемое значение игнорируется — дальше идёт
+      исходный результат или исходная ошибка. Исключения из этого правила два: если `finally` бросает ошибку
+      или возвращает отклонённый промис, цепочка отклоняется новой причиной. Если же он возвращает промис,
+      цепочка дождётся его, но значение всё равно останется исходным. Любопытная деталь: в консоли строка
+      `2:` появится раньше строки `1:`. Чтобы пропустить исходное значение, `finally` внутри делает
+      `Promise.resolve(onFinally()).then(() => value)`, а это лишние шаги очереди. Брошенная ошибка отклоняет
+      промис сразу.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/finally
+    source: own
+
+  - id: javascript-promises-008
+    level: middle
+    tags: [unhandled-rejection, try-catch]
+    question: |
+      Почему `try/catch` не перехватывает ошибку?
+    code: |
+      try {
+        Promise.reject(new Error('fail'));
+      } catch (error) {
+        console.log('caught', error.message);
+      }
+    codeLang: js
+    options:
+      - text: '`Promise.reject` не создаёт настоящую ошибку, а только сообщение'
+        why: 'Промис отклонён настоящим объектом `Error`. Дело не в типе, а в том, что отклонение не является исключением.'
+      - text: 'Отклонение промиса не является исключением, его ловят иначе'
+        correct: true
+        why: '`Promise.reject` синхронно возвращает отклонённый промис, ничего не бросая. Перехватить отклонение можно `.catch()` или `await` внутри `try`, а без подписчика оно станет unhandled rejection.'
+      - text: '`try/catch` в принципе не работает с асинхронным кодом, даже с `await`'
+        why: 'С `await` работает: `await` превращает отклонение в исключение в точке ожидания, и `try/catch` его ловит.'
+      - text: 'Ошибку перехватит `catch`, но только в строгом режиме'
+        why: 'Строгий режим тут ни при чём: исключения нет ни в каком режиме.'
+    explanation: |
+      `try/catch` ловит исключения, брошенные синхронно внутри блока. Отклонение промиса — это не исключение,
+      а состояние объекта: вызов `Promise.reject(...)` или `fetch(...)` возвращает промис, ничего не бросая.
+      Ошибка «проявится» только у того, кто подпишется через `.catch()` или дождётся через `await`. Если
+      подписчика нет, среда сообщит о unhandled rejection: в браузере — в консоль и событием
+      `unhandledrejection`, в Node по умолчанию процесс завершится. Поэтому `await` внутри `try` или `.catch()` на
+      конце цепочки обязательны.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Window/unhandledrejection_event
+    source: own
+
+  - id: javascript-promises-009
+    level: senior
+    tags: [promise-race, timeout, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const wait = (ms, value) => new Promise((resolve) => setTimeout(() => resolve(value), ms));
+      const fail = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms));
+
+      Promise.race([wait(200, 'data'), fail(100)])
+        .then((value) => console.log('ok', value))
+        .catch((error) => console.log('error', error.message));
+    codeLang: js
+    options:
+      - text: '`ok data`'
+        why: '`race` не ищет успешный результат: его выигрывает первый завершившийся промис, а это отклонение через 100 мс.'
+      - text: '`error timeout`'
+        correct: true
+        why: 'Отклонение через 100 мс завершается раньше, чем данные через 200 мс. `race` принимает исход первого финишировавшего, даже если это ошибка.'
+      - text: '`error timeout`, затем `ok data`'
+        why: 'Промис `race` меняет состояние один раз. Поздний результат `wait` никуда не попадёт.'
+      - text: '`ok data`, затем `error timeout`'
+        why: 'Порядок неверный, и промис `race` в любом случае завершается однократно.'
+    explanation: |
+      `Promise.race` повторяет состояние первого завершившегося промиса — неважно, выполнился он или
+      отклонился. Классическое применение — таймаут: «гонка» между запросом и промисом, который отклоняется
+      через N миллисекунд. Важно помнить, что проигравший промис продолжает работать: запрос не отменяется,
+      а таймер не очищается. Для запросов современный способ — `fetch(url, { signal: AbortSignal.timeout(100) })`,
+      он действительно прерывает запрос.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/race
+      - https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal/timeout_static
+    source: own
+
+  - id: javascript-promises-010
+    level: middle
+    tags: [promisify, callbacks]
+    question: |
+      Как правильно обернуть функцию с колбэком в стиле Node `readConfig(path, (error, data) => ...)` в промис?
+    options:
+      - text: '`new Promise((ok, fail) => readConfig(path, (e, d) => e ? fail(e) : ok(d)))`'
+        correct: true
+        why: 'Executor вызывает исходную функцию, а колбэк переводит её результат в `resolve` или `reject`. Так работает и `util.promisify` в Node.'
+      - text: '`Promise.resolve(readConfig(path, (error, data) => data ?? error))`'
+        why: 'Функция с колбэком ничего полезного не возвращает: результат придёт позже, в колбэк. Здесь промис выполнится сразу значением `undefined`.'
+      - text: '`new Promise(readConfig(path, (error, data) => data))`'
+        why: 'Конструктор ждёт функцию-executor, а здесь передан результат вызова `readConfig`. Получится `TypeError`.'
+      - text: '`async () => readConfig(path, (error, data) => data ?? error)`'
+        why: '`async` дожидается только промисов. Колбэк вызовется позже, а функция сразу вернёт промис с `undefined`.'
+    explanation: |
+      Промисификация — перевод API на колбэках в промисы, чтобы использовать `await` и комбинаторы. Executor
+      запускает операцию, а колбэк завершает промис: ошибка → `reject`, результат → `resolve`. В Node есть
+      готовые `util.promisify` и модули вроде `fs/promises`, в браузере многие старые API (например,
+      `setTimeout`) оборачивают так же: `const sleep = (ms) => new Promise((r) => setTimeout(r, ms))`. Важно,
+      чтобы колбэк вызывался ровно один раз, иначе лишние вызовы просто потеряются.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises#creating_a_promise_around_an_old_callback_api
+    source: own
+
+  - id: javascript-promises-011
+    level: senior
+    tags: [resolve, thenable, adoption, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const thenable = {
+        then(resolve) {
+          console.log('then called');
+          resolve(42);
+        },
+      };
+
+      Promise.resolve(thenable).then((value) => console.log(value));
+      console.log('sync');
+    codeLang: js
+    options:
+      - text: '`then called`, `sync`, `42`'
+        why: 'У thenable метод `then` вызывается не сразу при `Promise.resolve`, а в отдельной микрозадаче.'
+      - text: '`sync`, `then called`, `42`'
+        correct: true
+        why: '`Promise.resolve` видит объект с методом `then` и «усыновляет» его: вызов `then` ставится в очередь микрозадач. Поэтому сначала `sync`, затем `then called`, затем значение.'
+      - text: '`sync`, затем объект `{ then: ... }`'
+        why: 'Промис не отдаёт thenable как значение, а разворачивает его: результатом становится то, что thenable передал в `resolve`.'
+      - text: '`sync`, `42`'
+        why: 'Метод `then` объекта будет вызван, иначе значение 42 неоткуда было бы взять.'
+    explanation: |
+      Промисы совместимы со всем, что похоже на промис: любой объект с методом `then` (thenable). Когда промис
+      выполняется таким объектом — через `resolve(x)`, `Promise.resolve(x)`, возврат из `then` или `await x` —
+      он не берёт объект как значение, а вызывает у него `then` в отдельной микрозадаче и ждёт результата.
+      Так работают старые библиотеки промисов, и так объясняются «лишние» шаги в задачах на порядок вывода.
+      Побочный эффект: объект с полем `then` нельзя просто так вернуть из async-функции как обычное значение.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise#thenables
+    source: own

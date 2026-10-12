@@ -1,0 +1,41 @@
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--chip-border);
+  border-radius: var(--chip-radius);
+  background: var(--chip-bg);
+  color: var(--text-2);
+  font-size: 14px;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.count {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.on {
+  border-color: var(--chip-on-border);
+  background: var(--chip-on-bg);
+  color: var(--chip-on-text);
+  box-shadow: var(--chip-on-glow);
+}
+
+.on .count {
+  color: var(--chip-on-count);
+}
+
+.empty:not(.on) {
+  opacity: 0.5;
+}

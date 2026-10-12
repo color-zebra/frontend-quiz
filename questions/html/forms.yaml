@@ -1,0 +1,320 @@
+# yaml-language-server: $schema=../../schema.json
+topic: html
+subtopic: forms
+questions:
+  - id: html-forms-001
+    level: junior
+    tags: [button, submit]
+    question: |
+      Внутри формы есть кнопка «Показать пароль» с обработчиком клика. Почему при нажатии на неё браузер
+      уходит на страницу `/login`?
+    code: |
+      <form action="/login">
+        <input type="password" name="password">
+        <button onclick="togglePassword()">Показать пароль</button>
+        <button>Войти</button>
+      </form>
+    codeLang: html
+    options:
+      - text: 'Обработчик `onclick` на кнопке всегда отправляет ближайшую форму'
+        why: 'Обработчик клика здесь ни при чём: форму отправляет поведение самой кнопки.'
+      - text: 'Кнопка без `type` в форме считается кнопкой отправки'
+        correct: true
+        why: 'Значение `type` по умолчанию у `<button>` — `submit`. Вспомогательным кнопкам внутри форм нужно явно ставить `type="button"`.'
+      - text: 'Форма отправляется при любом клике мышью внутри неё'
+        why: 'Клик по полю или тексту форму не отправляет. Отправляют submit-кнопки, Enter в поле и вызовы `requestSubmit()` и `submit()`.'
+      - text: 'Обработчик вернул `undefined`, а браузер расценил это как согласие на отправку'
+        why: '`undefined` ничего не меняет. Отменить отправку может `return false` в инлайн-обработчике или `event.preventDefault()`, но правильнее не делать кнопку submit.'
+    explanation: |
+      У `<button>` три типа: `submit` (по умолчанию), `reset` и `button`. Кнопка без `type` внутри формы —
+      это кнопка отправки, поэтому «Показать пароль», «Добавить строку» или «Открыть подсказку» без
+      `type="button"` отправят форму. Здесь это ещё и неприятно с точки зрения безопасности: у формы
+      метод GET по умолчанию, и пароль окажется прямо в адресе — `/login?password=...` — а значит, в истории
+      и логах. Многие линтеры (например, правило `react/button-has-type`) требуют всегда указывать тип явно.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/button#type
+    source: own
+
+  - id: html-forms-002
+    level: junior
+    tags: [label]
+    question: |
+      В каком варианте видимая подпись «Email» никак не связана с полем — ни для клика, ни для скринридера?
+    options:
+      - text: '`<label for="email">Email</label><input id="email">`'
+        why: 'Связана: атрибут `for` указывает на id поля. Клик по подписи переведёт фокус, скринридер прочитает её.'
+      - text: '`<label>Email <input></label>`'
+        why: 'Связана: поле внутри `<label>` связывается с ним неявно.'
+      - text: '`<label>Email</label><input aria-label="Email">`'
+        correct: true
+        why: 'Label и поле не связаны. Имя поле получает из `aria-label`, а сама подпись ни при чём: клик по ней фокус не переведёт.'
+      - text: '`<span id="lbl">Email</span><input aria-labelledby="lbl">`'
+        why: 'Связана программно: скринридер возьмёт имя поля из span. Клик по span фокус не переведёт, но для скринридера связь есть.'
+    explanation: |
+      Связь подписи с полем нужна для двух вещей. Во-первых, скринридер зачитывает подпись при фокусе на
+      поле. Во-вторых, клик по `<label>` переводит фокус в поле или переключает чекбокс, и зона клика
+      становится больше. `for` и вложение дают обе вещи. `aria-labelledby` связывает подпись только для
+      скринридера, а `aria-label` вообще не использует видимый текст. Если на экране есть видимая подпись,
+      лучше всего использовать настоящий `<label>`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/label
+    source: own
+
+  - id: html-forms-003
+    level: middle
+    tags: [disabled, readonly, submit]
+    question: |
+      Чем `readonly` отличается от `disabled` у текстового поля?
+    options:
+      - text: '`readonly` отправляется с формой и фокусируется, `disabled` — нет'
+        correct: true
+        why: 'Главная практическая разница: значение disabled-поля не придёт на сервер. Если значение нужно отправить, но не дать править — это readonly.'
+      - text: 'Ничем, кроме вида: `disabled` выглядит серым, `readonly` — обычным'
+        why: 'Помимо вида отличается поведение: отправка, фокус, обход клавишей Tab.'
+      - text: '`disabled` отправляется с формой, а `readonly` — нет'
+        why: 'Ровно наоборот: disabled-поле исключается из данных формы, а readonly отправляется.'
+      - text: '`readonly` работает для всех полей, включая чекбоксы и select'
+        why: '`readonly` действует на текстовые, числовые и датовые `input` и на `textarea`. У чекбоксов, радиокнопок, select, file, range и color его нет.'
+    explanation: |
+      `disabled` выключает поле полностью: на него нельзя нажать или перейти Tab-ом, оно не участвует в
+      валидации и не попадает в данные формы. `readonly` запрещает только изменять значение: поле
+      фокусируется, текст можно выделить и скопировать, значение отправляется на сервер. `readonly`-поля
+      тоже исключены из валидации: `required` на них не действует. Для чекбоксов и select
+      `readonly` нет, поэтому значение, которое нужно отправить, но нельзя менять, кладут в
+      `<input type="hidden">` рядом с заблокированным контролом.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/readonly
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/disabled
+    source: own
+
+  - id: html-forms-004
+    level: junior
+    tags: [checkbox, form-data]
+    question: |
+      Пользователь отметил чекбокс и отправил форму методом GET. Что попадёт в адрес запроса?
+    code: |
+      <form action="/subscribe">
+        <input type="checkbox" name="agree">
+        <button>Отправить</button>
+      </form>
+    codeLang: html
+    options:
+      - text: '`/subscribe?agree=true`'
+        why: 'Браузер не превращает состояние чекбокса в `true`. Без атрибута `value` отправляется строка `on`.'
+      - text: '`/subscribe?agree=on`'
+        correct: true
+        why: 'У чекбокса без атрибута `value` значение по умолчанию — `"on"`. Его и отправляет браузер, если чекбокс отмечен.'
+      - text: '`/subscribe?agree=1`'
+        why: 'Единица отправится, только если явно указать `value="1"`.'
+      - text: '`/subscribe?agree=checked`'
+        why: '`checked` — имя атрибута, а не отправляемое значение.'
+    explanation: |
+      Отмеченный чекбокс отправляет пару `name=value`, где `value` по умолчанию — строка `on`. Неотмеченный
+      чекбокс не отправляет вообще ничего: ключа `agree` в запросе не будет. Поэтому сервер должен считать
+      отсутствие поля за `false`. Иногда перед чекбоксом ставят `<input type="hidden" name="agree" value="0">`,
+      чтобы ключ приходил всегда. Несколько чекбоксов с одинаковым `name` дают несколько пар, в JS их
+      читают через `formData.getAll('name')`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input/checkbox#value
+    source: own
+
+  - id: html-forms-005
+    level: junior
+    tags: [form-data, name]
+    question: |
+      Почему значение поля не попадает в `new FormData(form)` и на сервер?
+    code: |
+      <form id="profile">
+        <input id="city" value="Москва">
+      </form>
+    codeLang: html
+    options:
+      - text: 'У поля нет атрибута `name`'
+        correct: true
+        why: 'Имя поля — ключ в данных формы. Без `name` значение не под каким ключом отправить, и поле пропускается.'
+      - text: 'В форме нет кнопки отправки, а без неё данные не собираются'
+        why: '`FormData` собирает данные независимо от кнопок. Кнопка нужна только, чтобы пользователь отправил форму.'
+      - text: '`id` поля не совпадает с `id` формы, и поле не считается её частью'
+        why: 'Связь поля и формы определяется вложенностью или атрибутом `form`, а не похожими id.'
+      - text: 'Значения из атрибута `value` не отправляются, только введённые руками'
+        why: 'Отправляется текущее значение поля, откуда бы оно ни взялось: из атрибута или из ввода.'
+    explanation: |
+      Данные формы — это набор пар «имя — значение». Браузер обходит поля формы и пропускает те, у которых
+      нет `name`, которые `disabled`, неотмеченные чекбоксы и радиокнопки, а также кнопки, кроме той, что
+      отправила форму. `id` нужен для связи с label и для скриптов, а `name` — для отправки. Это разные
+      атрибуты с разными задачами, хотя часто их значения совпадают.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/FormData/FormData
+      - https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#constructing-the-form-data-set
+    source: own
+
+  - id: html-forms-006
+    level: senior
+    tags: [implicit-submission, enter]
+    question: |
+      В форме два текстовых поля и нет ни одной кнопки. Что произойдёт, если нажать Enter в первом поле?
+    code: |
+      <form action="/search">
+        <input name="query">
+        <input name="city">
+      </form>
+    codeLang: html
+    options:
+      - text: 'Форма отправится: Enter в текстовом поле всегда отправляет форму'
+        why: 'Не всегда. Без submit-кнопки неявная отправка разрешена, только если в форме одно поле, блокирующее её.'
+      - text: 'Ничего не произойдёт'
+        correct: true
+        why: 'Без submit-кнопки спецификация разрешает отправку по Enter, только когда в форме ровно одно текстовое поле. Здесь их два.'
+      - text: 'Фокус перейдёт во второе поле, как по клавише Tab'
+        why: 'Enter не перемещает фокус между полями. Это делает Tab.'
+      - text: 'Форма очистится, как при нажатии кнопки reset'
+        why: 'Очищает форму только кнопка `type="reset"` или вызов `form.reset()`.'
+    explanation: |
+      Неявная отправка (implicit submission) — когда форму отправляют клавишей Enter в текстовом поле.
+      Если в форме есть submit-кнопка, браузер «нажимает» первую из них: срабатывают её `click` и
+      `submit` формы. Если кнопки нет, отправка по Enter происходит, только когда в форме одно-единственное
+      поле, которое её блокирует. Обычно это одно текстовое поле, как у поиска. С двумя полями и без кнопки
+      Enter не сделает ничего. Поэтому кнопку отправки иногда оставляют, просто скрыв её визуально.
+    links:
+      - https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#implicit-submission
+    source: own
+
+  - id: html-forms-007
+    level: senior
+    tags: [submit, requestSubmit, validation]
+    question: |
+      Чем `form.requestSubmit()` отличается от `form.submit()`?
+    options:
+      - text: '`requestSubmit()` запускает валидацию и событие `submit`, `submit()` — нет'
+        correct: true
+        why: '`requestSubmit()` работает как клик по кнопке отправки. `submit()` не проверяет `required` и не вызывает обработчики `submit`, поэтому `preventDefault` в них не сработает.'
+      - text: '`requestSubmit()` отправляет форму через `fetch`, без перезагрузки страницы'
+        why: 'Оба метода выполняют обычную отправку с навигацией. Без перезагрузки отправляют через `fetch` вручную.'
+      - text: 'Ничем: `requestSubmit` — новое название того же метода'
+        why: 'Это разные методы с разным поведением, `submit()` никуда не делся.'
+      - text: '`submit()` запускает валидацию и событие, а `requestSubmit()` — нет'
+        why: 'Ровно наоборот: в обход проверок отправляет именно старый `submit()`, а `requestSubmit()` имитирует нажатие кнопки.'
+    explanation: |
+      Исторически `form.submit()` отправляет форму «в обход» всего: без проверки ограничений (`required`,
+      `pattern`), без события `submit`, без учёта кнопки отправки. Из-за этого в SPA обработчик с
+      `preventDefault` и `fetch` не срабатывал, если форму отправляли из кода. `requestSubmit(submitter?)`
+      ведёт себя так, будто пользователь нажал кнопку: проверяет поля, показывает подсказки браузера,
+      генерирует событие `submit`, а с аргументом ещё и передаёт значение конкретной кнопки.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/HTMLFormElement/requestSubmit
+      - https://developer.mozilla.org/en-US/docs/Web/API/HTMLFormElement/submit
+    source: own
+
+  - id: html-forms-008
+    level: middle
+    tags: [validation, setCustomValidity]
+    question: |
+      После неудачной проверки вызвали `input.setCustomValidity('Логин занят')`. Пользователь ввёл другой
+      логин, но форма по-прежнему не отправляется и показывает «Логин занят». Почему?
+    options:
+      - text: 'Браузер кэширует сообщение до перезагрузки страницы'
+        why: 'Кэша здесь нет. Сообщение — состояние поля, и его нужно снять явно.'
+      - text: 'Ошибку нужно сбросить вызовом `setCustomValidity("")`'
+        correct: true
+        why: 'Любая непустая строка делает поле невалидным. Браузер не знает, когда ваша проверка снова пройдёт, поэтому ошибку сбрасывают сами, обычно в обработчике `input`.'
+      - text: 'Нужно вызвать `form.reset()`, чтобы перезапустить проверку'
+        why: '`reset()` вернёт поля к начальным значениям, но кастомную ошибку не уберёт, а введённые данные сотрёт.'
+      - text: 'У поля нет атрибута `required`, и проверка не обновляется'
+        why: '`setCustomValidity` работает независимо от `required` и других атрибутов.'
+    explanation: |
+      Constraint Validation API складывает итоговую валидность из встроенных проверок (`required`, `type`,
+      `pattern`, `min`/`max`) и пользовательской ошибки. `setCustomValidity('текст')` делает поле
+      невалидным (`validity.customError === true`) и задаёт сообщение. Сбросить ошибку может только
+      `setCustomValidity('')`. Типичная схема: в обработчике `input` сначала сбросить ошибку, затем,
+      если нужно, установить новую. Проверить поле без отправки можно через `checkValidity()` (молча) или
+      `reportValidity()` (с показом подсказки).
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/setCustomValidity
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Guides/Constraint_validation
+    source: own
+
+  - id: html-forms-009
+    level: middle
+    tags: [inputmode, mobile, autocomplete]
+    question: |
+      Поле для кода из SMS. Нужна цифровая клавиатура на телефоне, но код может начинаться с нуля, и
+      стрелки увеличения значения не нужны. Какой вариант лучше?
+    options:
+      - text: '`<input type="number" inputmode="numeric">`'
+        why: '`type="number"` — для количеств, а не кодов: ведущий ноль теряется в `valueAsNumber`, колесо мыши может менять значение, появляются стрелки.'
+      - text: '`<input type="text" inputmode="numeric" autocomplete="one-time-code">`'
+        correct: true
+        why: '`inputmode` выбирает клавиатуру, не меняя тип данных, а `autocomplete="one-time-code"` позволяет телефону подставить код из SMS.'
+      - text: '`<input type="tel" autocomplete="tel">`'
+        why: 'Клавиатура будет цифровой, но это семантика телефонного номера, и автозаполнение может предложить номер телефона вместо кода.'
+      - text: '`<input type="text" pattern="[0-9]*" maxlength="6">`'
+        why: 'Цифровую клавиатуру по `pattern` включает только iOS Safari. На Android это не работает, а задача `pattern` — валидация.'
+    explanation: |
+      Тип поля определяет тип данных и поведение, а `inputmode` — только экранную клавиатуру. Числовой
+      `type="number"` подходит для величин, с которыми делают арифметику: количество, возраст. Коды,
+      номера карт, индексы — это строки из цифр, для них берут `type="text"` и `inputmode="numeric"`.
+      `autocomplete="one-time-code"` подсказывает iOS предложить код из пришедшего SMS прямо над клавиатурой,
+      а Chrome на Android может подставить его через автозаполнение и WebOTP API.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/inputmode
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/autocomplete
+    source: own
+
+  - id: html-forms-010
+    level: junior
+    tags: [input-number, value]
+    question: |
+      Пользователь ввёл `5` в поле `<input type="number" id="qty">`. Что вернёт выражение `qty.value + 1`,
+      если `qty` — это поле?
+    options:
+      - text: 'Число `6`'
+        why: 'Так было бы, если бы `value` возвращал число. Но у любого input это строка.'
+      - text: 'Строку `"51"`'
+        correct: true
+        why: '`value` — всегда строка, даже у `type="number"`, поэтому `+` склеивает строки. Число отдаёт свойство `valueAsNumber`.'
+      - text: '`NaN`'
+        why: '`NaN` получился бы, например, при вычитании нечисловой строки. Здесь строка склеивается с числом.'
+      - text: 'Ошибку `TypeError`'
+        why: 'Сложение строки с числом допустимо в JS и не бросает ошибок.'
+    explanation: |
+      Свойство `value` у всех полей ввода — строка: браузер хранит то, что видит пользователь. Для числовых
+      и датовых полей есть `valueAsNumber` (`NaN`, если поле пустое или значение неверное), а у полей дат
+      ещё и `valueAsDate`. Оператор `+` при строке хотя бы с одной стороны выполняет конкатенацию, отсюда
+      `"5" + 1 === "51"`. Правильно — `qty.valueAsNumber + 1` или `Number(qty.value) + 1`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input/number
+      - https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/valueAsNumber
+    source: own
+
+  - id: html-forms-011
+    level: middle
+    tags: [form-attribute, button]
+    question: |
+      Кнопка стоит в шапке модалки, а форма — в теле. Отправит ли кнопка форму?
+    code: |
+      <header>
+        <button type="submit" form="edit-form">Сохранить</button>
+      </header>
+      <form id="edit-form" action="/save">
+        <input name="title">
+      </form>
+    codeLang: html
+    options:
+      - text: 'Нет: кнопка вне формы не может её отправить без JavaScript'
+        why: 'Может: атрибут `form` связывает элемент с формой по её id.'
+      - text: 'Да, атрибут `form` связывает кнопку с формой'
+        correct: true
+        why: 'Атрибут `form` есть у кнопок, полей, select, textarea и других элементов форм. С ним элемент принадлежит форме, где бы ни находился в разметке.'
+      - text: 'Да, но только если кнопка стоит в документе раньше формы'
+        why: 'Расположение не важно. Элемент может стоять и до формы, и после, и в совсем другом месте страницы.'
+      - text: 'Да, но без валидации полей и без события `submit`'
+        why: 'Отправка через связанную кнопку — обычная отправка с валидацией и событием `submit`.'
+    explanation: |
+      Принадлежность элемента форме обычно определяется вложенностью, но атрибут `form="id"` её
+      переопределяет. Это удобно, когда вёрстка не даёт вложить кнопку или поле в форму: шапка или подвал
+      модалки, ячейка таблицы, где каждая строка редактируется своей формой (`<form>` нельзя вкладывать в
+      `<tr>`). Есть и родственные атрибуты кнопки: `formaction`, `formmethod`, `formnovalidate` — они
+      переопределяют настройки формы для отправки именно этой кнопкой.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/button#form
+    source: own

@@ -1,0 +1,100 @@
+/* C. Терминал: почти чёрный фон, изумрудное свечение, мелкие радиусы, моноширинные заголовки. */
+:root {
+  --page-bg: #020304;
+  --bg: #040607;
+  --blob1: #10b981;
+  --blob2: #0ea5e9;
+  --blob3: #84cc16;
+  --blob-blur: 90px;
+  --blob-opacity: 0.3;
+
+  --glass-bg: rgba(16, 28, 24, 0.45);
+  --glass-border: rgba(52, 211, 153, 0.2);
+  --glass-blur: 14px;
+  --glass-sat: 140%;
+  --glass-shadow: inset 0 0 24px rgba(16, 185, 129, 0.06);
+  --bar-bg: rgba(4, 10, 8, 0.7);
+
+  --radius: 12px;
+  --chip-radius: 8px;
+  --btn-radius: 10px;
+  --code-radius: 10px;
+
+  --font-body: Inter, system-ui, sans-serif;
+  --font-heading: "JetBrains Mono", ui-monospace, monospace;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --text: #d7fbe8;
+  --text-2: #a7d9c2;
+  --muted: #5f8a77;
+  --accent: #34d399;
+  --link: #22d3ee;
+
+  --primary-bg: linear-gradient(90deg, #34d399, #a3e635);
+  --primary-text: #03140c;
+  --primary-shadow: 0 0 24px rgba(52, 211, 153, 0.35);
+
+  --chip-bg: rgba(255, 255, 255, 0.02);
+  --chip-border: rgba(52, 211, 153, 0.16);
+  --chip-on-bg: rgba(52, 211, 153, 0.14);
+  --chip-on-border: #34d399;
+  --chip-on-text: #bbf7d0;
+  --chip-on-glow: 0 0 12px rgba(52, 211, 153, 0.35);
+  --chip-on-count: #6ee7b7;
+
+  --seg-bg: rgba(0, 0, 0, 0.4);
+  --seg-on-bg: rgba(52, 211, 153, 0.18);
+  --seg-on-text: #bbf7d0;
+  --seg-on-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.6);
+
+  --ok: #4ade80;
+  --ok-bg: rgba(74, 222, 128, 0.1);
+  --bad: #f87171;
+  --bad-bg: rgba(248, 113, 113, 0.1);
+  --on-status: #03140c;
+  --lvl-junior: #4ade80;
+  --lvl-middle: #facc15;
+  --lvl-senior: #38bdf8;
+
+  --track: rgba(52, 211, 153, 0.12);
+  --ring-color: #34d399;
+
+  --code-bg: rgba(0, 0, 0, 0.55);
+  --tok-plain: #d7fbe8;
+  --tok-kw: #22d3ee;
+  --tok-fn: #a3e635;
+  --tok-num: #fbbf24;
+  --tok-str: #4ade80;
+  --tok-cls: #c084fc;
+  --tok-punc: #4b7a66;
+  --inline-code-bg: rgba(52, 211, 153, 0.12);
+  --inline-code-text: #6ee7b7;
+}
+
+/* Терминальные акценты поверх общей разметки. */
+.title {
+  font-size: 24px;
+}
+
+.title::before {
+  content: "> ";
+  color: var(--accent);
+}
+
+.card-label {
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.card-label::before {
+  content: "// ";
+}
+
+.qtext {
+  font-size: 17px;
+}
+
+.ring-text b {
+  font-size: 24px;
+}

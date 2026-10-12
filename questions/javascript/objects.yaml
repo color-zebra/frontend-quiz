@@ -1,0 +1,341 @@
+# yaml-language-server: $schema=../../schema.json
+topic: javascript
+subtopic: objects
+questions:
+  - id: javascript-objects-001
+    level: junior
+    tags: [shallow-copy, spread, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const user = { name: 'Аня', address: { city: 'Москва' } };
+      const copy = { ...user };
+
+      copy.name = 'Боря';
+      copy.address.city = 'Казань';
+
+      console.log(user.name, user.address.city);
+    codeLang: js
+    options:
+      - text: '`Аня Москва`'
+        why: 'Spread копирует только верхний уровень. Вложенный объект `address` в копии — тот же самый объект.'
+      - text: '`Боря Казань`'
+        why: '`name` — примитив на верхнем уровне, он скопировался по значению, и изменение копии не трогает оригинал.'
+      - text: '`Аня Казань`'
+        correct: true
+        why: 'Spread создаёт поверхностную копию: верхний уровень новый, а вложенные объекты общие. Поэтому смена `name` не задела оригинал, а смена `address.city` — задела.'
+      - text: '`Боря Москва`'
+        why: 'Ровно наоборот: независимым оказалось поле верхнего уровня, а вложенный объект общий.'
+    explanation: |
+      `{ ...obj }`, `Object.assign({}, obj)`, `[...arr]` и `arr.slice()` делают поверхностную копию: создаётся
+      новый объект, но значения свойств копируются как есть, а для вложенных объектов это ссылки. Для глубокой
+      копии есть `structuredClone(obj)`. В иммутабельных обновлениях (React, Redux) копируют только изменяемую
+      ветку: `{ ...user, address: { ...user.address, city: 'Казань' } }`. Остальные вложенные объекты остаются
+      общими, и это нормально, пока их никто не мутирует.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Glossary/Shallow_copy
+    source: own
+
+  - id: javascript-objects-002
+    level: middle
+    tags: [json, structuredClone, deep-copy, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const original = {
+        date: new Date(0),
+        missing: undefined,
+        greet() {},
+      };
+
+      const copy = JSON.parse(JSON.stringify(original));
+      console.log(Object.keys(copy), typeof copy.date);
+    codeLang: js
+    options:
+      - text: '`[ "date", "missing", "greet" ] object`'
+        why: 'JSON не умеет хранить ни `undefined`, ни функции: такие свойства при сериализации пропускаются.'
+      - text: '`[ "date" ] string`'
+        correct: true
+        why: '`JSON.stringify` пропускает свойства со значением `undefined` и функции, а `Date` превращает в строку через `toJSON`. Обратно строка уже не станет датой.'
+      - text: '`[ "date" ] object`'
+        why: 'Дата сериализуется в строку ISO, а `JSON.parse` не знает, что это была дата, и оставляет строку.'
+      - text: '`[ "date", "missing" ] string`'
+        why: 'Свойства со значением `undefined` не попадают в JSON, в отличие от `null`.'
+    explanation: |
+      Копирование через `JSON.parse(JSON.stringify(x))` теряет данные: пропадают `undefined`, функции и
+      символы; `Date` становится строкой; `Map` и `Set` превращаются в пустые объекты, экземпляры классов
+      теряют прототип и методы; `NaN` и `Infinity` — в `null`; циклические ссылки бросают ошибку. Современная альтернатива — `structuredClone`:
+      сохраняет `Date`, `Map`, `Set`, типизированные массивы и циклические ссылки, но бросает `DataCloneError`
+      на функциях и не сохраняет прототипы классов.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Window/structuredClone
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify#description
+    source: own
+
+  - id: javascript-objects-003
+    level: middle
+    tags: [freeze, immutability, output]
+    question: |
+      Что выведется в консоль? Код выполняется как обычный скрипт без строгого режима.
+    code: |
+      const config = Object.freeze({ level: 1, nested: { debug: false } });
+
+      config.level = 2;
+      config.nested.debug = true;
+
+      console.log(config.level, config.nested.debug);
+    codeLang: js
+    options:
+      - text: '`2 true`'
+        why: '`Object.freeze` запрещает менять собственные свойства объекта, поэтому `level` останется 1.'
+      - text: '`1 false`'
+        why: '`freeze` поверхностный: вложенный объект `nested` не заморожен и меняется свободно.'
+      - text: '`1 true`'
+        correct: true
+        why: 'Запись в замороженный объект в нестрогом режиме молча игнорируется. А вложенный объект не заморожен, и его свойство меняется.'
+      - text: '`TypeError` на строке `config.level = 2`'
+        why: 'В строгом режиме так и было бы. В нестрогом запись в замороженный объект просто игнорируется.'
+    explanation: |
+      `Object.freeze` делает объект неизменяемым: нельзя добавлять, удалять и менять свойства. Но заморозка
+      поверхностная: вложенные объекты остаются изменяемыми, для глубокой заморозки нужна рекурсия. Ошибки при
+      записи зависят от режима: в нестрогом она молча игнорируется, в строгом (модули, классы) — `TypeError`.
+      Родственные функции: `Object.seal` (менять значения можно, добавлять и удалять — нет) и
+      `Object.preventExtensions` (нельзя только добавлять).
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/freeze
+    source: own
+
+  - id: javascript-objects-004
+    level: senior
+    tags: [property-order, integer-keys, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const obj = { b: 1, 2: 'two', a: 2, 1: 'one', '-1': 'minus' };
+      console.log(Object.keys(obj));
+    codeLang: js
+    options:
+      - text: '`[ "b", "2", "a", "1", "-1" ]`'
+        why: 'Порядок вставки соблюдается только для строковых ключей. Целочисленные ключи идут первыми по возрастанию.'
+      - text: '`[ "1", "2", "b", "a", "-1" ]`'
+        correct: true
+        why: 'Сначала ключи-индексы (неотрицательные целые) по возрастанию, затем остальные строки в порядке добавления. `"-1"` — не индекс массива, поэтому идёт как обычная строка.'
+      - text: '`[ "-1", "1", "2", "a", "b" ]`'
+        why: 'Строковые ключи не сортируются по алфавиту, а `"-1"` не считается целочисленным индексом.'
+      - text: '`[ "1", "2", "-1", "b", "a" ]`'
+        why: 'Отрицательное число как ключ — обычная строка. Она идёт вместе с остальными строками в порядке добавления.'
+    explanation: |
+      Порядок собственных ключей объекта определён спецификацией: сначала ключи, похожие на индексы массива
+      (целые от 0 до 2^32 − 2), по возрастанию; затем остальные строковые ключи в порядке создания; затем
+      символы в порядке создания. Этому порядку следуют `Object.keys`, `for...in`, `JSON.stringify`. На
+      практике это значит, что объект с id в роли ключей (`{ 42: ..., 7: ... }`) всегда отсортирован по id, а не
+      по порядку добавления. Если порядок важен и ключи числовые, используют `Map`.
+    links:
+      - https://tc39.es/ecma262/#sec-ordinaryownpropertykeys
+    source: own
+
+  - id: javascript-objects-005
+    level: middle
+    tags: [defineProperty, descriptors, output]
+    question: |
+      Что выведется в консоль? Код выполняется в нестрогом режиме.
+    code: |
+      const order = {};
+      Object.defineProperty(order, 'id', { value: 42 });
+
+      order.id = 7;
+      console.log(order.id, Object.keys(order), JSON.stringify(order));
+    codeLang: js
+    options:
+      - text: '`7 [ "id" ] {"id":7}`'
+        why: '`defineProperty` по умолчанию ставит флаги `writable`, `enumerable` и `configurable` в `false`. Свойство нельзя переписать и не видно в перечислениях.'
+      - text: '`42 [ "id" ] {"id":42}`'
+        why: 'Значение действительно не изменится, но свойство неперечисляемое, поэтому `Object.keys` и JSON его не покажут.'
+      - text: '`42 [] {}`'
+        correct: true
+        why: 'Флаги по умолчанию — `false`: свойство только для чтения (запись молча игнорируется) и неперечисляемое, поэтому скрыто от `Object.keys` и `JSON.stringify`.'
+      - text: '`TypeError` на записи `order.id = 7`'
+        why: 'В строгом режиме так и было бы. В нестрогом запись в свойство только для чтения просто игнорируется.'
+    explanation: |
+      У каждого свойства есть дескриптор: `value` и три флага — `writable` (можно менять), `enumerable` (видно в
+      `Object.keys`, `for...in`, JSON) и `configurable` (можно удалить и перенастроить). При обычном присваивании
+      все флаги `true`, а при `Object.defineProperty` — по умолчанию `false`. Так устроены встроенные методы:
+      `Array.prototype.map` неперечисляем, поэтому не появляется в `for...in`. Посмотреть флаги можно через
+      `Object.getOwnPropertyDescriptor(obj, key)`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
+    source: own
+
+  - id: javascript-objects-006
+    level: middle
+    tags: [object-keys, coercion, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const cache = {};
+      const first = { id: 1 };
+      const second = { id: 2 };
+
+      cache[first] = 'первый';
+      cache[second] = 'второй';
+
+      console.log(cache[first], Object.keys(cache));
+    codeLang: js
+    options:
+      - text: '`первый [ "first", "second" ]`'
+        why: 'Ключом становится не имя переменной, а значение, приведённое к строке.'
+      - text: '`второй [ "[object Object]" ]`'
+        correct: true
+        why: 'Ключи обычного объекта — строки (или символы). Оба объекта приводятся к строке `"[object Object]"`, поэтому второе присваивание перезаписывает первое.'
+      - text: '`первый [ "[object Object]" ]`'
+        why: 'Обе записи идут в один и тот же ключ, и последняя побеждает.'
+      - text: '`undefined []`'
+        why: 'Запись по ключу-объекту не игнорируется: ключ просто превращается в строку.'
+    explanation: |
+      Ключи обычного объекта — только строки и символы. Всё остальное приводится к строке: числа (`obj[1]` и
+      `obj['1']` — одно и то же), `true`, объекты (`"[object Object]"`). Поэтому объект не годится как словарь
+      с ключами-объектами: все они схлопываются в один ключ. Для этого есть `Map`, где ключом может быть
+      что угодно, а сравнение идёт по ссылке, и `WeakMap`, если ключи-объекты не должны удерживаться в памяти.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map#objects_vs._maps
+    source: own
+
+  - id: javascript-objects-007
+    level: middle
+    tags: [proxy, get-trap, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const counters = new Proxy({}, {
+        get(target, key) {
+          return key in target ? target[key] : 0;
+        },
+      });
+
+      counters.likes = 5;
+      counters.views++;
+      console.log(counters.likes, counters.views, counters.shares);
+    codeLang: js
+    options:
+      - text: '`5 NaN 0`'
+        why: 'Ловушка `get` возвращает 0 для отсутствующего `views`, поэтому `++` даёт 1, а не `NaN`.'
+      - text: '`5 1 0`'
+        correct: true
+        why: 'Запись без ловушки `set` уходит прямо в целевой объект. Для `views++` чтение через `get` вернуло 0, а запись сохранила 1. `shares` не записывался и читается как 0.'
+      - text: '`5 1 undefined`'
+        why: 'Ловушка `get` перехватывает любое чтение, включая отсутствующий `shares`, и возвращает 0.'
+      - text: '`undefined 1 0`'
+        why: 'Запись `likes = 5` без ловушки `set` передаётся в целевой объект, и чтение найдёт 5.'
+    explanation: |
+      `Proxy` оборачивает объект и перехватывает операции через ловушки (traps): `get`, `set`, `has`,
+      `deleteProperty` и другие. Если ловушки нет, операция передаётся целевому объекту без изменений. Так
+      делают значения по умолчанию, валидацию при записи, логирование, реактивность: Vue 3 и MobX отслеживают
+      чтения и записи именно через Proxy. Для корректной работы с геттерами и наследованием внутри ловушек
+      используют `Reflect.get(target, key, receiver)` вместо `target[key]`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
+    source: own
+
+  - id: javascript-objects-008
+    level: senior
+    tags: [proxy, reflect, receiver, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const user = {
+        _name: 'Аня',
+        get name() {
+          return this._name;
+        },
+      };
+
+      const masked = new Proxy(user, {
+        get(target, key, receiver) {
+          if (key === '_name') return 'скрыто';
+          return target[key];
+        },
+      });
+
+      console.log(masked.name);
+    codeLang: js
+    options:
+      - text: '`скрыто`'
+        why: 'Так было бы с `Reflect.get(target, key, receiver)`: геттер получил бы `this = receiver`, то есть прокси.'
+      - text: '`Аня`'
+        correct: true
+        why: '`target[key]` вызывает геттер с `this = target`. Внутри геттера `this._name` читается у исходного объекта, мимо прокси, поэтому подмена не срабатывает.'
+      - text: '`undefined`'
+        why: 'Геттер вызывается и читает `_name` у исходного объекта, где значение есть.'
+      - text: 'Бесконечная рекурсия'
+        why: 'Рекурсии нет: геттер обращается к `target`, а не к прокси, и ловушка второй раз не вызывается.'
+    explanation: |
+      Аргумент `receiver` в ловушке `get` — объект, на котором изначально читали свойство, обычно сам прокси.
+      Если вернуть `target[key]`, геттер выполнится с `this = target`, и все обращения внутри него пройдут мимо
+      ловушек. `Reflect.get(target, key, receiver)` вызывает геттер с правильным `this`, и вложенные чтения
+      тоже перехватываются. То же касается наследования: объект, у которого прокси в прототипе, получает
+      корректный `this` только через `receiver`. Поэтому в ловушках используют методы `Reflect`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/Proxy/get#parameters
+      - https://javascript.info/proxy#proxying-a-getter
+    source: own
+
+  - id: javascript-objects-009
+    level: middle
+    tags: [symbols, keys, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const id = Symbol('id');
+      const product = { [id]: 1, title: 'Книга' };
+
+      console.log(Object.keys(product), JSON.stringify(product), product[id]);
+    codeLang: js
+    options:
+      - text: '`[ "title" ] {"title":"Книга"} 1`'
+        correct: true
+        why: 'Символьные ключи не попадают в `Object.keys`, `for...in` и JSON. Но свойство существует и доступно по самому символу.'
+      - text: '`[ "id", "title" ] {"id":1,"title":"Книга"} 1`'
+        why: 'Описание `"id"` — только подпись символа для отладки. Ключом становится сам символ, а не строка.'
+      - text: '`[ "title" ] {"title":"Книга"} undefined`'
+        why: 'По тому же символу свойство читается. Не найти его можно только по другому символу, даже с тем же описанием.'
+      - text: '`[ "Symbol(id)", "title" ] {"title":"Книга"} 1`'
+        why: 'Символ не приводится к строке при использовании как ключ. `Object.keys` возвращает только строковые ключи.'
+    explanation: |
+      Символы — уникальные значения, которые можно использовать как ключи свойств. Каждый `Symbol('id')` уникален,
+      описание нужно только для отладки. Символьные свойства скрыты от обычных перечислений (`Object.keys`,
+      `for...in`, `JSON.stringify`), но доступны через `Object.getOwnPropertySymbols` и `Reflect.ownKeys`. Это не
+      приватность, а защита от случайных конфликтов имён. Встроенные символы (`Symbol.iterator`,
+      `Symbol.toPrimitive`) позволяют подключаться к поведению языка.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol
+    source: own
+
+  - id: javascript-objects-010
+    level: junior
+    tags: [optional-chaining, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const user = { profile: null, notify: undefined };
+
+      console.log(user.profile?.email, user.notify?.(), user.settings?.theme ?? 'light');
+    codeLang: js
+    options:
+      - text: '`undefined undefined light`'
+        correct: true
+        why: '`?.` останавливает вычисление и возвращает `undefined`, если слева `null` или `undefined`. `?.()` не вызывает отсутствующую функцию. `??` подставляет значение по умолчанию.'
+      - text: '`null undefined light`'
+        why: 'Опциональная цепочка всегда возвращает `undefined`, даже если слева был `null`.'
+      - text: '`TypeError`: нельзя прочитать `email` у `null`'
+        why: 'Именно от этой ошибки защищает `?.`: при `null` слева чтение не выполняется.'
+      - text: '`undefined`, затем `TypeError`: `notify` — не функция'
+        why: '`?.()` проверяет, что функция не `null` и не `undefined`, и пропускает вызов.'
+    explanation: |
+      Опциональная цепочка `?.` проверяет значение слева: если это `null` или `undefined`, всё выражение
+      справа не вычисляется, а результат — `undefined`. Работает для свойств (`a?.b`), вычисляемых ключей
+      (`a?.[key]`) и вызовов (`fn?.()`). Важно: `?.()` защищает только от отсутствия функции; если в свойстве
+      лежит не функция, а например строка, будет `TypeError`. В паре с `??` получаются короткие безопасные
+      значения по умолчанию.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Optional_chaining
+    source: own

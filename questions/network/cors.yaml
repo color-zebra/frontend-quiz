@@ -1,0 +1,239 @@
+# yaml-language-server: $schema=../../schema.json
+topic: network
+subtopic: cors
+questions:
+  - id: network-cors-001
+    level: junior
+    tags: [same-origin, origin]
+    question: |
+      Какой адрес относится к тому же источнику (origin), что и `https://app.example.com`?
+    options:
+      - text: '`https://app.example.com:443/settings`'
+        correct: true
+        why: 'Источник — это схема, хост и порт. Для `https` порт по умолчанию 443, поэтому явное указание `:443` источник не меняет, а путь в него не входит.'
+      - text: '`http://app.example.com/settings`'
+        why: 'Другая схема: `http` вместо `https`. Это уже другой источник.'
+      - text: '`https://api.example.com/settings`'
+        why: 'Другой хост. Поддомены одного домена — разные источники.'
+      - text: '`https://app.example.com:8443/settings`'
+        why: 'Другой порт: 8443 вместо стандартного 443.'
+    explanation: |
+      Источник (origin) — тройка «схема + хост + порт». Политика одного источника (same-origin policy)
+      запрещает скрипту читать данные с другого источника: ответы `fetch`, содержимое чужого `iframe`, пиксели
+      картинок на `canvas`. Встраивать ресурсы можно: картинки, скрипты, стили с других доменов загружаются,
+      но прочитать их содержимое из скрипта нельзя без разрешения. Не путайте источник и «сайт» (site): это
+      разные понятия, и некоторые механизмы браузера опираются именно на сайт.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy
+    source: own
+
+  - id: network-cors-002
+    level: middle
+    tags: [cors, simple-request]
+    question: |
+      Скрипт на `https://app.example.com` отправил `fetch('https://api.other.com/log', { method: 'POST', body:
+      'x' })`. Сервер не вернул заголовков CORS, и в консоли ошибка CORS. Дошёл ли запрос до сервера?
+    options:
+      - text: 'Дошёл: сервер его обработал, браузер не отдал ответ скрипту'
+        correct: true
+        why: 'Это «простой» запрос: `POST` с телом-строкой (`text/plain`) не требует предварительной проверки. Браузер отправляет его сразу, а CORS проверяет уже при получении ответа.'
+      - text: 'Не дошёл: браузер заблокировал его до отправки'
+        why: 'До отправки браузер блокирует только запросы, для которых нужен preflight, и только если preflight не прошёл. Простые запросы уходят сразу.'
+      - text: 'Не дошёл: сервер отклонил его из-за отсутствия CORS'
+        why: 'CORS — механизм браузера. Сервер не обязан ничего проверять и обычно обрабатывает запрос как любой другой.'
+      - text: 'Дошёл, и скрипт получил ответ со статусом 0'
+        why: 'Скрипт не получает ответа вовсе: промис `fetch` отклоняется с `TypeError`.'
+    explanation: |
+      CORS защищает не сервер, а пользователя: он запрещает чужой странице читать ответы, полученные с cookie
+      пользователя. Отправку «простых» запросов, которые могла бы сделать и обычная HTML-форма, браузер не
+      блокирует. Поэтому CORS не заменяет защиту от CSRF: изменяющие запросы сервер должен проверять сам.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS#simple_requests
+    source: own
+
+  - id: network-cors-003
+    level: middle
+    tags: [cors, preflight]
+    question: |
+      Какой из запросов к другому источнику вызовет предварительный запрос `OPTIONS` (preflight)?
+    options:
+      - text: '`POST` с заголовком `Content-Type: application/json`'
+        correct: true
+        why: 'Тип `application/json` не входит в список «простых» типов содержимого, поэтому браузер сначала спрашивает сервер через `OPTIONS`, разрешён ли такой запрос.'
+      - text: '`GET` с заголовком `Accept: application/json`'
+        why: '`Accept` входит в список безопасных заголовков, поэтому такой `GET` остаётся простым запросом без preflight.'
+      - text: '`POST` с `Content-Type: multipart/form-data`'
+        why: '`FormData` отправляется как `multipart/form-data`, а это разрешённый для простых запросов тип.'
+      - text: '`HEAD` с заголовком `Accept-Language: ru`'
+        why: '`HEAD` — простой метод, а `Accept-Language` — безопасный заголовок, preflight не нужен.'
+    explanation: |
+      Preflight — запрос `OPTIONS` с заголовками `Access-Control-Request-Method` и
+      `Access-Control-Request-Headers`. Браузер отправляет его перед «непростыми» запросами: другие методы
+      (`PUT`, `DELETE`, `PATCH`), нестандартные заголовки (`Authorization`, `X-Request-Id`), JSON. Если ответ
+      разрешает запрос (`Access-Control-Allow-Methods`, `Access-Control-Allow-Headers`), отправляется
+      основной. Логика простая: такие запросы старые серверы никогда не получали от форм, и их нужно сперва
+      спросить. Это лишний сетевой проход, поэтому результат preflight кэшируют.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS#preflighted_requests
+    source: own
+
+  - id: network-cors-004
+    level: senior
+    tags: [cors, credentials, wildcard]
+    question: |
+      Фронтенд вызывает `fetch(url, { credentials: 'include' })` к API на другом домене. Сервер отвечает
+      `Access-Control-Allow-Origin: *`. Что произойдёт?
+    options:
+      - text: 'Браузер заблокирует ответ: с учётными данными `*` запрещена'
+        correct: true
+        why: 'Для запросов с cookie сервер должен вернуть конкретный источник в `Access-Control-Allow-Origin` и `Access-Control-Allow-Credentials: true`. Звёздочка в этом режиме не принимается.'
+      - text: 'Всё сработает: `*` разрешает любые источники и cookie'
+        why: '`*` работает только для запросов без учётных данных. Иначе любой сайт мог бы читать ответы с cookie пользователя.'
+      - text: 'Запрос уйдёт без cookie, и скрипт получит ответ'
+        why: 'Cookie уйдёт, если её пропустят правила `SameSite` и настройки сторонних cookie. Но в любом случае браузер не отдаст ответ скрипту из-за `*`.'
+      - text: 'Браузер подставит источник вместо `*` и разрешит ответ'
+        why: 'Браузер не исправляет заголовки сервера. Правильный источник должен вернуть сам сервер.'
+    explanation: |
+      Учётные данные в CORS — это cookie, HTTP-аутентификация и клиентские сертификаты. Чтобы скрипт получил
+      ответ на запрос с ними, сервер должен явно назвать источник (`Access-Control-Allow-Origin:
+      https://app.example.com`) и вернуть `Access-Control-Allow-Credentials: true`. Обычно сервер сверяет
+      заголовок `Origin` запроса со списком разрешённых и возвращает его же. Помимо CORS, cookie ещё должна
+      пройти правила `SameSite`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS#requests_with_credentials
+    source: own
+
+  - id: network-cors-005
+    level: middle
+    tags: [cors, preflight, max-age]
+    question: |
+      Каждый `PUT`-запрос к API сопровождается предварительным `OPTIONS`, и это удваивает задержку. Как
+      сократить число preflight-запросов, не меняя сами запросы?
+    options:
+      - text: 'Вернуть в ответе на preflight `Access-Control-Max-Age`'
+        correct: true
+        why: 'Заголовок говорит браузеру, сколько секунд можно не повторять проверку для того же запроса. Браузеры ограничивают срок: Chrome не больше двух часов.'
+      - text: 'Добавить в ответ на preflight `Cache-Control: max-age=3600`'
+        why: 'Кэш результатов preflight управляется отдельным заголовком CORS, а не общим HTTP-кэшем.'
+      - text: 'Отвечать на `OPTIONS` статусом `304 Not Modified`'
+        why: '304 — ответ на условный запрос к кэшу и к preflight отношения не имеет. Успешный preflight отвечает статусом `2xx`.'
+      - text: 'Указать в `fetch` опцию `mode: "no-cors"`'
+        why: 'В режиме `no-cors` разрешены только простые методы. `PUT` так отправить нельзя.'
+    explanation: |
+      Результат preflight браузер кэширует отдельно от HTTP-кэша. Срок задаёт `Access-Control-Max-Age`, а без
+      него используется короткое значение по умолчанию (5 секунд). Кэш привязан к источнику, адресу, методу и
+      заголовкам. Другой путь — избавиться от preflight совсем: держать API на том же источнике через обратный
+      прокси (`/api` → бэкенд). Тогда CORS не нужен вовсе.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Access-Control-Max-Age
+    source: own
+
+  - id: network-cors-006
+    level: junior
+    tags: [cors, development, proxy]
+    question: |
+      Фронтенд на `http://localhost:5173` обращается к API на `http://localhost:8080` и получает ошибку CORS.
+      Как правильно это исправить?
+    options:
+      - text: 'Разрешить источник фронтенда в CORS на сервере или проксировать запросы'
+        correct: true
+        why: 'Порты разные, значит источники разные. Либо сервер вернёт нужные заголовки CORS, либо dev-сервер фронтенда проксирует `/api` на бэкенд, и запросы станут запросами к своему источнику.'
+      - text: 'Добавить в `fetch` опцию `mode: "no-cors"`, чтобы снять ограничения'
+        why: 'Этот режим не снимает ограничения, а прячет ответ от скрипта: прочитать данные всё равно не получится.'
+      - text: 'Добавить в запрос заголовок `Access-Control-Allow-Origin: *`'
+        why: 'Это заголовок ответа сервера. В запросе он ничего не разрешает и только сделает запрос «непростым».'
+      - text: 'Перейти на `https`, потому что CORS действует только для `http`'
+        why: 'CORS действует для любых схем. При `https` на разных портах источники всё равно разные.'
+    explanation: |
+      Ошибка CORS всегда исправляется на стороне сервера или инфраструктуры, а не в клиентском коде: решать,
+      кому можно читать ответы, должен владелец данных. В разработке удобнее прокси (`server.proxy` в Vite,
+      `rewrites` в Next.js): браузер видит один источник. В продакшене часто делают так же, через общий домен
+      и обратный прокси. Отключать проверки в браузере флагами запуска — плохая идея: так легко пропустить
+      проблему, которая проявится у пользователей.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS
+      - https://vite.dev/config/server-options.html#server-proxy
+    source: own
+
+  - id: network-cors-007
+    level: senior
+    tags: [cors, no-cors, opaque-response, output, no-run]
+    question: |
+      Что выведет этот код, если `cdn.other.com` не возвращает заголовков CORS, а сервер ответил `200` с
+      картинкой PNG?
+    code: |
+      const response = await fetch('https://cdn.other.com/logo.png', { mode: 'no-cors' });
+      console.log(response.type, response.status, response.ok);
+    codeLang: js
+    options:
+      - text: '`opaque 0 false`'
+        correct: true
+        why: 'В режиме `no-cors` браузер выполняет запрос, но возвращает «непрозрачный» ответ: статус, заголовки и тело скрыты от скрипта, `status` равен 0.'
+      - text: '`cors 200 true`'
+        why: 'Без заголовков CORS прочитать ответ нельзя. `no-cors` не разрешает чтение, а лишь не выбрасывает ошибку.'
+      - text: '`basic 200 true`'
+        why: 'Тип `basic` бывает только у ответов с того же источника.'
+      - text: 'Промис отклонится с `TypeError`'
+        why: 'В режиме `no-cors` ошибки CORS нет: промис выполняется, но с непрозрачным ответом.'
+    explanation: |
+      `mode: 'no-cors'` — не способ обойти CORS, а явный отказ читать ответ. Запрос ограничен простыми
+      методами и заголовками, а ответ имеет тип `opaque`. Такой ответ можно положить в кэш через Service
+      Worker или использовать для запросов «отправил и забыл», например аналитики, но не прочитать. Частая
+      ошибка — поставить `no-cors`, чтобы «убрать ошибку», и потом недоумевать, почему `response.json()`
+      падает. Кроме того, браузеры защищают чувствительные ответы механизмом ORB: ответ вроде JSON в таком
+      режиме могут заблокировать целиком, поэтому пример приведён с картинкой.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Request/mode
+      - https://developer.mozilla.org/en-US/docs/Web/API/Response/type
+    source: own
+
+  - id: network-cors-008
+    level: middle
+    tags: [cors, expose-headers]
+    question: |
+      API на другом домене возвращает заголовок `X-Total-Count` с общим числом записей, и запрос проходит
+      CORS. Почему `response.headers.get('X-Total-Count')` возвращает `null`?
+    options:
+      - text: 'Сервер не перечислил его в `Access-Control-Expose-Headers`'
+        correct: true
+        why: 'Скрипту на другом источнике по умолчанию доступны только безопасные заголовки ответа: `Content-Type`, `Content-Length`, `Cache-Control` и ещё несколько. Остальные сервер должен открыть явно.'
+      - text: 'Пользовательские заголовки браузер вырезает из ответа полностью'
+        why: 'Заголовок дошёл до браузера и виден в DevTools. Он скрыт только от скрипта.'
+      - text: 'Имена заголовков в `get` чувствительны к регистру'
+        why: '`Headers.get` нечувствителен к регистру имени.'
+      - text: 'Префикс `X-` в имени заголовка запрещён'
+        why: 'Префикс `X-` считается устаревшим соглашением, но не запрещён и на доступность не влияет.'
+    explanation: |
+      CORS ограничивает не только тело ответа, но и заголовки. Без разрешения скрипт видит лишь список
+      безопасных заголовков (CORS-safelisted response headers). Всё остальное, например заголовки пагинации,
+      `ETag`, идентификатор запроса для логов, сервер открывает через `Access-Control-Expose-Headers:
+      X-Total-Count`. DevTools показывают все заголовки, и это сбивает с толку: «заголовок есть, а код его не
+      видит».
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Access-Control-Expose-Headers
+    source: own
+
+  - id: network-cors-009
+    level: middle
+    tags: [fetch, credentials, cookies]
+    question: |
+      Фронтенд на `app.example.com` вызывает `fetch('https://api.example.com/me')` без опций. Отправит ли
+      браузер cookie, выставленные для `api.example.com`?
+    options:
+      - text: 'Нет: по умолчанию `credentials` равен `same-origin`'
+        correct: true
+        why: 'Значение по умолчанию `same-origin` прикладывает cookie только к запросам на свой источник. Для `api.` нужен `credentials: "include"` и разрешение сервера через CORS.'
+      - text: 'Да: это поддомен того же сайта'
+        why: 'Для `fetch` важен источник, а не сайт. Поддомен — другой источник, и cookie без `include` не уйдут.'
+      - text: 'Да: cookie браузер прикладывает к любым запросам'
+        why: 'Так ведут себя навигации и обычные теги, а `fetch` по умолчанию отправляет cookie только на свой источник.'
+      - text: 'Нет: `fetch` вообще не умеет отправлять cookie'
+        why: 'Умеет: для этого есть опция `credentials` со значениями `same-origin` и `include`.'
+    explanation: |
+      Опция `credentials` управляет cookie и HTTP-аутентификацией в `fetch`: `omit` — никогда, `same-origin`
+      (по умолчанию) — только на свой источник, `include` — всегда, если разрешат `SameSite` и CORS. В axios
+      аналог — `withCredentials: true`. Частая ошибка: API на поддомене, логин работает, а каждый следующий
+      запрос приходит «без сессии».
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/RequestInit#credentials
+    source: own

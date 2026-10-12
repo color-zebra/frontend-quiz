@@ -1,0 +1,284 @@
+# yaml-language-server: $schema=../../schema.json
+topic: react
+subtopic: refs
+questions:
+  - id: react-refs-001
+    level: junior
+    tags: [useRef, re-render, output]
+    question: |
+      Пользователь дважды нажал кнопку `a`, затем один раз кнопку `b`. Что выведется в консоль? Вывод
+      при монтировании не учитывайте.
+    code: |
+      function App() {
+        const clicks = useRef(0);
+        const [, forceRender] = useState(0);
+        console.log('render', clicks.current);
+
+        return (
+          <>
+            <button id="a" onClick={() => {
+              clicks.current += 1;
+              console.log('clicked', clicks.current);
+            }}>a</button>
+            <button id="b" onClick={() => forceRender((n) => n + 1)}>b</button>
+          </>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`clicked 1`, `clicked 2`, `render 2`'
+        correct: true
+        why: 'Запись в `ref.current` меняет значение сразу, но рендер не вызывает. Рендер случается только после изменения состояния кнопкой `b`, и он видит накопленное значение 2.'
+      - text: '`clicked 1`, `clicked 2`, `render 2`, `render 2`'
+        why: 'Рендер один: его вызывает `forceRender`. Изменения рефа сами рендер не запускают и к нему ничего не добавляют.'
+      - text: '`clicked 1`, `clicked 2`, `render 0`'
+        why: 'Реф хранит одно и то же значение между рендерами, а не создаётся заново. Новый рендер прочитает текущее значение 2.'
+      - text: '`clicked 1`, `clicked 1`, `render 0`'
+        why: '`ref.current` — изменяемое поле, и второе нажатие продолжает счёт от 1.'
+    explanation: |
+      `useRef` возвращает один и тот же объект `{ current }` на протяжении жизни компонента. Значение в нём
+      можно менять когда угодно, и оно сохраняется между рендерами, в отличие от локальной переменной. Но
+      изменение не вызывает рендер, в отличие от состояния. Поэтому реф подходит для данных, которые не
+      показываются на экране: id таймера, ссылка на DOM-элемент, флаг «уже отправлено», предыдущее значение.
+      Если значение выводится в JSX, оно должно быть состоянием, иначе экран будет показывать устаревшие данные.
+    links:
+      - https://react.dev/learn/referencing-values-with-refs
+    source: own
+
+  - id: react-refs-002
+    level: middle
+    tags: [ref-timing, effects, output]
+    question: |
+      Что выведется в консоль при монтировании?
+    code: |
+      function App() {
+        const inputRef = useRef(null);
+        console.log('render', inputRef.current);
+
+        useLayoutEffect(() => console.log('layout', inputRef.current?.tagName));
+        useEffect(() => console.log('effect', inputRef.current?.tagName));
+
+        return (
+          <input
+            ref={(node) => {
+              inputRef.current = node;
+              console.log('ref callback', node?.tagName);
+            }}
+          />
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`render null`, `ref callback INPUT`, `layout INPUT`, `effect INPUT`'
+        correct: true
+        why: 'Во время рендера DOM-элемента ещё нет. Рефы назначаются в фазе коммита, сразу после вставки в DOM и до layout-эффектов, поэтому оба эффекта уже видят элемент.'
+      - text: '`render INPUT`, `ref callback INPUT`, `layout INPUT`, `effect INPUT`'
+        why: 'При первом рендере элемент ещё не создан: React строит DOM только в фазе коммита, после вызова компонента.'
+      - text: '`render null`, `layout undefined`, `ref callback INPUT`, `effect INPUT`'
+        why: 'Рефы назначаются раньше layout-эффектов: layout-эффекты рассчитаны на то, что DOM и рефы уже готовы.'
+      - text: '`render null`, `layout INPUT`, `effect INPUT`, `ref callback INPUT`'
+        why: 'Колбэк-реф вызывается в коммите при подключении элемента, раньше любых эффектов. Иначе эффекты не смогли бы читать `inputRef.current`.'
+    explanation: |
+      Реф на DOM-элемент заполняется в фазе коммита: React вставляет узлы в DOM, назначает рефы (вызывает
+      колбэк-рефы или записывает `ref.current`), затем запускает `useLayoutEffect`, а после отрисовки —
+      `useEffect`. Поэтому в теле компонента при первом рендере `ref.current` равен `null`, а в эффектах и
+      обработчиках событий элемент уже доступен. Документация прямо запрещает читать и писать `ref.current`
+      во время рендера (кроме ленивой инициализации): результат рендера тогда зависит от того, что React не
+      отслеживает.
+    links:
+      - https://react.dev/learn/manipulating-the-dom-with-refs#when-react-attaches-the-refs
+      - https://react.dev/reference/react/useRef#caveats
+    source: own
+
+  - id: react-refs-003
+    level: middle
+    tags: [ref-as-prop, forwardRef, react-19]
+    question: |
+      Как в React 19 передать реф на `<input>` внутри собственного функционального компонента?
+    options:
+      - text: 'Принять `ref` как обычный проп и передать в `<input>`'
+        correct: true
+        why: 'С React 19 функциональные компоненты получают `ref` в пропсах: `function TextInput({ ref, ...props }) { return <input ref={ref} {...props} /> }`.'
+      - text: 'Только обернуть компонент в `forwardRef`'
+        why: '`forwardRef` по-прежнему работает, но в React 19 уже не нужен для функциональных компонентов. Его планируют объявить устаревшим.'
+      - text: 'Вызвать `useImperativeHandle` в родительском компоненте'
+        why: '`useImperativeHandle` вызывают в дочернем компоненте, чтобы отдать родителю свой объект вместо DOM-элемента. Передачу рефа он не заменяет.'
+      - text: 'Никак: рефы можно ставить только на DOM-элементы'
+        why: 'Реф можно передать в компонент, а тот решит, к какому элементу его привязать или что вернуть через `useImperativeHandle`.'
+    explanation: |
+      До React 19 `ref`, как и `key`, был особым атрибутом: React забирал его и не передавал в пропсы. Чтобы
+      пробросить реф внутрь компонента, нужен был `forwardRef((props, ref) => ...)`. В React 19 `ref` стал
+      обычным пропом для функциональных компонентов, и `forwardRef` больше не нужен. Для классовых компонентов
+      `ref` по-прежнему указывает на экземпляр. В TypeScript проп описывают типом `React.Ref<HTMLInputElement>`
+      или берут вместе с остальными через `ComponentProps<'input'>`.
+    links:
+      - https://react.dev/blog/2024/12/05/react-19#ref-as-a-prop
+      - https://react.dev/reference/react/forwardRef
+    source: own
+
+  - id: react-refs-004
+    level: senior
+    tags: [callback-ref, cleanup, react-19, output]
+    question: |
+      Что выведется в консоль после клика по кнопке?
+    code: |
+      function App() {
+        const [n, setN] = useState(0);
+        console.log('render', n);
+
+        return (
+          <>
+            <button onClick={() => setN(n + 1)}>+</button>
+            <input
+              ref={(node) => {
+                console.log('ref', node.tagName);
+                return () => console.log('ref cleanup');
+              }}
+            />
+          </>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: '`render 1`, `ref cleanup`, `ref INPUT`'
+        correct: true
+        why: 'Инлайн-колбэк при каждом рендере — новая функция. React считает, что реф изменился: вызывает очистку старого колбэка и подключает новый к тому же элементу.'
+      - text: '`render 1`'
+        why: 'React сравнивает колбэк-рефы по ссылке. Новая функция в каждом рендере означает новый реф, даже если элемент тот же.'
+      - text: '`render 1`, `ref INPUT`'
+        why: 'Если колбэк вернул функцию очистки, перед подключением нового колбэка React вызывает её.'
+      - text: '`ref cleanup`, `render 1`, `ref INPUT`'
+        why: 'Рефы обновляются в фазе коммита, то есть после рендера. Очистка не может выполниться раньше вызова компонента.'
+    explanation: |
+      Колбэк-реф — функция, которую React вызывает с DOM-узлом при подключении. С React 19 она может вернуть
+      функцию очистки, как эффект. Раньше при отключении колбэк вызывался второй раз с `null`. Если колбэк
+      записан инлайн, при каждом рендере он новый, и React каждый раз отключает старый и подключает новый.
+      Для логирования это безобидно, а для подписок, `ResizeObserver` или фокуса означает лишнюю работу на
+      каждом рендере. Стабильный колбэк получают через `useCallback` или выносом функции за пределы компонента.
+    links:
+      - https://react.dev/blog/2024/12/05/react-19#cleanup-functions-for-refs
+      - https://react.dev/reference/react-dom/components/common#ref-callback
+    source: own
+
+  - id: react-refs-005
+    level: senior
+    tags: [useImperativeHandle, output]
+    question: |
+      Что выведется в консоль при монтировании?
+    code: |
+      function Video({ ref }) {
+        const videoRef = useRef(null);
+        useImperativeHandle(ref, () => ({
+          play() {
+            console.log('play called');
+          },
+        }), []);
+        return <video ref={videoRef} />;
+      }
+
+      function App() {
+        const playerRef = useRef(null);
+        useEffect(() => {
+          const player = playerRef.current;
+          console.log(typeof player.play, player instanceof HTMLElement, Object.keys(player));
+          player.play();
+        }, []);
+        return <Video ref={playerRef} />;
+      }
+    codeLang: jsx
+    options:
+      - text: '`function false [''play'']`, затем `play called`'
+        correct: true
+        why: '`useImperativeHandle` подменяет значение рефа родителя объектом, который вернула функция. Родитель получает только `play`, а не DOM-элемент `<video>`.'
+      - text: '`function true [''play'']`, затем `play called`'
+        why: 'В реф родителя попадает обычный объект из `useImperativeHandle`, а не элемент. `instanceof HTMLElement` даёт `false`.'
+      - text: '`undefined true []`, затем `TypeError`'
+        why: 'Реф `playerRef` не указывает на `<video>`: его значение задаёт `useImperativeHandle` в дочернем компоненте.'
+      - text: '`function false [''play'']`, затем ничего'
+        why: 'Метод `play` из объекта вызывается напрямую и выводит строку.'
+    explanation: |
+      `useImperativeHandle(ref, createHandle, deps)` позволяет дочернему компоненту решить, что увидит родитель в
+      своём рефе. Обычно это небольшой набор методов: `focus`, `scrollIntoView`, `play`. Так компонент не
+      раскрывает свой DOM целиком и сохраняет инкапсуляцию: родитель не сможет случайно поменять стили
+      или удалить узел. Реф заполняется в коммите, поэтому вызывать методы можно в эффектах и обработчиках.
+      Документация советует не злоупотреблять императивными методами: всё, что можно выразить пропсами
+      (`isPlaying`), лучше передавать пропсами.
+    links:
+      - https://react.dev/reference/react/useImperativeHandle
+    source: own
+
+  - id: react-refs-006
+    level: junior
+    tags: [useRef, dom]
+    question: |
+      Что окажется в `inputRef.current` после монтирования компонента?
+    code: |
+      function Search() {
+        const inputRef = useRef(null);
+        return (
+          <>
+            <input ref={inputRef} />
+            <button onClick={() => inputRef.current.focus()}>Искать</button>
+          </>
+        );
+      }
+    codeLang: jsx
+    options:
+      - text: 'DOM-элемент `<input>`'
+        correct: true
+        why: 'Атрибут `ref` у DOM-элемента говорит React записать в `ref.current` настоящий узел DOM после его создания. Поэтому у него есть методы `focus`, `select`, `scrollIntoView`.'
+      - text: 'React-элемент `<input />` из JSX'
+        why: 'JSX создаёт лишь описание элемента. В реф попадает реальный узел DOM, созданный по этому описанию.'
+      - text: 'Объект с пропсами `input`'
+        why: 'Пропсы в реф не попадают. В `current` лежит DOM-узел со своими свойствами и методами.'
+      - text: '`null` до первого клика по кнопке'
+        why: 'Реф заполняется при монтировании, а не по клику. К моменту клика в нём уже элемент.'
+    explanation: |
+      Рефы — способ выйти за пределы декларативной модели React, когда нужно работать с DOM напрямую:
+      поставить фокус, прокрутить к элементу, измерить размер, вызвать `play()` у видео, подключить стороннюю
+      библиотеку. React заполняет `ref.current` узлом после вставки элемента в DOM и обнуляет при удалении.
+      Менять через реф то, чем управляет React (содержимое, атрибуты из пропсов), не стоит: при следующем
+      рендере React может перезаписать изменения или запутаться.
+    links:
+      - https://react.dev/learn/manipulating-the-dom-with-refs
+    source: own
+
+  - id: react-refs-008
+    level: senior
+    tags: [ref-timing, conditional-rendering, callback-ref, output]
+    question: |
+      Что выведется в консоль после клика по кнопке `open`? Вывод при монтировании не учитывайте.
+    code: |
+      function App() {
+        const [show, setShow] = useState(false);
+        const panelRef = useRef(null);
+
+        useEffect(() => {
+          console.log('effect', panelRef.current?.tagName ?? 'null');
+        }, []);
+
+        return show
+          ? <section ref={panelRef}>panel</section>
+          : <button onClick={() => setShow(true)}>open</button>;
+      }
+    codeLang: jsx
+    options:
+      - text: 'Ничего'
+        correct: true
+        why: 'Эффект с пустыми зависимостями выполнился один раз при монтировании и вывел `effect null`. Появление `section` в рефе его не перезапускает: реф изменился, но зависимостей, которые бы это заметили, нет.'
+      - text: '`effect SECTION`'
+        why: 'Эффект с `[]` не перезапускается после обновлений. Элемент появился в рефе, но эффект об этом не узнает.'
+      - text: '`effect null`'
+        why: 'Эта строка выводится при монтировании, до клика. После клика эффект не выполняется.'
+      - text: '`effect null`, затем `effect SECTION`'
+        why: 'Эффект не следит за рефом и не выполняется повторно: зависимостей, которые бы изменились, у него нет.'
+    explanation: |
+      Частая ошибка: подписаться на элемент в `useEffect(..., [])`, хотя элемент появляется позже, после
+      загрузки данных или открытия панели. Эффект выполнится, когда рефа ещё нет, и больше не запустится.
+      Решения: колбэк-реф, который React вызывает при подключении узла (в React 19 из него можно вернуть
+      очистку), или вынести элемент в отдельный компонент, который монтируется вместе с ним и использует свой
+      эффект. Оба способа привязывают логику к жизни самого элемента, а не родителя.
+    links:
+      - https://react.dev/reference/react-dom/components/common#ref-callback
+      - https://react.dev/learn/manipulating-the-dom-with-refs
+    source: own

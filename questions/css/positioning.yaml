@@ -1,0 +1,242 @@
+# yaml-language-server: $schema=../../schema.json
+topic: css
+subtopic: positioning
+questions:
+  - id: css-positioning-001
+    level: junior
+    tags: [absolute, containing-block]
+    question: |
+      Относительно чего будет позиционирован `.badge`?
+    code: |
+      <section class="page">
+        <div class="card">
+          <span class="badge">NEW</span>
+        </div>
+      </section>
+
+      <style>
+        .page { position: relative; }
+        .card { margin: 40px; }
+        .badge { position: absolute; top: 0; right: 0; }
+      </style>
+    codeLang: html
+    options:
+      - text: 'Относительно `.card` — своего прямого родителя-обёртки'
+        why: 'Родитель не становится точкой отсчёта, если он не позиционирован. У `.card` `position: static`.'
+      - text: 'Относительно `.page` — ближайшего позиционированного предка'
+        correct: true
+        why: 'Абсолютный элемент ищет вверх по дереву первого позиционированного предка, и это `.page`.'
+      - text: 'Относительно окна браузера'
+        why: 'Окно или начальный блок стали бы точкой отсчёта, если бы ни один предок не был позиционирован.'
+      - text: 'Относительно своего исходного места в потоке'
+        why: 'Это поведение `position: relative`. Абсолютный элемент выходит из потока.'
+    explanation: |
+      Для `position: absolute` координаты `top`, `right` и прочие отсчитываются от содержащего блока —
+      ближайшего предка с `position` не `static` (`relative`, `absolute`, `fixed`, `sticky`). Если такого нет,
+      отсчёт идёт от начального содержащего блока размером с viewport. Содержащим блоком для абсолютных
+      потомков становятся и элементы с `transform`, `filter`, `perspective` или `contain: paint`, даже без
+      `position`. Классика: родителю ставят `position: relative`, чтобы бейдж прижался к углу карточки.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_display/Containing_block
+    source: own
+
+  - id: css-positioning-002
+    level: senior
+    tags: [fixed, transform, containing-block]
+    question: |
+      Модальное окно с `position: fixed; inset: 0` вдруг перестало закрывать весь экран и прокручивается
+      вместе с одним из блоков страницы. В этом блоке недавно добавили анимацию появления. Что произошло?
+    code: |
+      .section { transform: translateY(0); transition: transform .3s; }
+      .modal   { position: fixed; inset: 0; } /* модалка внутри .section */
+    codeLang: css
+    options:
+      - text: '`position: fixed` не работает внутри элементов с `transition`'
+        why: '`transition` здесь ни при чём, эффект создаёт само свойство `transform`.'
+      - text: 'Предок с `transform` стал содержащим блоком для fixed'
+        correct: true
+        why: 'По спецификации `transform`, `filter`, `perspective`, `will-change: transform` и `contain: paint` создают содержащий блок даже для fixed-элементов.'
+      - text: 'Нужно добавить `z-index: 9999`'
+        why: '`z-index` влияет на порядок наложения, но не на то, относительно чего позиционируется элемент.'
+      - text: '`inset: 0` не поддерживается в fixed-позиционировании'
+        why: '`inset` — сокращение для `top/right/bottom/left` и работает для всех способов позиционирования.'
+    explanation: |
+      Обычно fixed-элемент привязан к viewport. Но если у предка задан `transform`, `filter`,
+      `backdrop-filter`, `perspective`, `contain: paint` или `will-change` с одним из этих свойств, такой предок
+      становится содержащим блоком и для fixed-потомков. Модалка «приклеивается» к блоку и скроллится с ним.
+      Даже `transform: translateY(0)` формально не `none` и запускает эффект. Поэтому модалки и тосты
+      рендерят в отдельный контейнер в конце `<body>` (портал в React) или используют нативный `<dialog>`
+      и Popover API с top layer.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/position#fixed_positioning
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_display/Containing_block#identifying_the_containing_block
+    source: own
+
+  - id: css-positioning-003
+    level: middle
+    tags: [sticky, overflow]
+    question: |
+      Шапка таблицы с `position: sticky; top: 0` не прилипает при прокрутке страницы. У одного из предков стоит
+      `overflow: hidden`. Почему это важно?
+    options:
+      - text: '`overflow: hidden` отключает свойство `top` у потомков'
+        why: '`top` работает, но отсчитывается от другого контейнера прокрутки.'
+      - text: 'Sticky привязался к предку, который не прокручивается'
+        correct: true
+        why: 'Любое значение `overflow`, кроме `visible` и `clip`, создаёт контейнер прокрутки. Sticky отслеживает его, а не страницу, а сам этот контейнер не прокручивается.'
+      - text: 'Sticky работает только в `<thead>`'
+        why: 'Sticky работает с любыми элементами, `thead` и `th` здесь не исключение и не обязательное условие.'
+      - text: 'Нужно использовать `position: fixed`'
+        why: 'Fixed выведет шапку из потока, и она потеряет связь с таблицей и колонками.'
+    explanation: |
+      `position: sticky` ведёт себя как `relative`, пока элемент не дошёл до порога (`top: 0`) в своём
+      контейнере прокрутки, затем как fixed — но только в пределах родителя. Контейнер прокрутки — ближайший
+      предок с `overflow`, отличным от `visible` (и `clip`). Если такой предок есть, но не прокручивается,
+      sticky ничего не делает. Другие частые причины: не задан `top`, родитель sticky-элемента по высоте
+      совпадает с ним самим (некуда ехать), или контейнер — flex-ряд, и элемент растянут на всю высоту.
+      Если нужно обрезать содержимое без создания контейнера прокрутки, используют `overflow: clip`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/position#sticky_positioning
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/overflow#clip
+    source: own
+
+  - id: css-positioning-004
+    level: middle
+    tags: [z-index, static]
+    question: |
+      Блоку задали `z-index: 10`, но он всё равно оказывается под соседом. В каком случае `z-index` на нём вообще
+      не сработает?
+    options:
+      - text: 'Если элемент статичный и не flex- или grid-элемент'
+        correct: true
+        why: '`z-index` применяется к позиционированным элементам, а также к flex- и grid-элементам. На обычном статичном блоке он игнорируется.'
+      - text: 'Если у элемента нет фона и рамки'
+        why: 'Фон влияет на то, видно ли перекрытие, но не на работу `z-index`.'
+      - text: 'Если значение меньше 100, порога браузера'
+        why: 'Магических порогов нет: сравниваются числа внутри одного контекста наложения.'
+      - text: 'Если элемент стоит в разметке раньше соседа'
+        why: 'Порядок в DOM решает при равных `z-index`. Если `z-index` работает, он важнее порядка.'
+    explanation: |
+      `z-index` действует на элементы с `position` не `static`, а также на flex- и grid-элементы. Это частый
+      источник недоумения: «поставил 9999, а не работает». Если `position` есть, а элемент всё равно внизу,
+      дело почти всегда в контекстах наложения: `z-index` сравнивается только с элементами того же
+      контекста.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/z-index
+    source: own
+
+  - id: css-positioning-005
+    level: senior
+    tags: [stacking-context, z-index]
+    question: |
+      Почему выпадающее меню с `z-index: 9999` оказывается под шапкой?
+    code: |
+      <main class="content">
+        <div class="dropdown">Меню</div>
+      </main>
+      <header class="sticky-header">Шапка</header>
+
+      <style>
+        .content { position: relative; z-index: 1; }
+        .dropdown { position: absolute; z-index: 9999; }
+        .sticky-header { position: sticky; top: 0; z-index: 2; }
+      </style>
+    codeLang: html
+    options:
+      - text: '`z-index` не может быть больше 1000'
+        why: 'Ограничения 1000 нет, число может быть любым целым.'
+      - text: 'Меню заперто в контексте наложения `.content`'
+        correct: true
+        why: 'Внутри контекста `z-index` работает только между «соседями по контексту». Наружу весь контекст выступает с z-index своего корня.'
+      - text: 'Sticky-элементы всегда рисуются поверх остальных'
+        why: 'Sticky подчиняется тем же правилам наложения. Он сверху только благодаря `z-index: 2` в сравнении с `1`.'
+      - text: 'Меню должно стоять в разметке после шапки'
+        why: 'Порядок в DOM решает только при равных значениях в одном контексте. Здесь дело в контекстах.'
+    explanation: |
+      Контекст наложения (stacking context) — группа элементов, которая рисуется как единое целое. Внутри
+      группы элементы сортируются по своим `z-index`, а вся группа встаёт в родительский контекст с
+      `z-index` своего корня. Поэтому 9999 внутри контекста со значением 1 проиграет элементу со значением 2
+      снаружи. Лечится так: убрать `z-index` у `.content` (без него контекст не создаётся), поднять его выше
+      шапки или вынести меню порталом на верхний уровень DOM.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_positioned_layout/Stacking_context
+    source: own
+
+  - id: css-positioning-006
+    level: senior
+    tags: [stacking-context]
+    question: |
+      Какое из этих свойств **не** создаёт новый контекст наложения?
+    options:
+      - text: '`opacity: 0.99`'
+        why: 'Создаёт: любая `opacity` меньше 1 создаёт контекст наложения.'
+      - text: '`transform: translateX(0px)`'
+        why: 'Создаёт: любой `transform`, кроме `none`, создаёт контекст, даже нулевой сдвиг.'
+      - text: '`position: relative; z-index: auto`'
+        correct: true
+        why: 'Для `relative` и `absolute` контекст создаётся только вместе с `z-index`, отличным от `auto`.'
+      - text: '`isolation: isolate`'
+        why: 'Создаёт: это свойство только для того и существует, чтобы создать контекст без побочных эффектов.'
+    explanation: |
+      Контекст наложения создают: корень документа; элементы с `position: relative/absolute` и `z-index` не
+      `auto`; `position: fixed` и `sticky` всегда; flex- и grid-элементы с `z-index` не `auto`; `opacity` < 1;
+      `transform`, `filter`, `backdrop-filter`, `perspective`, `clip-path`, `mask`, `mix-blend-mode` не по
+      умолчанию; `isolation: isolate`; `will-change` с одним из этих свойств; `contain: paint` и некоторые
+      другие. Отсюда неожиданные баги: анимация прозрачности внезапно «утапливает» выпадающее меню внутри
+      блока. А `isolation: isolate` — аккуратный способ создать контекст сознательно.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_positioned_layout/Stacking_context#features_creating_stacking_contexts
+    source: own
+
+  - id: css-positioning-007
+    level: junior
+    tags: [relative]
+    question: |
+      Что произойдёт с соседними блоками, если блоку задать `position: relative; top: 20px`?
+    options:
+      - text: 'Соседние блоки сдвинутся вниз на 20px'
+        why: 'Сдвиг relative-элемента визуальный, раскладка вокруг считается по его исходному месту.'
+      - text: 'Ничего, исходное место блока останется занятым'
+        correct: true
+        why: 'Relative-элемент остаётся в потоке. Смещение — как картинка, сдвинутая поверх, может перекрыть соседа снизу.'
+      - text: 'Блок выйдет из потока, и соседи займут его место'
+        why: 'Так ведёт себя `position: absolute`.'
+      - text: '`top` у relative-элемента не работает, нужен `margin-top`'
+        why: '`top` работает. А `margin-top`, в отличие от него, действительно сдвинул бы соседей.'
+    explanation: |
+      `position: relative` оставляет элемент в нормальном потоке: под него резервируется место, как будто
+      он не сдвигался. Свойства `top`, `left`, `right`, `bottom` смещают его только при отрисовке, поэтому
+      сдвиг может перекрыть соседей, но не двигает их. Главное применение `relative` сегодня — не сдвиг, а
+      точка отсчёта для абсолютных потомков и возможность задать `z-index`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/position#relative_positioning
+    source: own
+
+  - id: css-positioning-008
+    level: middle
+    tags: [absolute, inset, sizing]
+    question: |
+      Как растянуть абсолютный элемент-оверлей ровно по размеру родителя?
+    code: |
+      .card { position: relative; padding: 16px; }
+      .overlay { position: absolute; /* ? */ }
+    codeLang: css
+    options:
+      - text: '`width: 100%; height: 100%;`'
+        why: 'Без `top: 0; left: 0` оверлей встанет на статическую позицию — внутри padding карточки (16px) — и вылезет за её край. А при `content-box` к 100% добавятся ещё и его собственные padding и border.'
+      - text: '`inset: 0;`'
+        correct: true
+        why: '`inset: 0` = `top: 0; right: 0; bottom: 0; left: 0`. Абсолютный элемент растягивается между противоположными сторонами содержащего блока.'
+      - text: '`margin: auto;`'
+        why: 'Без заданных координат `margin: auto` у абсолютного элемента ничего не растянет.'
+      - text: '`display: block;`'
+        why: 'Абсолютный элемент и так блочный, но его ширина по умолчанию — по содержимому.'
+    explanation: |
+      Размер абсолютного элемента по умолчанию — по содержимому (shrink-to-fit). Если задать обе
+      противоположные координаты (`left` и `right`, `top` и `bottom`), элемент растянется между ними, и
+      padding с border не сломают расчёт. `inset` — сокращение для всех четырёх сторон. Тот же приём с
+      `margin: auto` и заданными размерами центрирует абсолютный элемент: `inset: 0; margin: auto;
+      width: 200px; height: 100px`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/inset
+    source: own

@@ -1,0 +1,285 @@
+# yaml-language-server: $schema=../../schema.json
+topic: javascript
+subtopic: errors
+questions:
+  - id: javascript-errors-001
+    level: junior
+    tags: [try-catch-finally, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      try {
+        console.log('try');
+        JSON.parse('{ broken');
+        console.log('after parse');
+      } catch (error) {
+        console.log('catch', error.name);
+      } finally {
+        console.log('finally');
+      }
+    codeLang: js
+    options:
+      - text: '`try`, `after parse`, `catch SyntaxError`, `finally`'
+        why: 'После исключения выполнение блока `try` сразу прерывается, строка после `JSON.parse` не выполнится.'
+      - text: '`try`, `catch SyntaxError`, `finally`'
+        correct: true
+        why: '`JSON.parse` бросает `SyntaxError`, оставшаяся часть `try` пропускается, управление уходит в `catch`, а затем всегда выполняется `finally`.'
+      - text: '`try`, `catch SyntaxError`'
+        why: '`finally` выполняется всегда — и после успешного `try`, и после `catch`.'
+      - text: '`try`, `catch TypeError`, `finally`'
+        why: 'Некорректный JSON — это синтаксическая ошибка разбора, `JSON.parse` бросает именно `SyntaxError`.'
+    explanation: |
+      Блок `try` выполняется до первого исключения, после чего управление переходит в `catch` с объектом ошибки.
+      `finally` выполняется в любом случае: после нормального завершения, после `catch`, даже если в `try` или
+      `catch` был `return` или новое исключение. Поэтому в `finally` кладут уборку: снять флаг загрузки, закрыть
+      ресурс. У ошибок есть стандартные типы: `SyntaxError`, `TypeError`, `ReferenceError`, `RangeError`, и по
+      `error.name` или `instanceof` их различают в `catch`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/try...catch
+    source: own
+
+  - id: javascript-errors-002
+    level: senior
+    tags: [finally, return, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function check() {
+        try {
+          return 'try';
+        } finally {
+          return 'finally';
+        }
+      }
+
+      function compute() {
+        let value = 1;
+        try {
+          return value;
+        } finally {
+          value = 2;
+        }
+      }
+
+      console.log(check(), compute());
+    codeLang: js
+    options:
+      - text: '`try 1`'
+        why: '`return` в `finally` заменяет результат, который вернул `try`.'
+      - text: '`finally 1`'
+        correct: true
+        why: '`return` в `finally` перекрывает возврат из `try`. Во второй функции значение для `return` вычислено до `finally`, и изменение переменной уже не влияет на результат.'
+      - text: '`finally 2`'
+        why: '`return value` вычисляет значение сразу, а `finally` меняет только переменную, не результат.'
+      - text: '`try 2`'
+        why: 'И `return` в `finally` побеждает, и вычисленный результат во втором случае не меняется.'
+    explanation: |
+      Когда `try` выполняет `return`, значение вычисляется и откладывается, затем выполняется `finally`. Если
+      `finally` сам делает `return` (или бросает исключение), он подменяет отложенный результат — так можно даже
+      «проглотить» исключение из `try`. Если не делает, возвращается ранее вычисленное значение, и изменения
+      переменных в `finally` на него не влияют (для объектов мутации видны, ведь возвращена ссылка). Отсюда
+      правило линтеров `no-unsafe-finally`: не возвращать и не бросать из `finally`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/try...catch#overwriting_return_values
+    source: own
+
+  - id: javascript-errors-003
+    level: middle
+    tags: [setTimeout, async-errors, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      try {
+        setTimeout(() => {
+          throw new Error('in timer');
+        }, 0);
+        console.log('scheduled');
+      } catch (error) {
+        console.log('caught', error.message);
+      }
+    codeLang: js
+    options:
+      - text: '`scheduled`, `caught in timer`'
+        why: 'К моменту срабатывания таймера блок `try/catch` давно завершён: колбэк выполняется в отдельной задаче, вне этого блока.'
+      - text: '`scheduled`, затем непойманная ошибка `in timer`'
+        correct: true
+        why: '`try` защищает только синхронное выполнение. Колбэк таймера запускается позже из event loop, и брошенная в нём ошибка непойманная.'
+      - text: '`caught in timer`'
+        why: '`setTimeout` лишь планирует колбэк и сразу возвращается, поэтому `scheduled` выведется, а ошибки на этот момент ещё нет.'
+      - text: 'Только `scheduled`, ошибка теряется бесследно'
+        why: 'Непойманная ошибка не исчезает: браузер выведет её в консоль и сгенерирует событие `error` у `window`.'
+    explanation: |
+      `try/catch` работает со стеком вызовов: он ловит исключения, брошенные синхронно, пока выполняется его блок.
+      Колбэки таймеров, событий и сетевых запросов выполняются позже, в новых задачах, когда исходного `try` в
+      стеке уже нет. Поэтому ошибку нужно ловить внутри колбэка, а для промисов — через `.catch()` или `await` в
+      `try`. Последний рубеж для непойманных ошибок — глобальные обработчики `window.onerror` (событие `error`) и
+      `unhandledrejection`, где их отправляют в системы мониторинга вроде Sentry.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Window/error_event
+    source: own
+
+  - id: javascript-errors-004
+    level: junior
+    tags: [custom-errors, instanceof, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      class ValidationError extends Error {
+        constructor(field, message) {
+          super(message);
+          this.name = 'ValidationError';
+          this.field = field;
+        }
+      }
+
+      try {
+        throw new ValidationError('email', 'Неверный email');
+      } catch (error) {
+        console.log(error instanceof ValidationError, error instanceof Error, error.name, error.field);
+      }
+    codeLang: js
+    options:
+      - text: '`true false ValidationError email`'
+        why: '`ValidationError` наследует от `Error`, поэтому объект является экземпляром обоих классов.'
+      - text: '`true true ValidationError email`'
+        correct: true
+        why: 'Наследование от `Error` даёт `message`, стектрейс и проверку `instanceof` по всей цепочке. Свойства `name` и `field` задали в конструкторе.'
+      - text: '`true true Error email`'
+        why: 'Имя по умолчанию было бы `Error`, но конструктор явно задал `this.name`.'
+      - text: '`false true ValidationError undefined`'
+        why: 'Экземпляр создан через `new ValidationError`, а `field` записан в конструкторе.'
+    explanation: |
+      Собственные классы ошибок наследуют от `Error` и задают `name`, а ещё полезные поля — код, поле формы,
+      HTTP-статус. Так в `catch` можно различать ошибки через `instanceof` и обрабатывать их по-разному:
+      валидацию показать пользователю, сетевую — повторить, неизвестную — пробросить. Наследование от `Error`
+      важно: так у объекта есть стектрейс, и он правильно отображается в консоли и системах мониторинга.
+      С ES2022 причину можно передать через `cause`: `new Error('Не сохранилось', { cause: originalError })`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error#custom_error_types
+    source: own
+
+  - id: javascript-errors-005
+    level: middle
+    tags: [throw-non-error, stack]
+    question: |
+      Чем плохо бросать строки: `throw 'Не найдено'`?
+    options:
+      - text: 'У строки нет стектрейса и полей `name` и `message`'
+        correct: true
+        why: 'Стектрейс записывается при создании объекта `Error`. Брошенная строка — просто значение: ошибку сложно отследить, и в мониторинге не видно, откуда она прилетела.'
+      - text: 'Это синтаксическая ошибка: `throw` принимает только объекты `Error`'
+        why: '`throw` принимает любое значение, включая строки, числа и `undefined`. Проблема не в синтаксисе.'
+      - text: 'Строку нельзя поймать в `catch`'
+        why: '`catch` ловит любое брошенное значение. Строка придёт в переменную `catch` как есть.'
+      - text: 'Строка автоматически превращается в `Error`, и текст теряется'
+        why: 'Никакого автоматического превращения нет: в `catch` придёт исходная строка.'
+    explanation: |
+      `throw` технически принимает любое значение, но полезную информацию несёт только объект `Error`: стектрейс
+      (место создания), `name`, `message`, `cause`. Код обработки обычно рассчитывает на `error.message`, а у строки
+      его нет. Поэтому ESLint-правило `no-throw-literal` запрещает бросать литералы, а в обработчике перед
+      использованием `error.message` надёжнее проверить `error instanceof Error`. Тот же принцип касается
+      промисов: отклонять их лучше объектом `Error`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/throw
+    source: own
+
+  - id: javascript-errors-006
+    level: middle
+    tags: [error-cause, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function loadConfig() {
+        try {
+          JSON.parse('не json');
+        } catch (error) {
+          throw new Error('Не удалось загрузить конфиг', { cause: error });
+        }
+      }
+
+      try {
+        loadConfig();
+      } catch (error) {
+        console.log(error.message, '|', error.cause.name);
+      }
+    codeLang: js
+    options:
+      - text: '`Не удалось загрузить конфиг | SyntaxError`'
+        correct: true
+        why: 'Опция `cause` сохраняет исходную ошибку в свойстве `cause`. Внешний код видит понятное сообщение и может добраться до первопричины.'
+      - text: '`Не удалось загрузить конфиг | undefined`'
+        why: 'С ES2022 конструктор `Error` принимает второй аргумент `{ cause }` и записывает его в `error.cause`.'
+      - text: '`Unexpected token | SyntaxError`'
+        why: 'Наружу выброшена новая ошибка со своим сообщением, исходный текст доступен только через `cause`.'
+      - text: '`TypeError`: у `Error` один аргумент'
+        why: 'Лишние аргументы в JS ошибок не вызывают, а с ES2022 второй аргумент `{ cause }` используется по назначению.'
+    explanation: |
+      Оборачивание ошибок — частый приём: низкоуровневая ошибка («неожиданный символ в JSON») превращается в
+      понятную для своего уровня («не удалось загрузить конфиг»). Раньше исходная ошибка терялась или её
+      дописывали в текст. Свойство `cause` (ES2022) сохраняет всю цепочку причин со стектрейсами. Браузерная
+      консоль и Node показывают её при выводе, а системы мониторинга умеют разворачивать. Работает и в
+      собственных классах ошибок: `super(message, { cause })`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/cause
+    source: own
+
+  - id: javascript-errors-007
+    level: middle
+    tags: [catch-scope, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      let error = 'внешняя';
+
+      try {
+        throw new Error('внутренняя');
+      } catch (error) {
+        error = 'переприсвоена';
+      }
+
+      console.log(error);
+    codeLang: js
+    options:
+      - text: '`переприсвоена`'
+        why: 'Параметр `catch` — отдельная переменная блока `catch`, она затеняет внешнюю. Присваивание меняет только её.'
+      - text: '`внешняя`'
+        correct: true
+        why: 'У `catch (error)` своя область видимости, и `error` внутри — новая переменная. Внешняя `error` не меняется.'
+      - text: '`Error: внутренняя`'
+        why: 'Объект ошибки живёт только в параметре блока `catch` и наружу не выходит.'
+      - text: '`SyntaxError`: повторное объявление `error`'
+        why: 'Параметр `catch` объявляется в собственной области блока, и совпадение имени с внешней переменной допустимо.'
+    explanation: |
+      Параметр `catch (error)` объявляется в области видимости блока `catch`, как `let`. Он затеняет внешнюю
+      переменную с тем же именем, и все присваивания внутри относятся к нему. Поэтому, если нужно передать ошибку
+      наружу, её сохраняют в переменную с другим именем. С ES2019 параметр можно вовсе опустить: `catch { ... }`,
+      если сам объект ошибки не нужен.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/try...catch#catch_binding
+    source: own
+
+  - id: javascript-errors-008
+    level: middle
+    tags: [global-handlers, error-event, unhandledrejection]
+    question: |
+      Какое событие сработает у `window`, если промис отклонён и нигде не обработан?
+    options:
+      - text: '`error`'
+        why: '`error` срабатывает для непойманных синхронных исключений и ошибок загрузки ресурсов. Для промисов есть отдельное событие.'
+      - text: '`unhandledrejection`'
+        correct: true
+        why: 'Браузер генерирует его, когда у отклонённого промиса к концу текущей задачи нет обработчика. В событии есть `reason` и сам `promise`.'
+      - text: '`rejectionhandled`'
+        why: 'Это событие срабатывает позже, если обработчик всё-таки подключили к уже отклонённому промису, ранее попавшему в `unhandledrejection`.'
+      - text: 'Никакое: необработанные промисы браузер игнорирует'
+        why: 'Браузер выводит предупреждение в консоль и генерирует событие, которое можно перехватить.'
+    explanation: |
+      Для мониторинга ошибок на фронтенде нужны два глобальных обработчика. `window.addEventListener('error', ...)`
+      ловит непойманные исключения синхронного кода, таймеров и обработчиков событий, а в фазе перехвата — ещё и
+      ошибки загрузки картинок и скриптов. `window.addEventListener('unhandledrejection', ...)` ловит отклонённые
+      промисы без обработчика: `event.reason` — причина, `event.preventDefault()` убирает сообщение из консоли.
+      Именно на эти события подписываются Sentry и подобные сервисы.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Window/unhandledrejection_event
+      - https://developer.mozilla.org/en-US/docs/Web/API/Window/error_event
+    source: own

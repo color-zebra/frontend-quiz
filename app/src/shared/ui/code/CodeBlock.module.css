@@ -1,0 +1,73 @@
+.code {
+  margin: 0;
+  padding: 14px 16px;
+  overflow-x: auto;
+  border-radius: var(--code-radius);
+  background: var(--code-bg);
+  color: var(--tok-plain);
+  font-size: 13px;
+  line-height: 1.6;
+  tab-size: 2;
+  white-space: pre;
+}
+
+/* Классы токенов ставит Prism, поэтому они глобальные — но только внутри блока кода. */
+.code :global(.comment),
+.code :global(.prolog),
+.code :global(.doctype),
+.code :global(.cdata) {
+  color: var(--tok-com);
+  font-style: italic;
+}
+
+.code :global(.punctuation),
+.code :global(.operator) {
+  color: var(--tok-punc);
+}
+
+.code :global(.keyword),
+.code :global(.atrule),
+.code :global(.rule),
+.code :global(.important),
+.code :global(.tag) {
+  color: var(--tok-kw);
+}
+
+.code :global(.function),
+.code :global(.method),
+.code :global(.property),
+.code :global(.attr-name),
+.code :global(.request-line) {
+  color: var(--tok-fn);
+}
+
+.code :global(.number),
+.code :global(.boolean),
+.code :global(.unit),
+.code :global(.hexcode),
+.code :global(.color) {
+  color: var(--tok-num);
+}
+
+.code :global(.string),
+.code :global(.char),
+.code :global(.attr-value),
+.code :global(.url),
+.code :global(.regex),
+.code :global(.template-string) {
+  color: var(--tok-str);
+}
+
+.code :global(.class-name),
+.code :global(.builtin),
+.code :global(.selector),
+.code :global(.maybe-class-name),
+.code :global(.header-name) {
+  color: var(--tok-cls);
+}
+
+/* Знаки внутри тегов и значений атрибутов — приглушённые, как остальная пунктуация. */
+.code :global(.tag) :global(.punctuation),
+.code :global(.attr-value) :global(.punctuation) {
+  color: var(--tok-punc);
+}

@@ -1,0 +1,361 @@
+# yaml-language-server: $schema=../../schema.json
+topic: typescript
+subtopic: config
+questions:
+  - id: typescript-config-001
+    level: junior
+    tags: [tsconfig, strict]
+    question: |
+      Что делает настройка `"strict": true` в `tsconfig.json`?
+    options:
+      - text: 'Включает группу проверок вроде `strictNullChecks`'
+        correct: true
+        why: '`strict` — переключатель для набора флагов: `strictNullChecks`, `noImplicitAny`, `strictFunctionTypes`, `useUnknownInCatchVariables` и других. Любой из них можно отдельно выключить.'
+      - text: 'Только добавляет `"use strict"` в каждый файл'
+        why: '`"use strict"` к строгим проверкам типов отношения не имеет. А с TypeScript 6.0 весь код и так считается строгим, отключение `alwaysStrict` устарело.'
+      - text: 'Запрещает писать `any` где-либо в коде'
+        why: 'Явный `any` остаётся разрешён. `noImplicitAny` запрещает только неявный `any`, когда тип не указан и не выводится.'
+      - text: 'Добавляет проверку типов во время выполнения'
+        why: 'TypeScript ничего не проверяет в рантайме: все проверки, включая строгие, работают только при компиляции.'
+    explanation: |
+      С TypeScript 6.0 `strict` включён по умолчанию, но в старых проектах часто стоит явный `"strict": false` или
+      TypeScript до 6.0. Без `strict` TypeScript
+      довольно мягкий: `null` и `undefined` подходят к любому типу, параметры без
+      аннотаций молча становятся `any`, параметры колбэков проверяются бивариантно. Флаг `strict` включает
+      семейство строгих проверок, и новые проверки этого семейства в следующих версиях тоже включаются
+      автоматически. Для новых проектов `strict` — стандарт. Без него теряется большая часть пользы от типов,
+      прежде всего защита от `cannot read properties of undefined`. Дополнительные строгие флаги вроде
+      `noUncheckedIndexedAccess` в `strict` не входят и включаются отдельно.
+    links:
+      - https://www.typescriptlang.org/tsconfig/#strict
+    source: own
+
+  - id: typescript-config-002
+    level: middle
+    tags: [noUncheckedIndexedAccess, index-signature]
+    question: |
+      Какие типы у `math` и `first` при включённом `noUncheckedIndexedAccess`?
+    code: |
+      // @noUncheckedIndexedAccess: true
+      const scores: Record<string, number> = { math: 5 };
+      const list = [1, 2, 3];
+
+      const math = scores['math'];
+      const first = list[0];
+    codeLang: ts
+    options:
+      - text: '`number | undefined` у обоих'
+        correct: true
+        why: 'Флаг добавляет `undefined` к результату любого доступа по индексной сигнатуре и по индексу массива: компилятор не знает, есть ли такой ключ или элемент.'
+      - text: '`number` у обоих'
+        why: 'Так без флага: по умолчанию TypeScript считает, что любой ключ словаря и любой индекс массива существуют.'
+      - text: '`number | undefined` и `number`'
+        why: 'Флаг действует и на массивы: элемента по индексу 0 может не быть, если массив пуст.'
+      - text: '`number` и `number | undefined`'
+        why: 'Для `Record<string, number>` ключ `"math"` проверяется по индексной сигнатуре, и флаг добавляет `undefined` и здесь.'
+    explanation: |
+      По умолчанию `arr[i]` и `dict[key]` имеют тип элемента без `undefined`, хотя в рантайме элемента может не
+      быть. Это частый источник ошибок `cannot read properties of undefined`. Флаг `noUncheckedIndexedAccess`
+      делает такой доступ честным: результат нужно проверить или обработать через `??`. Флаг не входит в
+      `strict` и добавляет проверок в существующем коде. Цикл `for...of` и методы `map`, `forEach` на него не
+      реагируют, а для кортежей с известной длиной `undefined` не добавляется.
+    links:
+      - https://www.typescriptlang.org/tsconfig/#noUncheckedIndexedAccess
+    source: own
+
+  - id: typescript-config-003
+    level: middle
+    tags: [vite, transpile-only, type-checking, build]
+    question: |
+      В Vite-проекте в одном из компонентов есть ошибка типов. Что сделает команда `vite build`, если
+      запустить её без `tsc` перед ней?
+    options:
+      - text: 'Соберёт проект, не заметив ошибку'
+        correct: true
+        why: 'Vite компилирует каждый файл отдельно быстрым транспайлером (в Vite 8 это Oxc, раньше esbuild), который только удаляет типы. Проверка типов — задача `tsc` или плагина, её запускают отдельно.'
+      - text: 'Остановит сборку и покажет ошибку TypeScript'
+        why: 'Сам Vite типы не проверяет. Сборка падает, только если перед ней запущен `tsc`, как в скрипте `build` шаблонов.'
+      - text: 'Соберёт проект, а ошибку покажет в консоли браузера'
+        why: 'В бандл информация о типах не попадает вовсе: после удаления типов ошибки не существует ни в коде, ни в браузере.'
+      - text: 'Соберёт все файлы, кроме файла с ошибкой типов'
+        why: 'Vite не знает об ошибках типов и не исключает файлы: файл с ошибкой попадёт в бандл как обычно.'
+    explanation: |
+      Современные сборщики (Vite с Oxc, Next.js с SWC, esbuild, Bun) разделяют компиляцию и проверку типов.
+      Транспайлер просто вырезает аннотации, это в десятки раз быстрее полной проверки. Поэтому ошибки типов
+      нужно ловить отдельным запуском `tsc` в CI и в скрипте сборки (шаблон Vite использует `tsc -b && vite
+      build`), подсветка в редакторе, плагин `vite-plugin-checker` в dev-режиме. Next.js по умолчанию
+      запускает проверку типов при `next build`, её можно отключить. Из-за раздельной компиляции нужен флаг
+      `isolatedModules`: он запрещает конструкции, которые нельзя скомпилировать без знания других файлов.
+    links:
+      - https://vite.dev/guide/features.html#transpile-only
+      - https://www.typescriptlang.org/tsconfig/#isolatedModules
+    source: own
+
+  - id: typescript-config-004
+    level: junior
+    tags: [declaration-files, d-ts]
+    question: |
+      Для чего нужны файлы с расширением `.d.ts`?
+    options:
+      - text: 'Описывают типы без реализации'
+        correct: true
+        why: 'Файл объявлений содержит только сигнатуры: какие функции, классы и переменные есть и какого они типа. Код в нём писать нельзя, в JavaScript он не компилируется.'
+      - text: 'Хранят скомпилированный JavaScript для браузера'
+        why: 'Скомпилированный код лежит в `.js`-файлах. `.d.ts` рядом с ними описывает его типы для потребителей.'
+      - text: 'Задают настройки компилятора для своей папки'
+        why: 'Настройки компилятора задаются в `tsconfig.json`. `.d.ts` содержит объявления типов.'
+      - text: 'Содержат тесты типов, которые не попадают в сборку'
+        why: 'Тесты типов пишут в обычных `.ts`-файлах, например с `expectTypeOf`. Назначение `.d.ts` — объявления.'
+    explanation: |
+      `.d.ts` (declaration files) описывают типы кода, реализация которого существует отдельно: в
+      JavaScript-библиотеке, в браузере, в окружении. Библиотеки поставляют их вместе с собранным JS (поле
+      `types` в `package.json`) или отдельно в пакетах `@types/*` из DefinitelyTyped. Встроенные типы браузера
+      и языка тоже лежат в `.d.ts`: `lib.dom.d.ts`, `lib.es2023.d.ts`. В своём проекте `.d.ts` используют для
+      глобальных объявлений, модулей без типов и импортов ресурсов вроде `*.svg` и `*.module.css`. `tsc` с
+      флагом `declaration` генерирует их из `.ts`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/type-declarations.html
+    source: own
+
+  - id: typescript-config-005
+    level: senior
+    tags: [declare-global, module-augmentation, d-ts]
+    question: |
+      Зачем в конце этого файла `export {}`?
+    code: |
+      // src/global.d.ts
+      declare global {
+        interface Window {
+          analytics: { track(event: string): void };
+        }
+      }
+
+      export {};
+    codeLang: ts
+    options:
+      - text: '`declare global` разрешён только в файле-модуле'
+        correct: true
+        why: 'Файл без `import` и `export` считается глобальным скриптом, и в нём `declare global` — ошибка. Пустой `export {}` превращает файл в модуль. При `skipLibCheck` ошибка в самом `.d.ts` не видна: дополнение просто не применится, и компилятор скажет, что у `window` нет `analytics`.'
+      - text: 'Без него интерфейс `Window` заменится, а не дополнится'
+        why: 'Интерфейсы всегда сливаются, замены не бывает. В файле-скрипте можно было бы просто написать `interface Window { ... }` без `declare global`.'
+      - text: 'Чтобы `analytics` попал в сборку как значение'
+        why: '`.d.ts` ничего не добавляет в сборку, и `export {}` ничего не экспортирует. Значение `window.analytics` должен создать реальный код.'
+      - text: 'Без него файл не будет включён в компиляцию'
+        why: 'Включение файла определяется настройками `include` и `files` в tsconfig, а не наличием экспортов.'
+    explanation: |
+      TypeScript различает файлы-модули (есть хотя бы один `import` или `export` верхнего уровня) и
+      файлы-скрипты. В скрипте все объявления и так глобальные, и `interface Window { ... }` дополнит
+      глобальный интерфейс. В модуле объявления локальные, и чтобы дополнить глобальную область, нужен
+      блок `declare global`. А он допустим только в модуле. Отсюда `export {}`: он делает файл модулем без
+      реального экспорта. Настройка `moduleDetection: force` делает модулем любой `.ts`-файл, но на `.d.ts` она
+      не действует, поэтому в файлах объявлений `export {}` нужен всегда. Модульная форма удобнее, потому что
+      в такой файл можно импортировать типы:
+      `import type { Analytics } from './analytics'`. Похожим образом дополняют типы библиотек через
+      `declare module 'library' { ... }`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/declaration-merging.html#global-augmentation
+    source: own
+
+  - id: typescript-config-006
+    level: middle
+    tags: [declaration-files, types-packages, declare-module]
+    question: |
+      В режиме `strict` компилятор сообщает: «Could not find a declaration file for module
+      'tiny-confetti'». Как правильно поступить?
+    code: |
+      import confetti from 'tiny-confetti';
+    codeLang: ts
+    options:
+      - text: 'Поставить `@types/tiny-confetti` или написать `declare module`'
+        correct: true
+        why: 'Ошибка значит, что у пакета нет типов. Их берут из DefinitelyTyped, если там есть пакет, или описывают сами в `.d.ts`: `declare module "tiny-confetti" { ... }`.'
+      - text: 'Заменить `import` на `require`, чтобы обойти проверку'
+        why: 'Без типов Node (`@types/node`, а с TypeScript 6.0 ещё и `"types": ["node"]`) компилятор не знает `require`, а `import x = require(...)` даёт ту же ошибку TS7016. Отсутствие типов у пакета так не исправить.'
+      - text: 'Добавить пакет в `exclude` в `tsconfig.json`'
+        why: '`exclude` влияет только на то, какие файлы компилятор берёт как входные. Импортированный модуль всё равно будет разрешаться.'
+      - text: 'Поставить `// @ts-ignore` перед каждым использованием'
+        why: 'Ошибка возникает на импорте, а не на использовании. К тому же `@ts-ignore` глушит и любые другие ошибки в этой строке.'
+    explanation: |
+      Пакет на JavaScript без своих типов для TypeScript — модуль неизвестной формы. В режиме `noImplicitAny`
+      импорт такого модуля даёт ошибку TS7016. Сначала стоит проверить пакет `@types/<имя>` в DefinitelyTyped.
+      Если его нет, пишут объявление в своём `.d.ts`. Минимальное `declare module 'tiny-confetti';` делает весь
+      модуль `any`, это быстрый, но слепой вариант. Полноценное объявление с сигнатурами экспортов вернёт
+      проверки. Многие современные пакеты поставляют типы сами, и `@types` им не нужен.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/declaration-files/templates/module-d-ts.html
+      - https://www.typescriptlang.org/docs/handbook/2/type-declarations.html#definitelytyped--types
+    source: own
+
+  - id: typescript-config-007
+    level: middle
+    tags: [skipLibCheck, d-ts]
+    question: |
+      Что делает настройка `"skipLibCheck": true`?
+    options:
+      - text: 'Не проверяет типы внутри `.d.ts`-файлов'
+        correct: true
+        why: 'Компилятор использует объявления из `.d.ts`, но не ищет ошибки в них самих. Это ускоряет проверку и избавляет от конфликтов между версиями `@types`.'
+      - text: 'Отключает проверку вызовов библиотечных функций'
+        why: 'Ваш код, вызывающий библиотеки, проверяется как обычно. Пропускается только проверка самих объявлений.'
+      - text: 'Не загружает типы из `node_modules/@types`'
+        why: 'Загрузкой `@types` управляет настройка `types`. `skipLibCheck` их загружает, но не проверяет внутри.'
+      - text: 'Пропускает проверку типов при сборке библиотеки'
+        why: 'Ваши `.ts`-файлы, включая код библиотеки, которую вы пишете, проверяются полностью.'
+    explanation: |
+      В `node_modules` сотни `.d.ts`-файлов, и проверять их все долго. Кроме того, два пакета могут объявить один
+      и тот же глобальный тип по-разному, и проект перестанет компилироваться не по своей вине. `skipLibCheck`
+      решает обе проблемы, поэтому включён почти во всех шаблонах. Цена — пропуск ошибок в ваших собственных
+      `.d.ts`: флаг действует на все файлы объявлений, а не только на библиотечные. Поэтому глобальные
+      объявления проекта иногда пишут в обычных `.ts`-файлах.
+    links:
+      - https://www.typescriptlang.org/tsconfig/#skipLibCheck
+    source: own
+
+  - id: typescript-config-008
+    level: senior
+    tags: [paths, module-resolution, node]
+    question: |
+      Проект на Node с таким `tsconfig.json` собран командой `tsc` и запущен через `node dist/index.js`. Что
+      произойдёт с импортом `import { log } from '@/utils/log.js'` в `src/index.ts`?
+    code: |
+      {
+        "compilerOptions": {
+          "module": "NodeNext",
+          "rootDir": "src",
+          "outDir": "dist",
+          "paths": { "@/*": ["./src/*"] }
+        }
+      }
+    codeLang: json
+    options:
+      - text: 'Ошибка при запуске: Node не знает про `@/`'
+        correct: true
+        why: '`paths` влияет только на то, где компилятор ищет типы. `tsc` не переписывает пути в выходном JavaScript, и в `dist` остаётся `"@/utils/log.js"`, которое Node не может найти.'
+      - text: 'Сработает: `tsc` заменит `@/` на относительный путь'
+        why: '`tsc` намеренно не меняет спецификаторы модулей: импорт в JavaScript остаётся ровно таким, как написан.'
+      - text: 'Сработает: Node прочитает `paths` из tsconfig'
+        why: 'Node ничего не знает о `tsconfig.json`. Его собственный механизм алиасов — поле `imports` в `package.json` с именами на `#`.'
+      - text: 'Ошибка компиляции: `paths` работает только с бандлером'
+        why: '`paths` поддерживается с любым режимом модулей, и компиляция пройдёт. Проблема проявится при запуске.'
+    explanation: |
+      `paths` — подсказка компилятору, как разрешать импорты при проверке типов. Сам JavaScript он не меняет. В
+      проектах с бандлером это работает, потому что бандлер настроен на те же алиасы (в Vite через
+      `resolve.alias` или плагин `vite-tsconfig-paths`). В Node без сборки алиасы нужно повторить на стороне
+      рантайма. Вариантов несколько: поле `imports` в `package.json` с алиасами вида `#utils/*`, которые
+      понимают и Node, и TypeScript; переписывание путей после сборки (`tsc-alias`); загрузчики вроде
+      `tsx`.
+    links:
+      - https://www.typescriptlang.org/tsconfig/#paths
+      - https://nodejs.org/api/packages.html#subpath-imports
+    source: own
+
+  - id: typescript-config-009
+    level: senior
+    tags: [target, lib, polyfills]
+    question: |
+      В `tsconfig.json` указаны `"target": "ES2017"` и `"lib": ["ES2023", "DOM"]`. Что произойдёт с этим кодом в
+      старом браузере, где нет `Array.prototype.at`?
+    code: |
+      const items = [1, 2, 3];
+      console.log(items.at(-1));
+    codeLang: ts
+    options:
+      - text: 'Скомпилируется, а в браузере будет `TypeError`'
+        correct: true
+        why: '`lib` говорит компилятору, какие встроенные API считать доступными, а `target` — в какой синтаксис переводить код. Полифилов TypeScript не добавляет, поэтому вызов метода, которого нет, упадёт.'
+      - text: '`tsc` заменит `at(-1)` на `items[items.length - 1]`'
+        why: 'TypeScript понижает только синтаксис: стрелки, классы, `?.`. Вызовы методов стандартной библиотеки он не переписывает.'
+      - text: 'Ошибка компиляции: метода `at` нет в ES2017'
+        why: 'Доступность API определяет `lib`, а не `target`. С `lib: ["ES2023"]` метод `at` объявлен, и компиляция проходит.'
+      - text: '`tsc` добавит в сборку полифил `Array.prototype.at`'
+        why: 'TypeScript не добавляет полифилов. Это делают core-js, Babel с `preset-env` или полифилы в HTML.'
+    explanation: |
+      Две настройки отвечают за разное. `target` определяет, во что компилируется синтаксис: для ES2017
+      оператор `?.` превратится в проверки, а `class` останется классом. `lib` определяет, какие
+      встроенные объекты и методы описаны в типах. Если `lib` не указан, он выводится из `target`. Указав
+      более новый `lib`, вы обещаете, что методы будут в рантайме, а выполнить обещание должны полифилы.
+      Поэтому TypeScript обычно не единственный инструмент: поддержку старых браузеров решают Babel
+      `preset-env`, core-js или плагин `@vitejs/plugin-legacy`.
+    links:
+      - https://www.typescriptlang.org/tsconfig/#target
+      - https://www.typescriptlang.org/tsconfig/#lib
+    source: own
+
+  - id: typescript-config-010
+    level: junior
+    tags: [tsc, noEmit, type-checking]
+    question: |
+      Что делает команда `tsc --noEmit`?
+    options:
+      - text: 'Проверяет типы, не создавая JS-файлов'
+        correct: true
+        why: 'Компилятор проходит весь проект, сообщает об ошибках типов и завершается с ненулевым кодом, если они есть, но ничего не записывает на диск.'
+      - text: 'Компилирует проект, не показывая ошибок'
+        why: 'Наоборот: ошибки показываются, а не создаются выходные файлы.'
+      - text: 'Собирает проект в один файл без source maps'
+        why: 'Source maps включает опция `sourceMap`. Склейку в один файл (`outFile`) TypeScript 6.0 объявил устаревшей, а 7.0 удалил: это задача бандлера.'
+      - text: 'Удаляет созданные ранее файлы сборки'
+        why: 'Очистку выполняет `tsc --build --clean` для проектов с `references`. `--noEmit` только не пишет новые файлы.'
+    explanation: |
+      Когда JavaScript собирает бандлер (Vite, webpack, Next.js), от `tsc` нужна только проверка типов.
+      `tsc --noEmit` делает именно это, поэтому его ставят в CI, в pre-commit и в скрипт сборки перед бандлером.
+      Ненулевой код выхода при ошибках останавливает пайплайн. Для монорепозиториев с project references
+      используют `tsc -b`, а ускорить повторные проверки помогает `incremental`.
+    links:
+      - https://www.typescriptlang.org/tsconfig/#noEmit
+    source: own
+
+  - id: typescript-config-011
+    level: middle
+    tags: [module-resolution, nodenext, extensions]
+    question: |
+      В проекте `"type": "module"` в `package.json` и `"module": "NodeNext"` в `tsconfig.json`. Рядом лежат
+      `src/utils.ts` и `src/index.ts`. Какой импорт в `index.ts` скомпилируется?
+    options:
+      - text: '`import { x } from ''./utils.js''`'
+        correct: true
+        why: 'В ES-модулях Node требует полный путь к файлу. TypeScript не переписывает пути, поэтому в исходнике пишут то имя, которое будет у файла после компиляции, — `.js`. Компилятор сам сопоставит его с `utils.ts`.'
+      - text: '`import { x } from ''./utils''`'
+        why: 'Без расширения Node в режиме ESM файл не найдёт, и компилятор сообщает об этом заранее: «Relative import paths need explicit file extensions».'
+      - text: '`import { x } from ''./utils.ts''`'
+        why: 'Расширение `.ts` разрешено только с `allowImportingTsExtensions` (и тогда без вывода JS) или с переписыванием путей `rewriteRelativeImportExtensions`.'
+      - text: '`import { x } from ''utils''`'
+        why: 'Голое имя ищется как пакет в `node_modules`, а не как соседний файл.'
+    explanation: |
+      Режимы `module` и `moduleResolution` описывают, в какой среде будет работать код, и компилятор проверяет
+      импорты по её правилам. `NodeNext` — это Node.js: в ESM-файлах расширение обязательно, и пишется оно
+      так, как будет в JavaScript. Это выглядит странно (импорт `.js` из `.ts`), но TypeScript принципиально
+      не переписывает спецификаторы модулей. Для проектов со сборщиком подходит `moduleResolution: bundler`:
+      сборщик сам находит файлы, и расширения можно опускать.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/modules/reference.html
+      - https://nodejs.org/api/esm.html#mandatory-file-extensions
+    source: own
+
+  - id: typescript-config-012
+    level: junior
+    tags: [typescript-7, native-port]
+    question: |
+      Что такое TypeScript 7.0?
+    options:
+      - text: 'Компилятор, переписанный на Go, с тем же языком'
+        correct: true
+        why: 'TypeScript 7.0 — нативный порт компилятора (проект Corsa). Язык и проверки типов перенесены из 6.0, а работает он обычно примерно в 10 раз быстрее благодаря нативному коду и параллельности.'
+      - text: 'Новая версия языка с номинальной типизацией'
+        why: 'Типизация осталась структурной. Цель 7.0 — скорость компилятора, а не изменение правил языка.'
+      - text: 'Версия, которая проверяет типы во время выполнения'
+        why: 'Проверки типов по-прежнему выполняются только при компиляции, в рантайме типов нет.'
+      - text: 'Компилятор в WebAssembly для работы прямо в браузере'
+        why: 'Порт сделан на Go и компилируется в нативный код. Ускорение достигается за счёт этого и параллельной проверки.'
+    explanation: |
+      Компилятор TypeScript до версии 6.0 был написан на самом TypeScript и работал в Node.js. На больших
+      проектах проверка типов и отклик редактора стали медленными, и команда переписала компилятор на Go.
+      Версия 6.0 стала переходной: она поменяла умолчания (`strict` по умолчанию включён, `target` — текущий
+      год ECMAScript, `types` по умолчанию пуст) и объявила устаревшими опции, которых нет в 7.0. Программного JS API в 7.0
+      нет, новое ожидается позже. Инструменты, которые вызывают компилятор из кода (например
+      typescript-eslint), пока работают через пакет `@typescript/typescript6`.
+    links:
+      - https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/
+      - https://devblogs.microsoft.com/typescript/typescript-native-port/
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-6-0.html
+    source: own

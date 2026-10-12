@@ -1,0 +1,384 @@
+# yaml-language-server: $schema=../../schema.json
+topic: javascript
+subtopic: types
+questions:
+  - id: javascript-types-001
+    level: junior
+    tags: [typeof, null, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      console.log(typeof null, typeof undefined, typeof [], typeof function () {});
+    codeLang: js
+    options:
+      - text: '`null undefined array function`'
+        why: '`typeof` не умеет отличать массивы и не возвращает `"null"`: таких результатов у него нет.'
+      - text: '`object undefined object function`'
+        correct: true
+        why: '`typeof null === "object"` — историческая ошибка первой реализации JS, оставленная ради совместимости. Массив — объект, а функции `typeof` выделяет отдельно.'
+      - text: '`object undefined array function`'
+        why: 'Для массивов `typeof` возвращает `"object"`. Проверить, что значение — массив, можно через `Array.isArray`.'
+      - text: '`null undefined object object`'
+        why: 'Для `null` результат `"object"`, а для функций — `"function"`, хотя функция тоже объект.'
+    explanation: |
+      `typeof` возвращает одну из строк: `"undefined"`, `"boolean"`, `"number"`, `"bigint"`, `"string"`,
+      `"symbol"`, `"function"`, `"object"`. `null` попадает в `"object"` из-за бага первой версии языка: метка
+      типа объекта совпадала с нулевым указателем. Исправить это так и не решились. Поэтому проверка на объект
+      пишется как `value !== null && typeof value === 'object'`, а на массив — `Array.isArray(value)`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/typeof#typeof_null
+    source: own
+
+  - id: javascript-types-002
+    level: junior
+    tags: [floating-point, number]
+    question: |
+      Почему `0.1 + 0.2 === 0.3` возвращает `false`?
+    options:
+      - text: 'В двоичном виде `0.1` и `0.2` хранятся лишь приближённо'
+        correct: true
+        why: 'Числа хранятся в формате IEEE 754, и сумма получается `0.30000000000000004`. Дробные числа сравнивают с допуском, зависящим от величины чисел.'
+      - text: '`===` сравнивает типы, а у `0.1 + 0.2` тип отличается от `0.3`'
+        why: 'Оба значения имеют тип `number`. Различаются сами значения из-за ошибки округления.'
+      - text: 'Это баг движка V8, в Firefox результат будет `true`'
+        why: 'Так работают все движки и почти все языки, использующие числа с плавающей точкой двойной точности.'
+      - text: 'JavaScript округляет сумму до целого, поэтому получается 0'
+        why: 'Округления до целого нет. Результат — `0.30000000000000004`, очень близкий к 0.3, но не равный ему.'
+    explanation: |
+      Все числа в JavaScript (кроме `BigInt`) — 64-битные числа с плавающей точкой по стандарту IEEE 754. Как
+      `1/3` нельзя точно записать десятичной дробью, так `0.1` нельзя точно записать двоичной. При сложении
+      ошибки округления накапливаются, и результат чуть больше `0.3`. Для денег используют целые копейки или
+      библиотеки десятичной арифметики, для сравнения — допуск с учётом масштаба:
+      `Math.abs(a - b) < Number.EPSILON * Math.max(Math.abs(a), Math.abs(b))` или фиксированный под задачу
+      (например, `1e-9`). Голый `Number.EPSILON` годится только для чисел около единицы. Для вывода — `toFixed`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/EPSILON
+    source: own
+
+  - id: javascript-types-003
+    level: middle
+    tags: [coercion, plus-operator, output]
+    question: |
+      Какие значения получатся в каждом выражении?
+    code: |
+      const results = [[] + [], [] + {}, 1 + '2', '3' - 1, '3' * '2'];
+      console.log(JSON.stringify(results));
+    codeLang: js
+    options:
+      - text: '`["","[object Object]","12",2,6]`'
+        correct: true
+        why: '`+` при объектах приводит их к строкам: `[]` → `""`, `{}` → `"[object Object]"`. Если хоть один операнд строка, `+` склеивает. Минус и умножение работают только с числами и приводят строки к числам.'
+      - text: '`[0,"[object Object]",3,2,6]`'
+        why: 'Пустые массивы не превращаются в 0 при сложении: `+` сначала приводит их к примитивам, а это пустые строки.'
+      - text: '`["","[object Object]","12","2","6"]`'
+        why: 'Склеивает строки только `+`. Операторы `-` и `*` всегда приводят операнды к числам и дают число.'
+      - text: '`["",NaN,"12",2,6]`'
+        why: '`{}` в выражении `[] + {}` — объект, и он приводится к строке `"[object Object]"`, а не к `NaN`.'
+    explanation: |
+      Бинарный `+` сначала приводит оба операнда к примитивам (через `valueOf`/`toString`). Если хотя бы один
+      результат — строка, выполняется конкатенация, иначе сложение чисел. У массива `toString` объединяет
+      элементы через запятую (пустой даёт `""`), у обычного объекта — `"[object Object]"`. Остальные
+      арифметические операторы (`-`, `*`, `/`, `%`) всегда приводят к числу. Отсюда классика `'3' - 1 === 2`, но
+      `'3' + 1 === '31'`. В реальном коде такие приведения прячут баги, поэтому явное `Number()` лучше.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Addition
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Data_structures#type_coercion
+    source: own
+
+  - id: javascript-types-004
+    level: senior
+    tags: [null, comparison, equality, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      console.log(null == 0, null >= 0, null > 0);
+    codeLang: js
+    options:
+      - text: '`false false false`'
+        why: 'Операторы сравнения `>=` и `>` приводят `null` к числу, а `==` — нет. Поэтому результаты расходятся.'
+      - text: '`true true false`'
+        why: '`null == 0` — `false`: по правилам нестрогого равенства `null` равен только `undefined` и самому себе.'
+      - text: '`false true false`'
+        correct: true
+        why: '`==` не приводит `null` к числу и сравнивает его только с `null`/`undefined`. А `>=` и `>` приводят `null` к `0`, поэтому `0 >= 0` — истина, а `0 > 0` — ложь.'
+      - text: '`false false true`'
+        why: '`null > 0` после приведения — это `0 > 0`, то есть `false`.'
+    explanation: |
+      Нестрогое равенство и операторы сравнения — разные алгоритмы. `==` для `null` и `undefined` особый:
+      они равны друг другу и ничему больше, без приведения к числу. Операторы `<`, `>`, `<=`, `>=` приводят
+      операнды к числам, и `null` превращается в `0`. Получается парадокс: `null` не равен нулю, но «больше или
+      равен» ему. С `undefined` иначе: он приводится к `NaN`, и все сравнения дают `false`. Вывод — сравнивать
+      `null` и `undefined` строго или явно проверять их до сравнения.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Equality#description
+      - https://javascript.info/comparison#strange-result-null-vs-0
+    source: own
+
+  - id: javascript-types-005
+    level: senior
+    tags: [nan, includes, indexOf, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const values = [NaN];
+      console.log(NaN === NaN, values.indexOf(NaN), values.includes(NaN), Object.is(NaN, NaN));
+    codeLang: js
+    options:
+      - text: '`false -1 true true`'
+        correct: true
+        why: '`NaN` не равен даже себе при `===`, а `indexOf` ищет именно через `===`. `includes` и `Object.is` используют алгоритм SameValueZero и SameValue, где `NaN` равен `NaN`.'
+      - text: '`false -1 false true`'
+        why: '`includes` специально использует SameValueZero, в котором `NaN` считается равным `NaN`.'
+      - text: '`false 0 true true`'
+        why: '`indexOf` сравнивает через `===`, а `NaN === NaN` — ложь. Элемент не найдётся.'
+      - text: '`true 0 true true`'
+        why: 'По стандарту IEEE 754 `NaN` не равен ничему, включая себя, поэтому `NaN === NaN` — `false`.'
+    explanation: |
+      В JavaScript четыре алгоритма равенства. `==` — с приведением типов. `===` (Strict Equality) — без
+      приведения, но `NaN !== NaN` и `0 === -0`. `Object.is` (SameValue) — как `===`, только `NaN` равен `NaN`, а
+      `0` и `-0` различаются. SameValueZero — как `Object.is`, но `0` равен `-0`; его используют `includes`,
+      `Map`, `Set`. Поэтому `[NaN].indexOf(NaN) === -1`, но `[NaN].includes(NaN) === true`. Проверить значение на
+      `NaN` правильно через `Number.isNaN(x)`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Equality_comparisons_and_sameness
+    source: own
+
+  - id: javascript-types-006
+    level: middle
+    tags: [falsy, bigint]
+    question: |
+      Какое из значений ложно (falsy)?
+    options:
+      - text: '`"0"`'
+        why: 'Непустая строка всегда истинна, даже если в ней ноль или пробел.'
+      - text: '`[]`'
+        why: 'Любой объект, включая пустой массив, истинен в логическом контексте.'
+      - text: '`0n`'
+        correct: true
+        why: '`0n` — ноль типа BigInt. Как и числовой `0`, он входит в список ложных значений.'
+      - text: '`new Boolean(false)`'
+        why: 'Это объект-обёртка, а любой объект истинен. `if (new Boolean(false))` выполнит ветку.'
+    explanation: |
+      Ложных значений ровно восемь: `false`, `0`, `-0`, `0n`, `""`, `null`, `undefined`, `NaN` (плюс
+      специальный `document.all` в браузере). Всё остальное истинно, включая пустые массивы и объекты, строки
+      `"0"` и `"false"`, объекты-обёртки. Ловушки на практике: `if (items.length)` работает, а `if (items)` для
+      пустого массива — нет; `if (count)` ложно при нуле, и правильнее писать `count !== undefined` или
+      использовать `??`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Glossary/Falsy
+    source: own
+
+  - id: javascript-types-007
+    level: senior
+    tags: [loose-equality, coercion, output]
+    question: |
+      Какое из сравнений вернёт `false`?
+    options:
+      - text: '`[] == false`'
+        why: 'Это `true`: `false` приводится к `0`, массив — к примитиву `""`, а затем к `0`.'
+      - text: '`"0" == false`'
+        why: 'Это `true`: обе стороны приводятся к числу, `0 == 0`.'
+      - text: '`null == false`'
+        correct: true
+        why: '`null` при `==` равен только `undefined` и самому себе. К числу он не приводится, поэтому с `false` не равен.'
+      - text: '`[0] == false`'
+        why: 'Это `true`: `[0]` → `"0"` → `0`, `false` → `0`.'
+    explanation: |
+      Алгоритм `==` по шагам: одинаковые типы сравниваются строго; `null` и `undefined` равны только друг
+      другу; boolean сначала превращается в число; строка с числом сравнивается как числа; объект с
+      примитивом — через приведение объекта к примитиву. Поэтому `[] == false` истинно, хотя `[]` в `if`
+      истинен: равенство и логический контекст — разные правила. Именно из-за таких сюрпризов в
+      большинстве стайлгайдов `==` запрещён. Единственное популярное исключение — `value == null` как
+      краткая проверка на `null` или `undefined`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Equality#description
+    source: own
+
+  - id: javascript-types-008
+    level: junior
+    tags: [nullish-coalescing, or, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const count = 0;
+      const title = '';
+      console.log(count || 10, count ?? 10, title || 'Без имени', title ?? 'Без имени');
+    codeLang: js
+    options:
+      - text: '`10 10 Без имени Без имени`'
+        why: '`??` подставляет значение только для `null` и `undefined`. Ноль и пустая строка через него проходят.'
+      - text: '`0 0 Без имени Без имени`'
+        why: '`||` реагирует на любое ложное значение, и ноль ложен. Поэтому `count || 10` даёт 10.'
+      - text: '`10 0 Без имени` и пустая строка'
+        correct: true
+        why: '`||` заменяет любое ложное значение (0, `""`), а `??` — только `null` и `undefined`. Поэтому `count ?? 10` — 0, а `title ?? ...` — пустая строка.'
+      - text: '`0 10` и две пустые строки'
+        why: 'Ровно наоборот: на ложный ноль реагирует `||`, а `??` его пропускает.'
+    explanation: |
+      `a || b` возвращает `b`, если `a` ложно, — в том числе при `0`, `""`, `false`, `NaN`. Для значений по
+      умолчанию это часто ошибка: количество товаров 0 превращается в 10, пустой заголовок — в «Без имени»,
+      хотя пользователь сознательно его очистил. `a ?? b` (nullish coalescing) срабатывает только для `null` и
+      `undefined`. Есть и присваивающие формы: `x ||= 1`, `x ??= 1`. Смешивать `??` с `||` или `&&` без скобок
+      запрещено синтаксически.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing
+    source: own
+
+  - id: javascript-types-009
+    level: middle
+    tags: [object-is, negative-zero, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      console.log(0 === -0, Object.is(0, -0), 1 / -0);
+    codeLang: js
+    options:
+      - text: '`true false -Infinity`'
+        correct: true
+        why: '`===` не различает нули разного знака, а `Object.is` различает. Знак нуля проявляется при делении: `1 / -0` — минус бесконечность.'
+      - text: '`true true Infinity`'
+        why: '`Object.is` намеренно различает `0` и `-0`, и деление на `-0` даёт отрицательную бесконечность.'
+      - text: '`false false -Infinity`'
+        why: '`0 === -0` — `true`: строгое равенство считает нули одинаковыми.'
+      - text: '`true false NaN`'
+        why: '`NaN` получается при `0 / 0`. Деление ненулевого числа на ноль даёт бесконечность со знаком.'
+    explanation: |
+      По IEEE 754 существуют `+0` и `-0`. Почти везде они ведут себя одинаково: `===`, `==`, `includes`, ключи
+      `Map` и `Set` их не различают. Разница видна при делении (`1 / -0 === -Infinity`), в `Math.atan2` и в
+      `Object.is`. `-0` появляется, например, при `Math.round(-0.4)` или `-1 * 0`. Это редко важно в обычном
+      коде, но объясняет, зачем существует `Object.is`, — его используют и в React, когда сравнивают
+      состояние и зависимости хуков.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is
+    source: own
+
+  - id: javascript-types-010
+    level: senior
+    tags: [number, precision, bigint, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      console.log(9007199254740992 === 9007199254740993, 2n ** 53n + 1n);
+    codeLang: js
+    options:
+      - text: '`false 9007199254740993n`'
+        why: 'Числа больше `Number.MAX_SAFE_INTEGER` (2^53 − 1) теряют точность: 9007199254740993 невозможно представить, и литерал округляется до соседнего.'
+      - text: '`true 9007199254740993n`'
+        correct: true
+        why: 'Оба литерала превращаются в одно и то же число 2^53, поэтому равны. `BigInt` хранит целые произвольной длины и считает точно.'
+      - text: '`true 9007199254740992n`'
+        why: '`BigInt` не теряет точность на больших значениях: 2^53 + 1 в нём вычисляется ровно.'
+      - text: '`false`, затем `TypeError`'
+        why: 'Операции между значениями `BigInt` разрешены. Ошибка была бы при смешивании `BigInt` и `number`, например `2n + 1`.'
+    explanation: |
+      У `number` 53 бита мантиссы, поэтому все целые до 2^53 − 1 (`Number.MAX_SAFE_INTEGER`) представимы точно,
+      а дальше — с пропусками: между 2^53 и 2^54 доступны только чётные числа. Литерал 9007199254740993
+      округляется до 9007199254740992. На практике это бьёт по большим идентификаторам из базы (например,
+      64-битным id Twitter): после `JSON.parse` они молча портятся, поэтому такие id передают строками. Для
+      точной целочисленной арифметики есть `BigInt` (`123n`), но смешивать его с `number` в одной операции нельзя.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt
+    source: own
+
+  - id: javascript-types-011
+    level: senior
+    tags: [parseInt, number, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      console.log(parseInt('12px'), Number('12px'), parseInt(0.0000005));
+    codeLang: js
+    options:
+      - text: '`12 NaN 0`'
+        why: '`parseInt` сначала превращает аргумент в строку, а `0.0000005` в строковом виде — `"5e-7"`.'
+      - text: '`12 12 5`'
+        why: '`Number` требует, чтобы вся строка была числом. Суффикс `px` делает результат `NaN`.'
+      - text: '`12 NaN 5`'
+        correct: true
+        why: '`parseInt` читает цифры с начала строки, пока может. `Number` разбирает строку целиком. А `0.0000005` превращается в строку `"5e-7"`, и `parseInt` читает из неё 5.'
+      - text: '`NaN NaN 0`'
+        why: '`parseInt` останавливается на первом недопустимом символе и возвращает прочитанное. `"12px"` даёт 12.'
+    explanation: |
+      `parseInt(string, radix)` приводит аргумент к строке и читает целое число с начала, игнорируя хвост.
+      `Number(value)` преобразует значение целиком: пробелы по краям допустимы, любые другие символы дают
+      `NaN`. Маленькие и большие числа превращаются в строку в экспоненциальной записи, отсюда фокус
+      `parseInt(0.0000005) === 5`. Правила: для разбора строк с единицами — `parseFloat` или `parseInt` с явным
+      основанием `10`; для строгой проверки — `Number`; для округления чисел — `Math.trunc`, а не `parseInt`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/parseInt#description
+    source: own
+
+  - id: javascript-types-012
+    level: junior
+    tags: [reference, primitive, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      let a = 1;
+      let b = a;
+      b = 2;
+
+      const user = { name: 'Аня' };
+      const copy = user;
+      copy.name = 'Боря';
+
+      console.log(a, user.name);
+    codeLang: js
+    options:
+      - text: '`1 Аня`'
+        why: 'Переменная `copy` хранит ссылку на тот же объект, что и `user`. Изменение через `copy` видно через `user`.'
+      - text: '`2 Боря`'
+        why: 'Примитивы копируются по значению: `b` получил копию единицы, и её изменение не трогает `a`.'
+      - text: '`1 Боря`'
+        correct: true
+        why: 'Примитив скопирован по значению, поэтому `a` осталась 1. Объект же не копируется: обе переменные ссылаются на один объект.'
+      - text: '`2 Аня`'
+        why: 'Ровно наоборот: независимой оказалась копия числа, а объект общий.'
+    explanation: |
+      Примитивы (числа, строки, boolean, `null`, `undefined`, symbol, bigint) хранятся и передаются по значению:
+      присваивание копирует само значение. Объекты (включая массивы и функции) передаются по ссылке: переменная
+      хранит ссылку, и присваивание копирует ссылку, а не объект. Поэтому изменение через одну переменную видно
+      через другую. Отсюда необходимость явных копий (`{ ...obj }`, `structuredClone`) и принцип
+      иммутабельности в React и Redux: чтобы увидеть изменение, нужен новый объект, а не мутация старого.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Glossary/Primitive
+    source: own
+
+  - id: javascript-types-013
+    level: senior
+    tags: [to-primitive, valueOf, toString, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const price = {
+        valueOf() {
+          return 42;
+        },
+        toString() {
+          return 'сорок два';
+        },
+      };
+
+      console.log(price + 1, `${price}`, String(price));
+    codeLang: js
+    options:
+      - text: '`43 42 42`'
+        why: 'Шаблонная строка и `String()` просят строку, поэтому сначала вызывают `toString`, а не `valueOf`.'
+      - text: '`43 сорок два сорок два`'
+        correct: true
+        why: 'Бинарный `+` приводит объект с подсказкой «default», и обычный объект сначала пробует `valueOf`. Строковый контекст использует подсказку «string» и вызывает `toString` первым.'
+      - text: '`сорок два1 сорок два сорок два`'
+        why: 'Для `+` объект приводится с подсказкой «default», а для обычных объектов она работает как «number»: первым вызывается `valueOf`.'
+      - text: '`[object Object]1 сорок два сорок два`'
+        why: 'Методы `valueOf` и `toString` переопределены, поэтому стандартное `[object Object]` не появится.'
+    explanation: |
+      Объект приводится к примитиву алгоритмом ToPrimitive с подсказкой (hint): `"string"` (шаблонные строки,
+      `String()`, ключи объектов), `"number"` (математика, сравнения) или `"default"` (бинарный `+`, `==`). При
+      `"string"` сначала вызывается `toString`, иначе — `valueOf`. Если объект определяет
+      `[Symbol.toPrimitive](hint)`, он полностью управляет процессом. Исключение из правила «default как number» —
+      `Date`: для него default работает как string, поэтому `date + 1` склеивает строку.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toPrimitive
+      - https://javascript.info/object-toprimitive
+    source: own

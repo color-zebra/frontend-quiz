@@ -1,0 +1,227 @@
+# yaml-language-server: $schema=../../schema.json
+topic: nextjs
+subtopic: pages
+questions:
+  - id: nextjs-pages-001
+    level: junior
+    tags: [pages-router, getServerSideProps]
+    question: |
+      Когда выполняется `getServerSideProps` в Pages Router?
+    options:
+      - text: 'На сервере при каждом запросе к странице'
+        correct: true
+        why: 'Функция выполняется на сервере для каждого запроса, и её результат передаётся пропсами в компонент страницы. Это серверный рендеринг (SSR).'
+      - text: 'Один раз при сборке проекта'
+        why: 'При сборке выполняется `getStaticProps`. `getServerSideProps` нужен для данных, зависящих от запроса.'
+      - text: 'В браузере после гидратации страницы'
+        why: 'В браузере функция не выполняется вовсе: её код вырезается из клиентского бандла.'
+      - text: 'В браузере при каждом клиентском переходе'
+        why: 'При клиентском переходе браузер запрашивает у сервера результат функции в виде JSON, но выполняется она по-прежнему на сервере.'
+    explanation: |
+      В Pages Router способ получения данных задаётся экспортом из файла страницы. `getStaticProps` — при
+      сборке (SSG, с `revalidate` — ISR). `getServerSideProps` — на каждый запрос (SSR), с доступом к `req`,
+      `res`, cookie и параметрам запроса. Без этих функций страница пререндерится как статическая, а данные
+      загружают на клиенте. В App Router вместо этого серверные компоненты сами загружают данные, а режим
+      определяется использованием runtime API и кэшем.
+    links:
+      - https://nextjs.org/docs/pages/building-your-application/data-fetching/get-server-side-props
+    source: own
+
+  - id: nextjs-pages-002
+    level: junior
+    tags: [pages-router, routing]
+    question: |
+      По какому адресу откроется страница `pages/blog/index.tsx`?
+    options:
+      - text: '`/blog`'
+        correct: true
+        why: 'В Pages Router файл `index` соответствует корню своей папки: `pages/index.tsx` — `/`, `pages/blog/index.tsx` — `/blog`.'
+      - text: '`/blog/index`'
+        why: 'Имя `index` в адрес не попадает: оно обозначает корень папки.'
+      - text: '`/blog/` только со слешем на конце'
+        why: 'По умолчанию Next.js убирает завершающий слеш и перенаправляет на `/blog`.'
+      - text: 'Ни по какому, нужна папка `page`'
+        why: 'Файлы `page` — соглашение App Router. В Pages Router маршрутом становится каждый файл в `pages`.'
+    explanation: |
+      В Pages Router маршрутом становится любой файл в папке `pages`: `pages/about.tsx` — `/about`,
+      `pages/blog/[slug].tsx` — динамический `/blog/:slug`, `pages/docs/[...slug].tsx` — catch-all. Отсюда
+      ограничение: рядом со страницами нельзя хранить компоненты и тесты, иначе они станут маршрутами. App
+      Router сменил подход: маршрут создаёт только специальный файл `page`, а остальное можно класть рядом.
+    links:
+      - https://nextjs.org/docs/pages/building-your-application/routing/pages-and-layouts
+    source: own
+
+  - id: nextjs-pages-003
+    level: middle
+    tags: [getStaticProps, client-navigation, json]
+    question: |
+      Страница пререндерена через `getStaticProps`. Пользователь переходит на неё по `next/link`. Что запросит
+      браузер?
+    options:
+      - text: 'JSON с пропсами страницы, созданный при сборке'
+        correct: true
+        why: 'При генерации страницы Next.js создаёт рядом с HTML файл JSON с результатом `getStaticProps`. При клиентском переходе браузер берёт этот JSON и рендерит страницу сам, а `getStaticProps` не вызывается.'
+      - text: 'Полный HTML страницы с перезагрузкой'
+        why: 'Клиентский переход не перезагружает страницу: нужны только пропсы, а код страницы у клиента уже есть или догружается.'
+      - text: 'Новый вызов `getStaticProps` на сервере'
+        why: 'Результат уже посчитан при сборке или регенерации. Клиентский переход использует готовый JSON.'
+      - text: 'Ничего: пропсы встроены в бандл страницы'
+        why: 'Данные страницы не входят в JavaScript-бандл: они передаются отдельно, чтобы их можно было обновлять без пересборки кода.'
+    explanation: |
+      Статическая генерация в Pages Router создаёт для каждой страницы два артефакта: HTML для первого визита
+      и поисковиков, JSON для клиентских переходов. Оба можно раздавать с CDN. Для `getServerSideProps`
+      устроено похоже, но JSON генерируется на сервере при каждом переходе. Отсюда известный эффект Pages
+      Router: даже клиентский переход на SSR-страницу ждёт ответа сервера.
+    links:
+      - https://nextjs.org/docs/pages/building-your-application/data-fetching/get-static-props
+    source: own
+
+  - id: nextjs-pages-004
+    level: middle
+    tags: [getStaticPaths, fallback]
+    question: |
+      `getStaticPaths` вернул пути `a` и `b` с `fallback: 'blocking'`. Что получит первый посетитель
+      `/posts/c`?
+    options:
+      - text: 'Отрендеренную по запросу страницу без заглушки'
+        correct: true
+        why: 'С `blocking` новые пути рендерятся при первом запросе, как SSR: пользователь ждёт готовый HTML без промежуточной заглушки. Затем путь попадает в список пререндеренных и раздаётся как статический.'
+      - text: 'Страницу 404, ведь пути `c` не было в списке'
+        why: '404 для неизвестных путей даёт `fallback: false`.'
+      - text: 'Сначала заглушку загрузки, а затем данные'
+        why: 'Так работает `fallback: true`: сначала отдаётся заглушка, `router.isFallback` равен `true`, а данные догружаются.'
+      - text: 'Ошибку сборки: путь `c` не был объявлен'
+        why: 'Ошибки при сборке нет: режим `fallback` и нужен для путей, которых не было в списке.'
+    explanation: |
+      `fallback` в `getStaticPaths` решает судьбу путей, не сгенерированных при сборке. `false` — 404. `true`
+      — сразу отдаётся заглушка, а страница генерируется в фоне и подставляется (поисковики и клиентские
+      переходы получают поведение `blocking`). `'blocking'` — первый запрос ждёт серверный рендер, дальше
+      страница статическая. В App Router эту роль играет `dynamicParams` вместе с `generateStaticParams`.
+    links:
+      - https://nextjs.org/docs/pages/api-reference/functions/get-static-paths#fallback-blocking
+    source: own
+
+  - id: nextjs-pages-005
+    level: junior
+    tags: [getServerSideProps, server-code]
+    question: |
+      Можно ли в `getServerSideProps` напрямую обращаться к базе данных и использовать секретные ключи?
+    options:
+      - text: 'Да: функция выполняется только на сервере и не попадает в бандл'
+        correct: true
+        why: 'Next.js вырезает `getServerSideProps`, `getStaticProps` и используемые только в них импорты из клиентского бандла. Поэтому секреты и клиент базы данных до браузера не дойдут.'
+      - text: 'Нет: код страницы целиком отправляется в браузер'
+        why: 'В браузер уходит только компонент страницы и его зависимости. Функции загрузки данных из бандла удаляются.'
+      - text: 'Только через API Route, вызванный из этой функции'
+        why: 'Вызывать собственный API Route из `getServerSideProps` — лишний сетевой запрос. Документация советует обращаться к данным напрямую.'
+      - text: 'Да, но только если страница использует `"use server"`'
+        why: 'Директива `"use server"` относится к серверным функциям App Router. В Pages Router серверным код делает само место его вызова.'
+    explanation: |
+      Функции загрузки данных в Pages Router — серверный код, живущий в файле страницы. Next.js анализирует
+      импорты и удаляет из клиентской сборки то, что используется только в них. Ограничение: всё, что функция
+      возвращает в `props`, сериализуется в JSON и попадает в HTML страницы (`__NEXT_DATA__`). Поэтому в
+      пропсы нельзя класть лишнее и секретное: всё это увидит пользователь в исходном коде страницы.
+    links:
+      - https://nextjs.org/docs/pages/building-your-application/data-fetching/get-server-side-props
+    source: own
+
+  - id: nextjs-pages-006
+    level: middle
+    tags: [_app, _document, global-css]
+    question: |
+      Где в Pages Router подключают глобальные стили и общие провайдеры для всех страниц?
+    options:
+      - text: 'В `pages/_app.tsx`'
+        correct: true
+        why: '`_app` оборачивает каждую страницу: в нём импортируют глобальный CSS, подключают провайдеры и общий layout, и он сохраняется при переходах между страницами.'
+      - text: 'В `pages/_document.tsx`'
+        why: '`_document` рендерится только на сервере и задаёт разметку `<html>` и `<body>`. В нём нет интерактивности, и провайдеры там не работают.'
+      - text: 'В `next.config.js`'
+        why: 'Конфигурация управляет сборкой и сервером, а не содержимым страниц.'
+      - text: 'В каждом файле страницы отдельно'
+        why: 'Глобальный CSS в Pages Router можно импортировать только в `_app`, а провайдеры в каждой странице пересоздавались бы при переходе.'
+    explanation: |
+      В Pages Router два специальных файла. `_app` — корневой компонент приложения: он получает `Component` и
+      `pageProps`, живёт между переходами, в нём подключают глобальные стили, провайдеры, общий layout.
+      `_document` — шаблон HTML-документа, который рендерится только на сервере: атрибут `lang`, шрифты в
+      `<Head>`, атрибуты `<body>`.
+    links:
+      - https://nextjs.org/docs/pages/building-your-application/routing/custom-app
+      - https://nextjs.org/docs/pages/building-your-application/routing/custom-document
+    source: own
+
+  - id: nextjs-pages-007
+    level: middle
+    tags: [getServerSideProps, components, data-fetching]
+    question: |
+      Компонент `Header` (не страница) экспортирует `getServerSideProps`, чтобы загрузить меню. Что
+      произойдёт?
+    options:
+      - text: 'Функция не вызовется, она работает только в страницах'
+        correct: true
+        why: 'Next.js вызывает функции загрузки данных только для страниц в папке `pages`. В обычных компонентах они просто экспортированы и никем не используются.'
+      - text: 'Next.js вызовет её при рендере каждой страницы с `Header`'
+        why: 'Next.js не ищет такие экспорты в дереве компонентов: он смотрит только на модуль страницы.'
+      - text: 'Сборка упадёт с ошибкой'
+        why: 'Ошибки не будет: экспорт с таким именем в обычном модуле допустим, просто бесполезен.'
+      - text: 'Функция выполнится в браузере при монтировании'
+        why: 'В браузере `getServerSideProps` никогда не выполняется, даже в странице.'
+    explanation: |
+      В Pages Router данные загружает только страница, а дальше раздаёт их пропсами вниз по дереву. Для общих
+      данных, например меню в шапке, есть варианты: загружать их в каждой странице и передавать в layout,
+      загружать на клиенте (SWR, React Query) или переходить на App Router, где каждый серверный компонент
+      может загружать свои данные сам. Это одно из главных ограничений Pages Router, которое App Router
+      снимает.
+    links:
+      - https://nextjs.org/docs/pages/building-your-application/routing/pages-and-layouts#data-fetching
+    source: own
+
+  - id: nextjs-pages-008
+    level: junior
+    tags: [api-routes, pages-router]
+    question: |
+      Как в Pages Router создать эндпоинт `/api/hello`?
+    options:
+      - text: 'Файл `pages/api/hello.ts` с обработчиком по умолчанию'
+        correct: true
+        why: 'Файлы в `pages/api` становятся API Routes: обработчик получает объекты запроса и ответа в стиле Node.js, а метод проверяют через `req.method`.'
+      - text: 'Файл `pages/hello.api.ts` с обработчиком'
+        why: 'Суффикс `.api` ничего не значит. API Routes определяет расположение в папке `pages/api`.'
+      - text: 'Функция `getServerSideProps` в `pages/api/hello.ts`'
+        why: '`getServerSideProps` нужна страницам для пропсов, а не эндпоинтам с произвольным ответом.'
+      - text: 'Файл `api/hello.ts` в корне проекта'
+        why: 'Next.js не рассматривает папку `api` в корне как маршруты. Нужен путь `pages/api`.'
+    explanation: |
+      API Routes в Pages Router — серверные обработчики в папке `pages/api`. Обработчик один на файл и сам
+      ветвится по `req.method`. Ответы формируются через `res.status(200).json(data)`. В App Router им
+      соответствуют Route Handlers. Обе системы могут сосуществовать в одном проекте при постепенной миграции.
+    links:
+      - https://nextjs.org/docs/pages/building-your-application/routing/api-routes
+    source: own
+
+  - id: nextjs-pages-009
+    level: senior
+    tags: [getInitialProps, _app, automatic-static-optimization]
+    question: |
+      В `pages/_app.tsx` добавили `App.getInitialProps`, чтобы загружать данные пользователя. Что станет со
+      страницами без `getStaticProps`, которые раньше были статическими?
+    options:
+      - text: 'Они перестанут пререндериться и будут рендериться на каждый запрос'
+        correct: true
+        why: '`getInitialProps` в `_app` отключает автоматическую статическую оптимизацию для страниц без `getStaticProps`: Next.js должен вызывать его при каждом запросе, поэтому статикой такие страницы быть не могут.'
+      - text: 'Ничего: `getInitialProps` выполняется только в браузере'
+        why: 'При первом запросе `getInitialProps` выполняется на сервере. Именно поэтому страницы приходится рендерить по запросу.'
+      - text: 'Они станут статическими с данными пользователя, полученными при сборке'
+        why: 'Данные пользователя при сборке неизвестны. Next.js вынужден вызывать `getInitialProps` на каждый запрос.'
+      - text: 'Сборка упадёт: `getInitialProps` удалён из Next.js'
+        why: '`getInitialProps` по-прежнему поддерживается, но документация советует по возможности избегать его в `_app`.'
+    explanation: |
+      Автоматическая статическая оптимизация (Automatic Static Optimization) делает статическими страницы без
+      блокирующих функций загрузки данных. Глобальный `getInitialProps` в `_app` ломает её для всего
+      приложения: каждую такую страницу приходится рендерить на сервере, растут задержка и нагрузка.
+      Документация прямо рекомендует убирать его из `_app`, а данные загружать на уровне страниц
+      (`getStaticProps`, `getServerSideProps`) или на клиенте.
+    links:
+      - https://nextjs.org/docs/pages/building-your-application/rendering/automatic-static-optimization
+      - https://nextjs.org/docs/pages/building-your-application/routing/custom-app
+    source: own

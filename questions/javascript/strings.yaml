@@ -1,0 +1,127 @@
+# yaml-language-server: $schema=../../schema.json
+topic: javascript
+subtopic: strings
+questions:
+  - id: javascript-strings-001
+    level: junior
+    tags: [immutability, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      let word = 'кот';
+      word[0] = 'К';
+      console.log(word, word.toUpperCase(), word);
+    codeLang: js
+    options:
+      - text: '`Кот КОТ Кот`'
+        why: 'Строки неизменяемы: присваивание по индексу молча игнорируется (в строгом режиме — `TypeError`).'
+      - text: '`кот КОТ кот`'
+        correct: true
+        why: 'Строку нельзя изменить по месту, поэтому `word[0] = ...` ничего не делает. Методы вроде `toUpperCase` возвращают новую строку, исходная остаётся прежней.'
+      - text: '`кот КОТ КОТ`'
+        why: '`toUpperCase` не меняет исходную строку, а возвращает новую. Третий вывод — та же исходная строка.'
+      - text: '`TypeError` на строке `word[0] = "К"`'
+        why: 'В нестрогом режиме запись по индексу строки молча игнорируется. Ошибку бросил бы только строгий режим.'
+    explanation: |
+      Строки в JavaScript — неизменяемые примитивы. Все строковые методы (`toUpperCase`, `replace`, `slice`,
+      `trim`) возвращают новую строку, а исходная не меняется. Поэтому результат нужно присвоить:
+      `word = word.toUpperCase()`. Чтобы заменить символ, собирают новую строку: `'К' + word.slice(1)`.
+      Неизменяемость делает строки безопасными для передачи куда угодно: никто не испортит строку, которую вы
+      отдали в функцию.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String#character_access
+    source: own
+
+  - id: javascript-strings-002
+    level: middle
+    tags: [unicode, length, surrogate-pairs, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const emoji = '😀';
+      console.log(emoji.length, [...emoji].length, emoji.split('').length);
+    codeLang: js
+    options:
+      - text: '`1 1 1`'
+        why: '`length` считает не символы, а единицы UTF-16. Эмодзи вне базовой плоскости занимает две такие единицы.'
+      - text: '`2 1 2`'
+        correct: true
+        why: 'Эмодзи кодируется суррогатной парой из двух единиц UTF-16. `length` и `split("")` работают с единицами, а spread идёт по кодовым точкам и даёт один символ.'
+      - text: '`2 2 2`'
+        why: 'Строковый итератор, который использует spread, идёт по кодовым точкам Unicode и не разбивает суррогатную пару.'
+      - text: '`4 1 4`'
+        why: '4 — это размер эмодзи в байтах UTF-8. JavaScript хранит строки в UTF-16, где этот символ занимает две единицы.'
+    explanation: |
+      Строки в JavaScript — последовательности 16-битных единиц UTF-16. Символы за пределами базовой плоскости
+      Unicode (многие эмодзи, редкие иероглифы) кодируются суррогатной парой и дают `length === 2`. `split('')`,
+      `charAt` и индексы работают с единицами и могут разрезать пару пополам, а `for...of`, spread и
+      `Array.from` идут по кодовым точкам. Но и это не «буквы»: эмодзи-флаги и семьи состоят из нескольких кодовых
+      точек. Пользовательские символы (графемы) правильно считать через `Intl.Segmenter`. Это важно для
+      ограничения длины ввода и обрезки текста.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String#utf-16_characters_unicode_code_points_and_grapheme_clusters
+    source: own
+
+  - id: javascript-strings-003
+    level: senior
+    tags: [regex, global-flag, lastIndex, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const hasDigit = /\d/g;
+      console.log(hasDigit.test('a1'), hasDigit.test('a1'), hasDigit.test('a1'));
+    codeLang: js
+    options:
+      - text: '`true true true`'
+        why: 'С флагом `g` регулярное выражение запоминает `lastIndex`, и следующий `test` ищет с этой позиции, а не с начала строки.'
+      - text: '`true false true`'
+        correct: true
+        why: 'Первый `test` нашёл цифру и записал `lastIndex = 2`. Второй ищет с позиции 2, не находит и сбрасывает `lastIndex` в 0. Третий снова ищет с начала.'
+      - text: '`true false false`'
+        why: 'После неудачного поиска `lastIndex` сбрасывается в 0, поэтому третий вызов снова найдёт цифру.'
+      - text: '`false false false`'
+        why: 'В строке `"a1"` есть цифра, первый поиск её находит.'
+    explanation: |
+      Регулярное выражение с флагами `g` или `y` — объект с состоянием: свойство `lastIndex` хранит позицию, с
+      которой начнётся следующий поиск в `test` и `exec`. После успеха оно указывает за найденное, после
+      неудачи сбрасывается в 0. Если такое выражение хранится в константе и переиспользуется для проверки
+      разных строк, результаты начинают «мигать». Для проверок флаг `g` не нужен: `/\d/.test(str)`. Для
+      поиска всех совпадений — `str.match(re)`: с флагом `g` он сам начинает с начала строки. А `str.matchAll(re)`
+      стартует с текущего `re.lastIndex`, поэтому выражение для него лучше создавать на месте.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/test#using_test_on_a_regex_with_the_global_flag
+    source: own
+
+  - id: javascript-strings-004
+    level: middle
+    tags: [sort, localeCompare, intl, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const words = ['ёж', 'еж', 'яблоко', 'Арбуз'];
+      console.log(
+        [...words].sort(),
+        [...words].sort((a, b) => a.localeCompare(b, 'ru')),
+      );
+    codeLang: js
+    options:
+      - text: '`[ "Арбуз", "еж", "ёж", "яблоко" ]` в обоих случаях'
+        why: 'Сортировка по умолчанию сравнивает коды UTF-16, а у `ё` код больше, чем у `я`. Поэтому `ёж` уйдёт в конец.'
+      - text: '`[ "Арбуз", "еж", "яблоко", "ёж" ]` и `[ "Арбуз", "еж", "ёж", "яблоко" ]`'
+        correct: true
+        why: 'Без компаратора строки сравниваются по кодам UTF-16: `ё` (U+0451) идёт после `я` (U+044F). `localeCompare` с локалью `ru` учитывает правила алфавита и ставит `ёж` рядом с `еж`.'
+      - text: '`[ "еж", "ёж", "яблоко", "Арбуз" ]` и `[ "Арбуз", "еж", "ёж", "яблоко" ]`'
+        why: 'Заглавная `А` по коду меньше любой строчной кириллической буквы, поэтому при сортировке по кодам `Арбуз` идёт первым.'
+      - text: '`[ "Арбуз", "ёж", "еж", "яблоко" ]` в обоих случаях'
+        why: 'При сравнении по кодам `ё` оказывается после всех букв от `а` до `я`, а не перед `е`.'
+    explanation: |
+      `sort()` без аргументов и операторы `<`/`>` сравнивают строки по кодам UTF-16. Для английского это
+      почти алфавит, а для других языков — нет: `ё` и прочие буквы вне основного диапазона, заглавные и
+      строчные стоят в разных местах таблицы. `a.localeCompare(b, locale)` и `Intl.Collator` сравнивают по
+      правилам языка, учитывают регистр и диакритику, а с опцией `{ numeric: true }` правильно сортируют
+      «файл2» раньше «файл10». Для больших массивов быстрее заранее создать `new Intl.Collator('ru')` и
+      передать его `compare` в `sort`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/localeCompare
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Collator
+    source: own

@@ -1,0 +1,293 @@
+# yaml-language-server: $schema=../../schema.json
+topic: css
+subtopic: rendering
+questions:
+  - id: css-rendering-001
+    level: middle
+    tags: [layout, paint, composite, pipeline]
+    question: |
+      Какие этапы конвейера отрисовки запустит изменение каждого свойства?
+    code: |
+      el.style.width = '300px';        // 1
+      el.style.color = 'red';          // 2
+      el.style.transform = 'scale(2)'; // 3
+    codeLang: js
+    options:
+      - text: 'Все три запускают полный цикл: layout, paint и composite'
+        why: 'Полный цикл нужен только при изменении геометрии. Цвет не двигает соседей, а transform может обойтись даже без перерисовки.'
+      - text: '1 — layout, paint, composite; 2 — paint и composite; 3 — обычно только composite'
+        correct: true
+        why: 'Ширина меняет геометрию, цвет — только пиксели, а `transform` у слоя на GPU можно применить при композитинге, не перерисовывая содержимое.'
+      - text: '1 — только paint; 2 — только layout; 3 — layout и paint'
+        why: 'Этапы перепутаны: layout отвечает за размеры и позиции, paint — за пиксели, а transform как раз дешевле остальных.'
+      - text: 'Ни одно не запускает отрисовку, пока не вызвать `requestAnimationFrame`'
+        why: 'Браузер сам перерисует страницу в ближайшем кадре. `requestAnimationFrame` лишь позволяет выполнить код перед этим.'
+    explanation: |
+      После изменения стилей браузер проходит этапы: style (пересчёт стилей) → layout (размеры и позиции,
+      reflow) → paint (заливка пикселей по слоям) → composite (сборка слоёв в кадр, часто на GPU). Изменение
+      геометрии (`width`, `top`, `margin`, `font-size`) запускает всё с layout, причём может задеть соседей и
+      предков. Изменение только внешнего вида (`color`, `background`, `box-shadow`) пропускает layout.
+      `transform` и `opacity` у элемента в отдельном слое меняются на этапе composite — поэтому именно их
+      рекомендуют для анимаций.
+    links:
+      - https://web.dev/articles/rendering-performance
+      - https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/How_browsers_work
+    source: own
+
+  - id: css-rendering-002
+    level: middle
+    tags: [animation, transform, performance]
+    question: |
+      Почему для анимации перемещения лучше использовать `transform: translateX()`, а не `left`?
+    options:
+      - text: '`left` не анимируется через `transition`, а `transform` — анимируется'
+        why: '`left` прекрасно анимируется. Дело не в возможности, а в стоимости каждого кадра.'
+      - text: '`transform` обходится без layout и paint — только композитинг'
+        correct: true
+        why: 'Изменение `left` пересчитывает раскладку и перерисовывает элемент 60 раз в секунду. `transform` обрабатывается на этапе композитинга, часто в отдельном потоке.'
+      - text: '`transform` точнее: он поддерживает дробные пиксели, а `left` нет'
+        why: 'Дробные значения поддерживают оба свойства. Разница в том, какие этапы отрисовки запускаются.'
+      - text: '`left` работает только для `position: absolute`, а `transform` — для любых элементов'
+        why: '`left` работает и у relative, fixed, sticky. Главное отличие — производительность, а не применимость.'
+    explanation: |
+      Плавная анимация — это 60 (или больше) кадров в секунду, примерно 16 мс на кадр, включая ваш JS. Если
+      каждый кадр требует layout и paint, браузер не успевает, и анимация дёргается, особенно на слабых
+      телефонах. `transform` и `opacity` у элемента, вынесенного в слой композитора, анимируются без
+      пересчёта раскладки и перерисовки: GPU просто двигает готовую текстуру. CSS-анимации этих свойств
+      могут идти в потоке композитора даже при занятом главном потоке.
+    links:
+      - https://web.dev/articles/animations-guide
+    source: own
+
+  - id: css-rendering-003
+    level: senior
+    tags: [will-change, layers]
+    question: |
+      Какой побочный эффект у `will-change: transform`, кроме вынесения элемента в отдельный слой?
+    options:
+      - text: 'Никакого: это только подсказка оптимизатору'
+        why: 'Подсказка, но с последствиями для раскладки: свойство ведёт себя так, будто `transform` уже задан.'
+      - text: 'Создаёт контекст наложения и содержащий блок'
+        correct: true
+        why: '`will-change` с `transform` вызывает те же побочные эффекты, что и сам `transform`: новый контекст наложения и содержащий блок для fixed и absolute потомков.'
+      - text: 'Элемент перестаёт реагировать на события мыши'
+        why: 'Взаимодействие не меняется. За события отвечает `pointer-events`.'
+      - text: 'Отключаются CSS-переходы у дочерних элементов'
+        why: '`will-change` не влияет на переходы потомков.'
+    explanation: |
+      `will-change` сообщает браузеру, что свойство скоро будет анимироваться, и тот заранее выносит элемент
+      в слой. Но спецификация требует, чтобы `will-change` вызывал те же эффекты, что и ненулевое значение
+      свойства: для `transform` — новый контекст наложения и содержащий блок. Отсюда «внезапные» баги: модалка
+      с `position: fixed` внутри такого блока перестаёт быть привязанной к окну. Кроме того, каждый слой
+      занимает видеопамять, поэтому `will-change` на сотнях элементов вредит. Лучше ставить его перед
+      анимацией и снимать после.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/will-change
+    source: own
+
+  - id: css-rendering-004
+    level: senior
+    tags: [content-visibility, contain]
+    question: |
+      Длинной ленте карточек добавили `content-visibility: auto`. Страница стала быстрее, но полоса прокрутки
+      начала прыгать при скролле. Как это исправить?
+    options:
+      - text: 'Добавить `contain-intrinsic-size` — размер-заглушку карточки'
+        correct: true
+        why: 'Пока карточка вне экрана, браузер не рендерит её содержимое и считает её высоту нулевой. Свойство задаёт размер-заглушку, и высота страницы становится стабильной.'
+      - text: 'Заменить `auto` на `hidden` — так браузер запомнит размеры'
+        why: '`hidden` скрывает содержимое всегда, как `display: none`, но с сохранением состояния. Карточки просто не покажутся.'
+      - text: 'Добавить `overflow: hidden` ленте, чтобы скроллбар не пересчитывался'
+        why: 'Это обрежет контент и создаст контейнер прокрутки, а размеры карточек так и останутся неизвестными.'
+      - text: 'Включить `will-change: scroll-position` у ленты'
+        why: 'Подсказка о прокрутке не сообщает браузеру размеры непоказанного содержимого.'
+    explanation: |
+      `content-visibility: auto` разрешает браузеру пропускать стили, раскладку и отрисовку содержимого
+      элементов вне экрана — огромная экономия для длинных страниц. Но тогда размер элемента без содержимого
+      неизвестен, и он схлопывается до нуля, пока не приблизится к экрану. Высота документа меняется при
+      прокрутке, полоса скролла прыгает. `contain-intrinsic-size: auto 400px` задаёт предполагаемый размер,
+      а ключевое слово `auto` заставляет браузер запомнить реальный размер, когда элемент однажды был
+      отрисован.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/content-visibility
+      - https://web.dev/articles/content-visibility
+    source: own
+
+  - id: css-rendering-005
+    level: junior
+    tags: [display-none, visibility, opacity]
+    question: |
+      Чем `visibility: hidden` отличается от `display: none`?
+    options:
+      - text: '`visibility: hidden` оставляет место под элементом, `display: none` — нет'
+        correct: true
+        why: 'Невидимый элемент продолжает участвовать в раскладке. Элемент с `display: none` удаляется из неё полностью.'
+      - text: '`display: none` скрывает только от скринридеров, а `visibility` — от всех'
+        why: 'Оба способа скрывают и визуально, и от скринридеров.'
+      - text: 'Ничем: это два способа записать одно и то же'
+        why: 'Различие видно сразу: при `visibility: hidden` на месте элемента остаётся пустота.'
+      - text: '`visibility: hidden` элемент по-прежнему ловит клики, а `display: none` — нет'
+        why: 'Скрытый через `visibility` элемент кликов не получает. Ловит клики невидимый элемент с `opacity: 0`.'
+    explanation: |
+      Три способа «спрятать» отличаются последствиями. `display: none` — элемента нет в раскладке, событий и
+      доступности, место освобождается. `visibility: hidden` — место сохраняется, событий и доступности нет,
+      а потомок с `visibility: visible` может «просвечивать». `opacity: 0` — элемент полностью на месте,
+      получает клики и фокус, виден скринридеру; это часто становится багом — невидимая кнопка перекрывает
+      нужную. `visibility` можно анимировать дискретно, поэтому её используют вместе с `opacity` для
+      плавного исчезновения.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/visibility
+    source: own
+
+  - id: css-rendering-006
+    level: senior
+    tags: [transition, display, starting-style]
+    question: |
+      Почему у такого всплывающего окна не работает плавное появление, и как исправить именно появление?
+    code: |
+      .popup { display: none; opacity: 0; transition: opacity .3s; }
+      .popup.open { display: block; opacity: 1; }
+    codeLang: css
+    options:
+      - text: 'Нужно добавить в `transition` свойство `display` с `allow-discrete`'
+        why: 'Это нужно для плавного исчезновения, чтобы `display: none` применился в конце перехода. Для появления этого мало: у элемента нет стиля «до», от которого начинать.'
+      - text: 'Нужен `@starting-style` с начальным `opacity: 0`'
+        correct: true
+        why: 'Переходу не от чего стартовать, потому что до этого элемент не рендерился. `@starting-style` задаёт стили первого кадра появления, и переход идёт от них.'
+      - text: 'Свойство `opacity` нельзя анимировать через `transition`'
+        why: '`opacity` — одно из самых дешёвых и удобных для анимации свойств.'
+      - text: 'Нужно перенести `transition` в правило `.popup.open`'
+        why: 'Место объявления здесь не важно: в момент появления `transition` и так задан. Проблема в том, что у элемента с `display: none` нет стиля «до».'
+    explanation: |
+      Переход анимирует изменение уже вычисленного стиля. Элемент с `display: none` не рендерится и стиля
+      «до» не имеет: в момент появления он сразу получает `opacity: 1`. Раньше это обходили через
+      `visibility`, двойной `requestAnimationFrame` или анимацией через `@keyframes`. Теперь есть `@starting-style { .popup.open { opacity: 0 } }`
+      — стили для первого кадра появления. Для плавного исчезновения нужен ещё `display` в списке переходов
+      с `allow-discrete`: `transition: opacity .3s, display .3s allow-discrete`. Тогда `display: none`
+      применится в конце перехода, а не мгновенно. Так анимируют и `<dialog>`, и popover.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/@starting-style
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/transition-behavior
+    source: own
+
+  - id: css-rendering-007
+    level: middle
+    tags: [font-display, fonts]
+    question: |
+      Что делает `font-display: swap` в `@font-face`?
+    options:
+      - text: 'Сразу показывает текст запасным шрифтом и подменяет его, когда загрузится веб-шрифт'
+        correct: true
+        why: 'Период блокировки почти нулевой, а период подмены бесконечный: текст виден сразу, и шрифт заменится, когда придёт.'
+      - text: 'Прячет текст, пока веб-шрифт не загрузится, но не дольше трёх секунд'
+        why: 'Это примерно поведение `block` и значения по умолчанию `auto` в большинстве браузеров.'
+      - text: 'Подгружает шрифт только для символов, которые есть на странице'
+        why: 'Загрузку частей шрифта регулирует `unicode-range`, а не `font-display`.'
+      - text: 'Меняет местами основной и запасной шрифты в `font-family`'
+        why: 'Порядок шрифтов в `font-family` не меняется. `swap` описывает поведение во время загрузки.'
+    explanation: |
+      Пока веб-шрифт загружается, браузер выбирает между невидимым текстом (FOIT, flash of invisible text) и
+      текстом запасным шрифтом с последующей подменой (FOUT, flash of unstyled text). `font-display`
+      управляет этим: `block` — до ~3 секунд невидимости, `swap` — показать сразу и подменить, `fallback` —
+      короткое ожидание и короткое окно подмены, `optional` — если не успел, остаться на запасном, не дёргая
+      вёрстку. `swap` хорош для читаемости, но подмена шрифта сдвигает текст. Сдвиг уменьшают подстройкой
+      запасного шрифта через `size-adjust`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display
+    source: own
+
+  - id: css-rendering-008
+    level: junior
+    tags: [transition]
+    question: |
+      При наведении цвет кнопки меняется плавно, а когда мышь уходит, цвет возвращается мгновенно. Почему?
+    code: |
+      .btn { background-color: blue; }
+      .btn:hover { background-color: red; transition: background-color .3s; }
+    codeLang: css
+    options:
+      - text: 'Переход объявлен только в `:hover` и при возврате не действует'
+        correct: true
+        why: 'Когда мышь уходит, правило `:hover` перестаёт применяться вместе со своим `transition`, и обратная смена цвета идёт без перехода.'
+      - text: 'Браузеры анимируют только первое изменение свойства, второе всегда резкое'
+        why: 'Переходы срабатывают при каждом изменении свойства, если в этот момент для элемента задан `transition`.'
+      - text: 'Обратный переход нужно отдельно включить свойством `transition-direction`'
+        why: 'Такого свойства нет. `animation-direction` существует, но относится к `@keyframes`-анимациям.'
+      - text: 'Синий цвет нельзя анимировать, поэтому возврат к нему резкий'
+        why: 'Любые цвета анимируются одинаково, браузер интерполирует значения каналов.'
+    explanation: |
+      Переход использует значение `transition`, которое действует в момент изменения стиля. При наведении
+      применяется правило `:hover`, в нём есть `transition` — смена плавная. При уходе мыши элемент
+      возвращается к базовому правилу, где `transition` нет, — смена мгновенная. Поэтому `transition` обычно
+      пишут в базовом правиле элемента: тогда плавными будут оба направления. Этот же механизм позволяет
+      сделать разную скорость туда и обратно, задав разные `transition` в базовом и `:hover`-правилах.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_transitions/Using_CSS_transitions
+    source: own
+
+  - id: css-rendering-009
+    level: senior
+    tags: [layout-thrashing, forced-reflow, performance]
+    question: |
+      Почему этот цикл работает очень медленно на списке из тысячи элементов?
+    code: |
+      for (const item of items) {
+        item.style.width = container.offsetWidth / 2 + 'px';
+      }
+    codeLang: js
+    options:
+      - text: 'Чтение размеров после записи стиля пересчитывает вёрстку'
+        correct: true
+        why: 'Это layout thrashing. Запись делает вёрстку «грязной», а чтение геометрии требует актуальных значений, и браузер пересчитывает layout на каждой итерации. Решение — прочитать `offsetWidth` один раз до цикла.'
+      - text: 'Свойство `style.width` медленное, нужно менять ширину через `classList`'
+        why: 'Смена класса тоже инвалидирует стили и вёрстку. Проблема не в способе записи, а в чередовании записи и чтения.'
+      - text: 'Браузер перерисовывает экран после каждой итерации цикла'
+        why: 'Отрисовка кадра не происходит посреди синхронного цикла. Дорогим здесь является пересчёт вёрстки, а не отрисовка.'
+      - text: 'Деление на 2 выполняется медленно, лучше умножить на 0.5'
+        why: 'Арифметика стоит наносекунды. Время уходит на тысячу принудительных пересчётов раскладки.'
+    explanation: |
+      Браузер откладывает пересчёт вёрстки до момента, когда он действительно нужен — обычно до кадра. Но
+      чтение геометрии (`offsetWidth`, `offsetTop`, `getBoundingClientRect()`, `scrollTop`, `getComputedStyle`
+      для размеров) требует актуальных значений. Если перед чтением что-то изменилось, браузер вынужден
+      синхронно пересчитать layout — это forced synchronous layout. В цикле «запись — чтение» это происходит
+      на каждой итерации. Правило: сначала все чтения, потом все записи; для сложных случаев — разносить их
+      по кадрам через `requestAnimationFrame` или библиотеки вроде fastdom.
+    links:
+      - https://web.dev/articles/avoid-large-complex-layouts-and-layout-thrashing
+      - https://gist.github.com/paulirish/5d52fb081b3570c81e3a
+    source: own
+
+  - id: css-rendering-010
+    level: middle
+    tags: [keyframes, animation, fill-mode, reduced-motion]
+    question: |
+      Анимация появления отрабатывает, но в конце элемент снова становится прозрачным. Что нужно добавить?
+    code: |
+      @keyframes fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      .toast { opacity: 0; animation: fade-in .3s; }
+    codeLang: css
+    options:
+      - text: '`animation-fill-mode: forwards`'
+        correct: true
+        why: 'После завершения анимации стили ключевых кадров перестают действовать, и элемент возвращается к своему `opacity: 0`. `forwards` оставляет значения последнего кадра.'
+      - text: '`animation-iteration-count: 1`'
+        why: 'Одна итерация — значение по умолчанию. Проблема не в количестве повторов, а в том, что происходит после последнего.'
+      - text: '`animation-direction: reverse`'
+        why: '`reverse` проиграет анимацию от 1 к 0, и элемент исчезнет плавно — ещё дальше от цели.'
+      - text: '`transition: opacity .3s` вместо `animation`'
+        why: 'Переход нужно чем-то запустить: сменой класса или `@starting-style`. Сама по себе замена не оставит элемент видимым.'
+    explanation: |
+      `@keyframes`-анимация применяет свои значения только пока идёт. До начала (с задержкой) и после
+      окончания действуют обычные стили элемента. `animation-fill-mode` это меняет: `forwards` — сохранить
+      значения последнего кадра, `backwards` — применить первый кадр во время задержки, `both` — оба сразу.
+      Часто проще задать элементу итоговое состояние (`opacity: 1`) и анимировать только появление.
+      Отличие от `transition`: анимация запускается сама и может иметь много шагов, а переход реагирует на
+      смену значения. Для пользователей с настройкой «уменьшить движение» анимации отключают через
+      `@media (prefers-reduced-motion: reduce)`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/animation-fill-mode
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion
+    source: own

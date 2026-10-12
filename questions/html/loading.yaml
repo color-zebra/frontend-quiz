@@ -1,0 +1,300 @@
+# yaml-language-server: $schema=../../schema.json
+topic: html
+subtopic: loading
+questions:
+  - id: html-loading-001
+    level: junior
+    tags: [script, async, defer]
+    question: |
+      Чем отличаются `<script async src>` и `<script defer src>`?
+    options:
+      - text: '`defer` выполняется после разбора документа по порядку, `async` — сразу по загрузке, в любом порядке'
+        correct: true
+        why: 'Оба загружаются параллельно с разбором HTML и не блокируют его. Различаются момент и порядок выполнения.'
+      - text: '`async` загружает скрипт параллельно, а `defer` откладывает до конца разбора и загрузку, и выполнение'
+        why: '`defer` откладывает только выполнение. Загружается такой скрипт сразу, параллельно с разбором HTML.'
+      - text: 'Ничем: это синонимы из разных версий стандарта, браузеры обрабатывают их одинаково'
+        why: 'Разница принципиальная: `async` не гарантирует порядок, и скрипт может выполниться посреди разбора документа.'
+      - text: '`async` выполняется после события `load`, а `defer` — перед `DOMContentLoaded`'
+        why: 'Про `defer` верно, а `async` от `load` не зависит: он выполняется, как только загрузится. Это может случиться и до `DOMContentLoaded`, и после.'
+    explanation: |
+      Обычный `<script src>` останавливает разбор HTML: браузер ждёт загрузки и выполнения, ведь скрипт
+      может сделать `document.write`. Атрибуты снимают блокировку. `defer` загружает файл параллельно и
+      выполняет все отложенные скрипты по порядку, когда разбор закончен, перед `DOMContentLoaded`. Подходит
+      для скриптов, которым нужен DOM или друг друга. `async` выполняет скрипт сразу после загрузки,
+      прерывая разбор, и порядок между несколькими async-скриптами не гарантирован. Подходит для
+      независимых скриптов вроде аналитики.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script#async
+      - https://html.spec.whatwg.org/multipage/scripting.html#attr-script-defer
+    source: own
+
+  - id: html-loading-002
+    level: middle
+    tags: [script, defer, DOMContentLoaded]
+    question: |
+      В каком порядке появятся сообщения в консоли? `a.js` выводит `A`, `b.js` выводит `B`.
+    code: |
+      <head>
+        <script defer src="a.js"></script>
+        <script defer src="b.js"></script>
+        <script>
+          document.addEventListener('DOMContentLoaded', () => console.log('DCL'));
+        </script>
+        <script>console.log('inline');</script>
+      </head>
+    codeLang: html
+    options:
+      - text: '`A`, `B`, `inline`, `DCL`'
+        why: 'Отложенные скрипты ждут конца разбора документа, а инлайн-скрипты выполняются сразу, как только парсер до них дошёл.'
+      - text: '`inline`, `A`, `B`, `DCL`'
+        correct: true
+        why: 'Инлайн-скрипт выполняется во время разбора. Defer-скрипты — после разбора, строго по порядку. `DOMContentLoaded` срабатывает только после них.'
+      - text: '`inline`, `DCL`, `A`, `B`'
+        why: '`DOMContentLoaded` специально ждёт, пока выполнятся все defer-скрипты.'
+      - text: '`inline`, затем `A` и `B` в порядке загрузки, затем `DCL`'
+        why: 'Порядок загрузки важен для `async`. Для `defer` порядок выполнения всегда совпадает с порядком в документе.'
+    explanation: |
+      Хронология такая. Парсер встречает defer-скрипты и ставит их загрузку параллельно, не останавливаясь.
+      Инлайн-скрипты выполняются сразу: первый подписывается на событие, второй печатает `inline`. Когда
+      разбор закончен, браузер выполняет список отложенных скриптов в порядке документа, а затем вызывает
+      `DOMContentLoaded`. Поэтому код в defer-скрипте может смело работать с DOM, а подписка на
+      `DOMContentLoaded` в нём сработает.
+    links:
+      - https://html.spec.whatwg.org/multipage/parsing.html#the-end
+      - https://developer.mozilla.org/en-US/docs/Web/API/Document/DOMContentLoaded_event
+    source: own
+
+  - id: html-loading-003
+    level: middle
+    tags: [script, modules]
+    question: |
+      Как ведёт себя `<script type="module" src="app.js">` без атрибутов `async` и `defer`?
+    options:
+      - text: 'Как обычный скрипт: блокирует разбор HTML до загрузки и выполнения'
+        why: 'Модули никогда не блокируют парсер: `document.write` в них бессмысленен, а граф импортов загружается асинхронно.'
+      - text: 'Как `defer`: загрузка параллельно, выполнение после разбора'
+        correct: true
+        why: 'Модульные скрипты отложены по умолчанию: загружаются параллельно и выполняются после разбора документа по порядку. `async` переключает их на выполнение сразу после загрузки.'
+      - text: 'Как `async`: выполняется сразу после загрузки, порядок не гарантирован'
+        why: 'Так модуль поведёт себя, только если явно добавить атрибут `async`.'
+      - text: 'Выполняется только после события `load`, когда загружены все ресурсы'
+        why: 'Модули выполняются раньше, до `DOMContentLoaded`, как и defer-скрипты.'
+    explanation: |
+      Модульные скрипты по умолчанию отложены: браузер загружает модуль и все его импорты параллельно
+      с разбором и выполняет после окончания разбора в порядке документа. Ещё отличия модулей: строгий
+      режим включён всегда, у каждого модуля своя область видимости (переменные не попадают в `window`),
+      `this` на верхнем уровне равен `undefined`, модуль выполняется один раз, даже если подключён дважды.
+      Загружаются модули в CORS-режиме, поэтому с другого домена нужен заголовок `Access-Control-Allow-Origin`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules#other_differences_between_modules_and_classic_scripts
+    source: own
+
+  - id: html-loading-004
+    level: senior
+    tags: [script, modules, defer, inline]
+    question: |
+      В каком порядке появятся сообщения в консоли?
+    code: |
+      <script type="module">console.log('module');</script>
+      <script defer>console.log('defer inline');</script>
+      <script>console.log('classic');</script>
+    codeLang: html
+    options:
+      - text: '`module`, `defer inline`, `classic`'
+        why: 'Это порядок в коде, но и инлайн-модуль, и defer-скрипт выполняются не так, как написано.'
+      - text: '`classic`, `defer inline`, `module`'
+        why: 'Ловушка: кажется, что `defer` откладывает инлайн-скрипт. Но у классических скриптов без `src` атрибут `defer` игнорируется.'
+      - text: '`defer inline`, `classic`, `module`'
+        correct: true
+        why: 'У инлайн-скрипта без `src` атрибут `defer` не работает, поэтому он выполняется сразу. Инлайн-модуль же отложен всегда и выполняется после разбора документа.'
+      - text: '`defer inline`, `module`, `classic`'
+        why: 'Модуль не может выполниться раньше обычного скрипта, стоящего ниже: модули ждут конца разбора документа.'
+    explanation: |
+      `defer` и `async` для классических скриптов работают только вместе с `src`: для инлайн-кода
+      откладывать нечего, загрузки нет. Поэтому `<script defer>` без `src` — обычный блокирующий скрипт.
+      Модули устроены иначе: даже инлайн-модуль может импортировать что-то по сети, поэтому он всегда
+      отложен до конца разбора (а с `async` — до загрузки своих импортов). Итог: первыми идут классические
+      скрипты в порядке документа, модуль — после разбора.
+    links:
+      - https://html.spec.whatwg.org/multipage/scripting.html#attr-script-defer
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script#defer
+    source: own
+
+  - id: html-loading-005
+    level: junior
+    tags: [DOMContentLoaded, load, events]
+    question: |
+      Чем событие `DOMContentLoaded` отличается от `load` у `window`?
+    options:
+      - text: '`DOMContentLoaded` не ждёт картинок и iframe, `load` ждёт все ресурсы'
+        correct: true
+        why: '`DOMContentLoaded` срабатывает, когда HTML разобран и DOM построен. `load` — когда загружено ещё и всё остальное.'
+      - text: '`DOMContentLoaded` срабатывает, когда страница впервые отрисована на экране'
+        why: 'Событие связано с разбором документа, а не с отрисовкой. Первая отрисовка может случиться и до него, и после.'
+      - text: 'Это одно и то же событие, `load` — его старое название'
+        why: 'Это два разных события с разным моментом срабатывания. На странице с тяжёлыми картинками между ними могут пройти секунды.'
+      - text: '`load` срабатывает раньше, потому что не ждёт выполнения скриптов'
+        why: '`load` срабатывает последним: после `DOMContentLoaded` и загрузки всех подресурсов.'
+    explanation: |
+      Последовательность загрузки такая: парсер строит DOM, по пути выполняются синхронные скрипты.
+      Когда разбор закончен, выполняются defer-скрипты, затем срабатывает `DOMContentLoaded` — с DOM уже
+      можно работать. Дальше догружаются картинки, iframe и прочие ресурсы, и только потом срабатывает
+      `window.onload`. Если код ждёт размеров картинок — нужен `load` (или событие `load` у самой картинки),
+      если нужен только DOM — достаточно `DOMContentLoaded`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Document/DOMContentLoaded_event
+      - https://developer.mozilla.org/en-US/docs/Web/API/Window/load_event
+    source: own
+
+  - id: html-loading-006
+    level: senior
+    tags: [css, render-blocking, DOMContentLoaded]
+    question: |
+      Почему на этой странице медленная загрузка `styles.css` задерживает событие `DOMContentLoaded`?
+    code: |
+      <head>
+        <link rel="stylesheet" href="styles.css">
+        <script>console.log('hello');</script>
+      </head>
+    codeLang: html
+    options:
+      - text: 'Любой `<link rel="stylesheet">` блокирует разбор HTML, пока не загрузится'
+        why: 'Стили сами по себе блокируют отрисовку, но не разбор. Без скрипта после них парсер пошёл бы дальше.'
+      - text: 'Скрипт ждёт загрузки CSS выше него, а сам держит разбор документа'
+        correct: true
+        why: 'Скрипт может вызвать `getComputedStyle`, поэтому выполняется только после загрузки предшествующих стилей. Пока он ждёт, разбор стоит, а с ним откладывается и `DOMContentLoaded`.'
+      - text: '`DOMContentLoaded` по спецификации всегда ждёт загрузки всех стилей'
+        why: 'Не всегда: если после стилей нет ни синхронных, ни defer- и module-скриптов, `DOMContentLoaded` может сработать раньше загрузки CSS.'
+      - text: 'Инлайн-скрипты выполняются только после события `load`'
+        why: 'Инлайн-скрипт выполняется во время разбора, как только парсер до него дошёл, — если ничто его не держит.'
+    explanation: |
+      CSS блокирует отрисовку (render-blocking): браузер не показывает страницу без стилей, чтобы она не
+      мигала. Разбор HTML стили не блокируют, но тут вмешивается скрипт. Он может спросить вычисленные
+      стили, поэтому браузер не выполнит его, пока не загрузится весь CSS выше по документу. Синхронный
+      скрипт блокирует парсер, и выходит цепочка: стили → скрипт → разбор → `DOMContentLoaded`. Перевод
+      скрипта на `defer` снимает блокировку парсера — HTML дальше разбирается и находит ресурсы. Но сам
+      отложенный скрипт тоже дождётся CSS, а с ним и `DOMContentLoaded`.
+    links:
+      - https://web.dev/articles/critical-rendering-path/render-blocking-css
+      - https://html.spec.whatwg.org/multipage/semantics.html#interactions-of-styling-and-scripting
+    source: own
+
+  - id: html-loading-007
+    level: middle
+    tags: [preload, prefetch, preconnect, resource-hints]
+    question: |
+      Что делает каждая из подсказок `preload`, `prefetch` и `preconnect`?
+    options:
+      - text: 'preload — ресурс для текущей страницы, prefetch — для следующей, preconnect — только соединение'
+        correct: true
+        why: '`preload` загружает с высоким приоритетом то, что нужно сейчас, `prefetch` — с низким и впрок, `preconnect` заранее делает DNS-запрос и TCP/TLS-рукопожатие.'
+      - text: 'Все три загружают ресурс заранее и различаются только приоритетом в очереди'
+        why: '`preconnect` ничего не загружает: он только открывает соединение с указанным origin.'
+      - text: 'prefetch — ресурс для текущей страницы, preload — для следующей, preconnect — DNS'
+        why: 'Ровно наоборот: preload — «подгрузи для этой страницы», prefetch — «впрок, на будущее».'
+      - text: 'preload загружает и сразу выполняет скрипт, prefetch только загружает его'
+        why: '`preload` тоже только загружает и кладёт ресурс в кэш. Выполнится скрипт, лишь когда его подключат обычным `<script>`.'
+    explanation: |
+      Это подсказки браузеру о приоритетах загрузки. `preload` полезен для ресурсов, которые браузер найдёт
+      поздно: шрифт, указанный в CSS, картинка из `background-image`, чанк, который подключится скриптом.
+      Обязателен атрибут `as`, иначе браузер не знает приоритет и тип. `prefetch` загружает в простое ресурсы
+      для следующей страницы. `preconnect` экономит сотни миллисекунд на установке соединения со сторонним
+      доменом: CDN, шрифтами, API. Злоупотреблять `preload` вредно: он отнимает полосу у действительно
+      критичных ресурсов.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/rel/preload
+      - https://web.dev/articles/preconnect-and-dns-prefetch
+    source: own
+
+  - id: html-loading-008
+    level: senior
+    tags: [preload, fonts, cors]
+    question: |
+      Шрифт подключён через `@font-face` и загружается заранее вот так. В DevTools видно, что файл
+      загружается дважды. Почему?
+    code: |
+      <link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2">
+    codeLang: html
+    options:
+      - text: 'Шрифты нельзя загружать через preload, браузер игнорирует такую подсказку'
+        why: 'Preload для шрифтов — стандартная практика, и подсказка работает, если её правильно оформить.'
+      - text: 'Не хватает атрибута `crossorigin`'
+        correct: true
+        why: 'Шрифты загружаются в режиме CORS даже с того же домена. Preload без `crossorigin` идёт в режиме no-cors, и ответ не подходит запросу из CSS.'
+      - text: 'Нужно указать `as="style"`, потому что шрифт подключается из CSS'
+        why: '`as` описывает тип самого ресурса. Для шрифта это `font`, и с `as="style"` загрузка не сработает.'
+      - text: 'Браузер загружает шрифт второй раз, чтобы проверить его актуальность'
+        why: 'Повторной загрузки «на проверку» нет. Второй запрос появляется, потому что кэш preload не подошёл к запросу из CSS.'
+    explanation: |
+      Ответ из preload-кэша переиспользуется, только если совпадают URL, тип (`as`) и режим запроса.
+      Спецификация CSS требует загружать шрифты в CORS-режиме (anonymous), даже со своего origin. Тег
+      `<link rel="preload" as="font">` без `crossorigin` делает запрос в режиме no-cors. Когда CSS позже
+      запрашивает тот же шрифт, режимы не совпадают, и файл качается второй раз, а Chrome пишет в консоль
+      предупреждение, что preload не использован. Правильно: `<link rel="preload" as="font"
+      type="font/woff2" crossorigin>`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/rel/preload#cors-enabled_fetches
+      - https://web.dev/articles/codelab-preload-web-fonts
+    source: own
+
+  - id: html-loading-009
+    level: junior
+    tags: [script, performance]
+    question: |
+      Почему обычные скрипты без `async` и `defer` традиционно подключали в конце `<body>`?
+    options:
+      - text: 'Скрипты в `<head>` не имеют доступа к объекту `document`'
+        why: '`document` доступен всегда, но элементы ниже по разметке ещё не разобраны, и `querySelector` их не найдёт.'
+      - text: 'Скрипт останавливает разбор HTML и не видит элементы ниже себя'
+        correct: true
+        why: 'Пока скрипт качается и выполняется, страница ниже него не разбирается и не показывается. В конце body он не задерживает контент и видит готовый DOM.'
+      - text: 'Браузеры загружают ресурсы строго по одному, сверху вниз'
+        why: 'Ресурсы загружаются параллельно, а preload-сканер заранее находит скрипты ниже по документу. Блокируется разбор, а не загрузка.'
+      - text: 'По стандарту в `<head>` разрешено подключать только стили и meta'
+        why: 'Скрипты в head разрешены и нормальны, особенно с `defer` или `type="module"`.'
+    explanation: |
+      Синхронный скрипт блокирует парсер: браузер должен загрузить и выполнить его, прежде чем разбирать
+      HTML дальше, потому что скрипт может изменить документ через `document.write`. Если такой скрипт
+      стоит в `<head>`, пользователь смотрит на белый экран, пока он грузится. Поставив скрипт в конец
+      `<body>`, получали быстрый показ контента и готовый DOM для скрипта. Сегодня то же делают элегантнее:
+      `<script defer>` в head начинает загрузку раньше и сохраняет порядок выполнения.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script
+    source: own
+
+  - id: html-loading-010
+    level: senior
+    tags: [script, dynamic, async]
+    question: |
+      Скрипты добавляются в страницу динамически. Что выведется, если `slow.js` (выводит `slow`) загружается
+      дольше, чем `fast.js` (выводит `fast`)?
+    code: |
+      for (const src of ['slow.js', 'fast.js']) {
+        const script = document.createElement('script');
+        script.src = src;
+        document.head.append(script);
+      }
+    codeLang: js
+    options:
+      - text: '`slow`, `fast` — скрипты выполняются в порядке вставки в документ'
+        why: 'Так будет, только если явно выставить `script.async = false` перед вставкой.'
+      - text: '`fast`, `slow`'
+        correct: true
+        why: 'У скрипта, созданного через `createElement`, свойство `async` по умолчанию равно `true`, и он выполняется, как только загрузится.'
+      - text: 'Ничего: скрипты, добавленные через JavaScript, не выполняются'
+        why: 'Не выполняются скрипты, вставленные через `innerHTML`. Созданные через `createElement` и добавленные в DOM выполняются.'
+      - text: 'Порядок случайный, и управлять им невозможно'
+        why: 'Порядком можно управлять: `script.async = false` заставляет браузер выполнять такие скрипты строго в порядке вставки.'
+    explanation: |
+      Скрипт, созданный через `document.createElement('script')`, по умолчанию асинхронный: загрузка не
+      блокирует страницу, выполнение — по готовности. Это удобно для независимых скриптов вроде аналитики.
+      Если скрипты зависят друг от друга (библиотека и код, который её использует), выставляют
+      `script.async = false`: браузер всё равно качает их параллельно, но выполняет в порядке вставки.
+      А `<script>`, вставленный через `innerHTML`, не выполнится: парсер помечает такие скрипты как уже
+      запущенные. Защитой от XSS это не считается: код из `onerror` и других атрибутов-обработчиков,
+      вставленных тем же `innerHTML`, выполнится.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/HTMLScriptElement/async
+      - https://developer.mozilla.org/en-US/docs/Web/API/Element/innerHTML#security_considerations
+    source: own

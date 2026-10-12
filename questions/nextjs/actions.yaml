@@ -1,0 +1,264 @@
+# yaml-language-server: $schema=../../schema.json
+topic: nextjs
+subtopic: actions
+questions:
+  - id: nextjs-actions-001
+    level: junior
+    tags: [server-actions, use-server]
+    question: |
+      Как превратить асинхронную функцию в Server Action, которую можно передать в `action` формы?
+    options:
+      - text: 'Добавить в функцию директиву `"use server"`'
+        correct: true
+        why: 'Директива помечает функцию как серверную: её код остаётся на сервере, а клиент получает ссылку, по которой вызов превращается в запрос к серверу.'
+      - text: 'Добавить директиву `"use client"` в начало файла'
+        why: '`"use client"` отмечает клиентские компоненты. Серверные функции помечаются противоположной директивой.'
+      - text: 'Экспортировать функцию из файла `route.ts`'
+        why: '`route.ts` задаёт Route Handler — эндпоинт с методами `GET`, `POST` и так далее. Server Action устроен иначе.'
+      - text: 'Достаточно, чтобы функция была `async`'
+        why: 'Асинхронность обязательна, но не достаточна: без `"use server"` функция останется обычной и не сможет вызываться с клиента.'
+    explanation: |
+      Server Function — асинхронная функция, которая выполняется на сервере и вызывается с клиента сетевым
+      запросом. В роли обработчика формы или изменения данных её называют Server Action. Директиву ставят либо
+      внутри функции в серверном компоненте, либо в начале отдельного файла (тогда серверными становятся все
+      его экспорты). В клиентском компоненте объявить серверную функцию нельзя, но можно импортировать её из
+      файла с `"use server"` или получить пропом.
+    links:
+      - https://nextjs.org/docs/app/getting-started/mutating-data
+    source: own
+
+  - id: nextjs-actions-002
+    level: middle
+    tags: [server-actions, security, authorization]
+    question: |
+      Server Action удаляет пост. Кнопка удаления видна только администраторам. Достаточно ли этого для
+      защиты?
+    options:
+      - text: 'Нет: action можно вызвать прямым запросом, права проверяют внутри'
+        correct: true
+        why: 'Server Action — это публичный эндпоинт, который вызывается `POST`-запросом. Скрытая кнопка не мешает отправить такой запрос вручную, поэтому аутентификацию и права нужно проверять в самой функции.'
+      - text: 'Да: идентификатор action зашифрован, и подобрать его нельзя'
+        why: 'Идентификаторы действительно непредсказуемы, но любой пользователь, у которого есть страница с кнопкой (или старый клиент), получит его. Это не замена проверки прав.'
+      - text: 'Да: action доступен только со страниц того же сайта'
+        why: 'Next.js проверяет `Origin`, что мешает вызову с чужих сайтов, но не мешает обычному пользователю вашего сайта вызвать действие напрямую.'
+      - text: 'Нет, но достаточно проверить права в `layout` этого раздела'
+        why: 'Вызов action не проходит через рендер layout, поэтому проверка там его не защитит.'
+    explanation: |
+      Серверные функции легко воспринимать как «часть компонента», но на деле каждая из них — HTTP-эндпоинт.
+      Next.js добавляет защиту: непредсказуемые идентификаторы, проверку `Origin` против CSRF, служебные
+      механизмы шифрования. Авторизацию он не делает. Правило из документации: проверять аутентификацию и
+      права в каждой серверной функции, а входные данные валидировать как недоверенные, например схемой zod.
+    links:
+      - https://nextjs.org/docs/app/guides/data-security#authentication-and-authorization
+    source: own
+
+  - id: nextjs-actions-003
+    level: middle
+    tags: [redirect, try-catch, server-actions]
+    question: |
+      Сохранение прошло успешно. Что вернёт `save` и будет ли переход на `/posts`?
+    code: |
+      'use server';
+      import { redirect } from 'next/navigation';
+
+      export async function save(formData: FormData) {
+        try {
+          await db.posts.create({ title: String(formData.get('title')) });
+          redirect('/posts');
+        } catch (error) {
+          return { error: 'Не удалось сохранить' };
+        }
+      }
+    codeLang: ts
+    options:
+      - text: 'Вернёт объект с ошибкой, перехода не будет'
+        correct: true
+        why: '`redirect` работает через выброс специального исключения, которое обрабатывает Next.js. Здесь его перехватил собственный `catch`, и функция вернула ошибку, хотя пост сохранён.'
+      - text: 'Ничего не вернёт, переход на `/posts` будет'
+        why: 'Так было бы, если бы `redirect` стоял после блока `try/catch`. Внутри `try` его исключение перехвачено.'
+      - text: 'Вернёт объект с ошибкой, а затем перейдёт'
+        why: '`redirect` не выполняет переход сам по себе, а бросает исключение. Если оно перехвачено, перехода не будет вовсе.'
+      - text: 'Сборка упадёт, `redirect` в Server Actions запрещён'
+        why: 'В серверных функциях `redirect` разрешён и часто используется. Важно только место вызова.'
+    explanation: |
+      `redirect`, `notFound` и подобные функции Next.js прерывают выполнение, выбрасывая исключение особого
+      вида, которое фреймворк перехватывает выше. Поэтому код после них не выполняется, а общий `try/catch`
+      вокруг них ломает поведение. Документация советует вызывать `redirect` вне `try`. Если перехват нужен,
+      его делают только вокруг операций, которые реально могут упасть, либо пробрасывают особые исключения
+      дальше (`unstable_rethrow`).
+    links:
+      - https://nextjs.org/docs/app/api-reference/functions/redirect
+    source: own
+  - id: nextjs-actions-004
+    level: junior
+    tags: [route-handlers]
+    question: |
+      Как в App Router создать эндпоинт `GET /api/users`?
+    options:
+      - text: 'Файл `app/api/users/route.ts` с экспортом функции `GET`'
+        correct: true
+        why: 'Route Handler задаётся файлом `route` в папке сегмента. Методы — именованные экспорты: `GET`, `POST`, `PUT`, `PATCH`, `DELETE` и другие.'
+      - text: 'Файл `app/api/users/handler.ts` с экспортом по умолчанию'
+        why: 'Next.js распознаёт обработчики только в файлах с именем `route`, и методы экспортируются по имени, а не по умолчанию.'
+      - text: 'Файл `app/api/users/page.tsx`, который возвращает JSON'
+        why: '`page` рендерит страницу, а не обрабатывает HTTP-запросы с произвольным ответом.'
+      - text: 'Server Action с директивой `"use server"` и методом `GET`'
+        why: 'Server Actions вызываются `POST`-запросом на адрес страницы с внутренним идентификатором, стабильного URL у них нет.'
+    explanation: |
+      Route Handlers используют стандартные Web API `Request` и `Response`: `export async function
+      GET(request) { return Response.json(data) }`. Они нужны для HTTP API с собственными адресами. В Next.js
+      15 и 16 `GET`-обработчики по умолчанию не кэшируются, кэширование включают явно. Мемоизация `fetch` в
+      них не работает: они не часть дерева компонентов.
+    links:
+      - https://nextjs.org/docs/app/getting-started/route-handlers
+    source: own
+
+  - id: nextjs-actions-005
+    level: middle
+    tags: [route-handlers, page, conflict]
+    question: |
+      В папке `app/users` лежат `page.tsx` и `route.ts`. Что произойдёт?
+    options:
+      - text: 'Ошибка: в одном сегменте не может быть `page` и `route`'
+        correct: true
+        why: 'Оба файла претендуют на один и тот же адрес `/users`, и Next.js запрещает такое сочетание. API обычно выносят в отдельный путь.'
+      - text: 'Браузер получит страницу, а `fetch` — JSON'
+        why: 'Next.js не выбирает обработчик по заголовку `Accept`. Сочетание файлов запрещено.'
+      - text: '`GET` обработает `route.ts`, остальные методы — `page.tsx`'
+        why: '`page` не обрабатывает HTTP-методы. Распределения методов между файлами нет.'
+      - text: '`page.tsx` будет проигнорирован без сообщений'
+        why: 'Next.js не скрывает такой конфликт молча, а сообщает о нём.'
+    explanation: |
+      Каждый сегмент маршрута отдаётся либо страницей (`page`), либо обработчиком (`route`). Поэтому API в App
+      Router обычно размещают в отдельной ветке `app/api/...`. Если API и страницы должны жить по похожим
+      адресам, используют разные пути: группы маршрутов конфликт не решают.
+    links:
+      - https://nextjs.org/docs/app/api-reference/file-conventions/route
+    source: own
+
+  - id: nextjs-actions-006
+    level: middle
+    tags: [progressive-enhancement, forms]
+    question: |
+      Серверный компонент рендерит `<form action={createPost}>`, где `createPost` — Server Action.
+      Пользователь отправил форму, пока JavaScript ещё не загрузился. Что произойдёт?
+    options:
+      - text: 'Отправится как обычная форма'
+        correct: true
+        why: 'Серверные компоненты поддерживают прогрессивное улучшение: форма с Server Action работает как обычная HTML-форма и без JavaScript.'
+      - text: 'Ничего: без JavaScript форма не работает'
+        why: 'В этом и смысл Server Actions в формах: отправка не зависит от загрузки клиентского кода.'
+      - text: 'Браузер выполнит action прямо на клиенте'
+        why: 'Код серверной функции в браузер не попадает, выполнить его там невозможно.'
+      - text: 'Next.js покажет ошибку гидратации'
+        why: 'Гидратация не связана с отправкой формы. Браузер отправит форму обычным POST независимо от неё.'
+    explanation: |
+      Прогрессивное улучшение (progressive enhancement): базовая функциональность работает без JavaScript, а с
+      ним становится удобнее. Формы с Server Actions в серверных компонентах отправляются как обычные
+      HTML-формы, а после загрузки JavaScript работают без перезагрузки страницы, с состоянием ожидания и
+      обновлением данных. В клиентских компонентах отправки до гидратации ставятся в очередь. Это делает формы
+      надёжными на медленных сетях и слабых устройствах.
+    links:
+      - https://nextjs.org/docs/app/getting-started/mutating-data#server-components
+    source: own
+
+  - id: nextjs-actions-007
+    level: senior
+    tags: [server-actions, closures, encryption]
+    question: |
+      Inline Server Action в серверном компоненте использует переменную `publishVersion` из внешней функции.
+      Что происходит с этой переменной?
+    code: |
+      export default async function Page() {
+        const publishVersion = await getLatestVersion();
+
+        async function publish() {
+          'use server';
+          if (publishVersion !== (await getLatestVersion())) {
+            throw new Error('Версия изменилась');
+          }
+        }
+
+        return (
+          <form action={publish}>
+            <button>Опубликовать</button>
+          </form>
+        );
+      }
+    codeLang: tsx
+    options:
+      - text: 'Шифруется и передаётся через клиента'
+        correct: true
+        why: 'Замыкание должно пережить путь сервер → клиент → сервер. Next.js шифрует захваченные переменные ключом сборки и отправляет их вместе со ссылкой на action, а при вызове расшифровывает.'
+      - text: 'Хранится в памяти сервера до вызова action'
+        why: 'Сервер не держит состояние между рендером и вызовом: запросы могут попасть на другой экземпляр. Значение путешествует через клиента.'
+      - text: 'Читается заново при каждом вызове action'
+        why: 'Захватывается снимок значения на момент рендера. Именно поэтому сравнение с актуальной версией имеет смысл.'
+      - text: 'Отправляется клиенту в открытом виде'
+        why: 'Next.js шифрует захваченные переменные, чтобы не раскрыть их. Но документация советует не полагаться только на шифрование.'
+    explanation: |
+      Inline-action создаёт замыкание, и это удобно для снимка данных на момент рендера, например версии
+      документа для оптимистичной блокировки. Технически захваченные значения сериализуются, шифруются и
+      передаются через клиента. Ключ меняется при каждой сборке, поэтому action вызывается только для «своей»
+      сборки. Документация предупреждает: шифрование — не повод замыкать секреты. Чувствительные данные лучше
+      получать заново внутри action, а не передавать через замыкание.
+    links:
+      - https://nextjs.org/docs/app/guides/data-security#closures-and-encryption
+    source: own
+
+  - id: nextjs-actions-008
+    level: middle
+    tags: [server-actions, route-handlers, architecture]
+    question: |
+      Платёжная система присылает вебхук об успешной оплате. Чем его принимать в Next.js?
+    options:
+      - text: 'Route Handler, например `app/api/webhooks/payment/route.ts`'
+        correct: true
+        why: 'Вебхук — запрос от внешней системы на известный адрес с собственным форматом тела. Для этого нужен публичный эндпоинт с контролем над методом, заголовками и ответом.'
+      - text: 'Server Action, импортированный в любую страницу'
+        why: 'У Server Action нет стабильного публичного адреса, а формат его вызова — внутренний протокол Next.js. Внешняя система не сможет его вызвать.'
+      - text: 'Серверный компонент страницы, читающий `searchParams`'
+        why: 'Страница отвечает HTML на `GET`-запросы браузера. Принимать `POST` с телом вебхука она не умеет.'
+      - text: 'Файл `proxy.ts`, который сохранит данные в базу'
+        why: '`proxy` выполняется перед маршрутизацией для перенаправлений, проверок и заголовков. Бизнес-логику туда не кладут.'
+    explanation: |
+      Server Actions и Route Handlers решают разные задачи. Server Actions — мутации из собственного
+      интерфейса: формы, кнопки, интеграция с переходами React и обновлением кэша в одном запросе. Route
+      Handlers — HTTP API для внешнего мира: вебхуки, мобильные клиенты, интеграции, файлы, `GET`-эндпоинты с
+      кэшированием. У вебхука ещё обязательно проверяют подпись, иначе любой сможет «подтвердить оплату».
+    links:
+      - https://nextjs.org/docs/app/getting-started/route-handlers
+      - https://nextjs.org/docs/app/getting-started/mutating-data
+    source: own
+
+  - id: nextjs-actions-009
+    level: middle
+    tags: [server-actions, bind, arguments]
+    question: |
+      Как передать `postId` в Server Action формы `updatePost(postId, formData)`, кроме полей `FormData`?
+    code: |
+      export default async function Page({ params }) {
+        const { id } = await params;
+        return <form action={/* ? */}>...</form>;
+      }
+    codeLang: tsx
+    options:
+      - text: '`updatePost.bind(null, id)`'
+        correct: true
+        why: '`bind` создаёт новую серверную функцию, у которой `id` подставлен первым аргументом, а `FormData` придёт следующим. Значение при этом уходит в HTML открытым текстом в служебном поле и может быть подменено, поэтому права на пост проверяют внутри action.'
+      - text: 'Стрелкой `() => updatePost(id)` прямо в `action`'
+        why: 'В серверном компоненте обычную стрелку нельзя передать клиенту: она не сериализуется. Нужна серверная функция.'
+      - text: 'Строкой `action="/posts?id=123"` в форме'
+        why: 'Строка в `action` превращает форму в обычную HTML-отправку на адрес, а не вызов Server Action.'
+      - text: 'Через `useState` в серверной странице'
+        why: 'Серверные компоненты не имеют состояния, и через состояние аргументы в action не передаются.'
+    explanation: |
+      Server Action в `action` формы получает `FormData`. Дополнительные аргументы добавляют через `bind`:
+      значения сериализуются вместе со ссылкой на функцию. В отличие от переменных замыкания inline-action,
+      аргументы `bind` не шифруются: они лежат в разметке в служебном поле и могут быть подменены так же, как
+      скрытое поле формы. Поэтому любой аргумент Server Action считают вводом пользователя: проверяют права
+      текущего пользователя на этот пост и валидируют данные внутри action.
+    links:
+      - https://nextjs.org/docs/app/guides/forms#passing-additional-arguments
+      - https://nextjs.org/docs/app/guides/data-security
+    source: own

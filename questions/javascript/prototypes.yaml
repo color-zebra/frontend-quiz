@@ -1,0 +1,333 @@
+# yaml-language-server: $schema=../../schema.json
+topic: javascript
+subtopic: prototypes
+questions:
+  - id: javascript-prototypes-001
+    level: junior
+    tags: [prototype-chain, hasOwnProperty, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const animal = { eats: true };
+      const rabbit = Object.create(animal);
+      rabbit.jumps = true;
+
+      console.log(rabbit.eats, Object.hasOwn(rabbit, 'eats'), Object.keys(rabbit));
+    codeLang: js
+    options:
+      - text: '`true true [ "jumps", "eats" ]`'
+        why: '`eats` не копируется в `rabbit`: оно остаётся в прототипе и находится через цепочку при чтении.'
+      - text: '`true false [ "jumps" ]`'
+        correct: true
+        why: 'Свойство `eats` находится в прототипе `animal`, поэтому читается, но собственным не является. `Object.keys` возвращает только собственные перечисляемые свойства.'
+      - text: '`undefined false [ "jumps" ]`'
+        why: 'Чтение свойства идёт вверх по цепочке прототипов, и `eats` найдётся у `animal`.'
+      - text: '`true false [ "jumps", "eats" ]`'
+        why: '`Object.keys` не заходит в прототипы. Унаследованные свойства перебирает `for...in`.'
+    explanation: |
+      У каждого объекта есть скрытая ссылка `[[Prototype]]` на другой объект или `null`. При чтении свойства
+      движок ищет его в самом объекте, потом в прототипе, потом в прототипе прототипа и так до `null`. Это
+      цепочка прототипов. `Object.create(proto)` создаёт объект с указанным прототипом. Проверки различаются:
+      `in` и чтение видят всю цепочку, а `Object.hasOwn`, `Object.keys` и `JSON.stringify` — только собственные
+      свойства.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Inheritance_and_the_prototype_chain
+    source: own
+
+  - id: javascript-prototypes-002
+    level: middle
+    tags: [shadowing, assignment, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const defaults = { theme: 'light' };
+      const settings = Object.create(defaults);
+
+      settings.theme = 'dark';
+      console.log(settings.theme, defaults.theme);
+    codeLang: js
+    options:
+      - text: '`dark dark`'
+        why: 'Запись не идёт в прототип: она создаёт собственное свойство у объекта, которому присваивают.'
+      - text: '`dark light`'
+        correct: true
+        why: 'Присваивание создало у `settings` собственное свойство `theme`, которое затеняет унаследованное. Прототип не изменился.'
+      - text: '`light light`'
+        why: 'Запись в объект разрешена и создаёт своё свойство. Ничто не мешает присваиванию.'
+      - text: '`TypeError`: нельзя менять унаследованное свойство'
+        why: 'Ошибка возможна только в строгом режиме, например если в прототипе свойство с `writable: false` или геттер без сеттера. В нестрогом режиме такая запись молча игнорируется, а если в прототипе есть сеттер, вызывается он. Обычное свойство можно затенить.'
+    explanation: |
+      Чтение свойств идёт по цепочке прототипов, а запись — нет: обычное присваивание создаёт или меняет
+      собственное свойство объекта. Унаследованное значение после этого затеняется (shadowing). Исключения:
+      если в цепочке есть сеттер с этим именем, вызывается он; если унаследованное свойство помечено как
+      `writable: false`, присваивание не сработает. Благодаря этому прототипы безопасно хранят значения по
+      умолчанию для множества объектов.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Inheritance_and_the_prototype_chain#inheritance_with_the_prototype_chain
+    source: own
+
+  - id: javascript-prototypes-003
+    level: middle
+    tags: [shared-state, prototype, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function Team() {}
+      Team.prototype.members = [];
+
+      const a = new Team();
+      const b = new Team();
+      a.members.push('Аня');
+
+      console.log(b.members.length);
+    codeLang: js
+    options:
+      - text: '`0`'
+        why: 'У экземпляров нет собственного массива. `push` изменил общий массив, который лежит в прототипе.'
+      - text: '`1`'
+        correct: true
+        why: '`a.members` читает массив из прототипа и мутирует его. `b.members` — тот же самый массив, поэтому в нём один элемент.'
+      - text: '`undefined`'
+        why: 'Свойство `members` найдётся в прототипе для любого экземпляра.'
+      - text: '`TypeError`: у `b` нет `members`'
+        why: 'У `b` нет собственного `members`, но чтение найдёт его в прототипе `Team.prototype`.'
+    explanation: |
+      Прототип общий для всех экземпляров. Методы туда класть правильно, а изменяемые данные — опасно: мутация
+      через один экземпляр видна во всех. Присваивание `a.members = [...]` создало бы собственное свойство и
+      проблемы бы не было, но `push` ничего не присваивает, а меняет общий массив. Поэтому состояние
+      инициализируют в конструкторе (`this.members = []`) или полями класса, а в прототипе держат только
+      функции.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/prototype
+    source: own
+
+  - id: javascript-prototypes-004
+    level: senior
+    tags: [prototype-reassign, instanceof, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function Box() {}
+      const box = new Box();
+
+      Box.prototype = { size: 10 };
+
+      console.log(box.size, box instanceof Box);
+    codeLang: js
+    options:
+      - text: '`10 true`'
+        why: 'Объект `box` получил ссылку на прототип в момент создания. Замена `Box.prototype` на новый объект эту ссылку не меняет.'
+      - text: '`undefined false`'
+        correct: true
+        why: '`box` по-прежнему ссылается на старый прототип, где нет `size`. А `instanceof` проверяет, есть ли в цепочке `box` текущий `Box.prototype`, — нового объекта там нет.'
+      - text: '`undefined true`'
+        why: '`instanceof` не помнит, каким конструктором создан объект. Он сравнивает цепочку прототипов с текущим значением `Box.prototype`.'
+      - text: '`10 false`'
+        why: 'Свойства нового прототипа видны только объектам, созданным после замены.'
+    explanation: |
+      `new Box()` записывает в `[[Prototype]]` нового объекта то, что лежит в `Box.prototype` в этот момент.
+      Связь — между объектами, а не с функцией. Замена `Box.prototype` целиком влияет только на будущие
+      экземпляры; изменение старого объекта (`Box.prototype.size = 10`) увидели бы все. Оператор `instanceof`
+      работает через цепочку: `x instanceof F` проверяет, встречается ли `F.prototype` в цепочке `x`. Поэтому
+      после замены старые объекты перестают быть «экземплярами».
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/instanceof
+    source: own
+
+  - id: javascript-prototypes-005
+    level: middle
+    tags: [prototype-vs-proto, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function User() {}
+      const user = new User();
+
+      console.log(
+        Object.getPrototypeOf(user) === User.prototype,
+        Object.getPrototypeOf(User) === User.prototype,
+        Object.getPrototypeOf(User) === Function.prototype,
+      );
+    codeLang: js
+    options:
+      - text: '`true true false`'
+        why: '`User.prototype` — прототип для экземпляров, а не прототип самой функции `User`.'
+      - text: '`true false true`'
+        correct: true
+        why: '`User.prototype` — объект, который станет прототипом экземпляров. Сама функция `User` — объект, и её прототип — `Function.prototype`.'
+      - text: '`false false true`'
+        why: '`new User()` ставит прототипом экземпляра именно `User.prototype`.'
+      - text: '`true false false`'
+        why: 'Любая функция наследует от `Function.prototype` — оттуда у неё методы `call`, `apply`, `bind`.'
+    explanation: |
+      Два похожих понятия, которые часто путают. `F.prototype` — обычное свойство функции: объект, который
+      `new F()` сделает прототипом создаваемых экземпляров. `[[Prototype]]` (доступ через
+      `Object.getPrototypeOf` или устаревший `__proto__`) — настоящий прототип конкретного объекта. У функции
+      `User` её собственный прототип — `Function.prototype`, а `User.prototype` нужен только для экземпляров.
+      Цепочка экземпляра: `user` → `User.prototype` → `Object.prototype` → `null`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/getPrototypeOf
+    source: own
+
+  - id: javascript-prototypes-006
+    level: junior
+    tags: [new, constructor]
+    question: |
+      Что делает оператор `new` при вызове `new User('Аня')`?
+    options:
+      - text: 'Создаёт объект с прототипом `User.prototype` и вызывает `User` с ним в `this`'
+        correct: true
+        why: 'Это основные шаги. Есть оговорка: если функция сама вернёт объект, `new` вернёт его вместо созданного.'
+      - text: 'Копирует все свойства `User.prototype` в новый объект и возвращает копию'
+        why: 'Свойства прототипа не копируются: новый объект ссылается на прототип и находит их по цепочке.'
+      - text: 'Вызывает `User` как обычную функцию и возвращает её результат'
+        why: 'Обычный вызов не создаёт объект и не задаёт `this`. Без `return` он вернул бы `undefined`.'
+      - text: 'Создаёт копию функции `User` с привязанным `this`'
+        why: 'Копию функции с привязанным `this` создаёт `bind`. `new` создаёт объект-экземпляр.'
+    explanation: |
+      `new F(args)` выполняет примерно такой алгоритм: создать объект `obj` с `[[Prototype]] = F.prototype`;
+      вызвать `F` с `this = obj` и переданными аргументами; если `F` вернула объект, вернуть его, иначе вернуть
+      `obj`. Так устроены функции-конструкторы и классы — синтаксис `class` работает поверх этого механизма.
+      Вызов конструктора без `new` раньше был частой ошибкой: `this` указывал на глобальный объект. Классы
+      защищены — без `new` они бросают `TypeError`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/new#description
+    source: own
+
+  - id: javascript-prototypes-007
+    level: middle
+    tags: [object-create-null, dictionary, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const dict = Object.create(null);
+      dict.word = 'слово';
+
+      console.log('toString' in dict, typeof dict.hasOwnProperty, Object.keys(dict));
+    codeLang: js
+    options:
+      - text: '`true function [ "word" ]`'
+        why: 'У объекта, созданного через `Object.create(null)`, нет прототипа, а значит, нет и методов `Object.prototype`.'
+      - text: '`false undefined [ "word" ]`'
+        correct: true
+        why: 'Цепочка прототипов пуста, поэтому `toString` и `hasOwnProperty` не находятся. `Object.keys` — статическая функция и работает с любым объектом.'
+      - text: '`false undefined []`'
+        why: '`word` — обычное собственное перечисляемое свойство, `Object.keys` его вернёт.'
+      - text: '`TypeError`: у объекта без прототипа нельзя создавать свойства'
+        why: 'Свойства создаются как обычно. Нет только унаследованных методов.'
+    explanation: |
+      `Object.create(null)` даёт «голый» объект без прототипа. Его используют как словарь: ключи вроде
+      `toString`, `constructor` или `__proto__` не конфликтуют с унаследованными свойствами и не дают
+      ложных срабатываний `key in dict`. Цена — методы `Object.prototype` недоступны: проверять ключи нужно
+      через `Object.hasOwn(dict, key)`, а `String(dict)` или шаблонная строка бросят `TypeError`. Для настоящих
+      словарей с произвольными ключами чаще берут `Map`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object#null-prototype_objects
+    source: own
+
+  - id: javascript-prototypes-008
+    level: senior
+    tags: [setter, prototype, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const proto = {
+        set value(v) {
+          this._value = v * 2;
+        },
+      };
+
+      const obj = Object.create(proto);
+      obj.value = 5;
+
+      console.log(Object.keys(obj), obj._value);
+    codeLang: js
+    options:
+      - text: '`[ "value" ] undefined`'
+        why: 'Собственное свойство `value` не создаётся: в цепочке найден сеттер, и присваивание уходит в него.'
+      - text: '`[ "_value" ] 10`'
+        correct: true
+        why: 'Присваивание нашло сеттер в прототипе и вызвало его с `this === obj`. Сеттер записал собственное свойство `_value` в сам `obj`.'
+      - text: '`[ "value", "_value" ] 10`'
+        why: 'Сеттер перехватывает присваивание целиком, свойство `value` в объекте не появится.'
+      - text: '`[] 10`'
+        why: '`_value` записан через `this`, а `this` в сеттере — это `obj`, поэтому свойство собственное.'
+    explanation: |
+      Присваивание `obj.key = v` сначала ищет `key` по цепочке. Если найден сеттер, он вызывается с `this`,
+      равным исходному объекту, и собственное свойство `key` не создаётся. Если найдено обычное свойство с
+      `writable: false`, присваивание игнорируется (в строгом режиме — `TypeError`). И только в остальных случаях
+      создаётся собственное свойство. Так работают геттеры и сеттеры в классах: они живут в прототипе, а данные —
+      в экземплярах.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/set
+    source: own
+
+  - id: javascript-prototypes-009
+    level: middle
+    tags: [for-in, inheritance, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      const base = { inherited: 1 };
+      const obj = Object.create(base);
+      obj.own = 2;
+
+      const keys = [];
+      for (const key in obj) keys.push(key);
+      console.log(keys, Object.keys(obj));
+    codeLang: js
+    options:
+      - text: '`[ "own" ] [ "own" ]`'
+        why: '`for...in` перебирает перечисляемые свойства по всей цепочке прототипов, а не только собственные.'
+      - text: '`[ "own", "inherited" ] [ "own" ]`'
+        correct: true
+        why: '`for...in` видит и унаследованное перечисляемое свойство, а `Object.keys` — только собственные.'
+      - text: '`[ "own", "inherited" ] [ "own", "inherited" ]`'
+        why: '`Object.keys` не заходит в прототипы.'
+      - text: '`[ "inherited", "own" ] [ "own" ]`'
+        why: '`for...in` сначала перебирает собственные свойства, а затем идёт вверх по цепочке.'
+    explanation: |
+      `for...in` обходит все перечисляемые строковые ключи объекта и его прототипов. Встроенные методы вроде
+      `toString` в обход не попадают, потому что они неперечисляемые. Но любые свойства, добавленные в
+      прототипы руками или библиотеками, появятся. Отсюда старая привычка писать внутри `for...in` проверку
+      `Object.hasOwn(obj, key)`. Сегодня обычно используют `Object.keys`, `Object.entries` или `for...of` по
+      ним — они работают только с собственными свойствами.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...in
+    source: own
+
+  - id: javascript-prototypes-010
+    level: senior
+    tags: [new, return, constructor, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      function WithObject() {
+        this.a = 1;
+        return { b: 2 };
+      }
+      function WithPrimitive() {
+        this.a = 1;
+        return 42;
+      }
+
+      console.log(JSON.stringify(new WithObject()), JSON.stringify(new WithPrimitive()));
+    codeLang: js
+    options:
+      - text: '`{"a":1} {"a":1}`'
+        why: 'Если конструктор возвращает объект, `new` отдаёт его вместо созданного `this`.'
+      - text: '`{"b":2} 42`'
+        why: 'Примитив, возвращённый из конструктора, `new` игнорирует и отдаёт созданный объект.'
+      - text: '`{"b":2} {"a":1}`'
+        correct: true
+        why: 'Возвращённый объект подменяет результат `new`. Возвращённый примитив игнорируется, и `new` отдаёт созданный объект с `a: 1`.'
+      - text: '`{"a":1,"b":2} {"a":1}`'
+        why: 'Объекты не сливаются: возвращённый объект полностью заменяет созданный.'
+    explanation: |
+      Последний шаг алгоритма `new`: если конструктор вернул объект (включая массив или функцию), результатом
+      будет он, иначе — созданный `this`. Примитивы (`42`, `'str'`, `null`) игнорируются. Этим пользуются редко,
+      например чтобы вернуть закэшированный экземпляр (синглтон) или Proxy вокруг `this`. В классах правило
+      то же самое. Но в производном классе вернуть примитив нельзя: это `TypeError`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/new#description
+    source: own

@@ -1,0 +1,85 @@
+/* D. Закат: тёплое сияние оранжевый → розовый, крупные скругления, широкий заголовочный шрифт. */
+:root {
+  --page-bg: #0d0614;
+  --bg: #140a1f;
+  --blob1: #f97316;
+  --blob2: #ec4899;
+  --blob3: #8b5cf6;
+  --blob-blur: 80px;
+  --blob-opacity: 0.55;
+
+  --glass-bg: rgba(255, 255, 255, 0.07);
+  --glass-border: rgba(255, 210, 190, 0.16);
+  --glass-blur: 26px;
+  --glass-sat: 170%;
+  --glass-shadow: 0 10px 34px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 230, 220, 0.1);
+  --bar-bg: rgba(28, 12, 34, 0.55);
+
+  --radius: 26px;
+  --chip-radius: 999px;
+  --btn-radius: 999px;
+  --code-radius: 20px;
+
+  --font-body: Manrope, system-ui, sans-serif;
+  --font-heading: Unbounded, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --text: #fff3ec;
+  --text-2: #f2d4c8;
+  --muted: #b08f9f;
+  --accent: #fdba74;
+  --link: #fdba74;
+
+  --primary-bg: linear-gradient(120deg, #fb923c, #ec4899);
+  --primary-text: #fff;
+  --primary-shadow: 0 12px 30px rgba(236, 72, 153, 0.4);
+
+  --chip-bg: rgba(255, 255, 255, 0.05);
+  --chip-border: rgba(255, 210, 190, 0.14);
+  --chip-on-bg: linear-gradient(120deg, rgba(251, 146, 60, 0.35), rgba(236, 72, 153, 0.35));
+  --chip-on-border: rgba(253, 186, 116, 0.6);
+  --chip-on-text: #fff;
+  --chip-on-glow: 0 0 18px rgba(236, 72, 153, 0.35);
+  --chip-on-count: #fed7aa;
+
+  --seg-bg: rgba(0, 0, 0, 0.25);
+  --seg-on-bg: rgba(255, 255, 255, 0.16);
+  --seg-on-text: #fff;
+  --seg-on-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+
+  --ok: #4ade80;
+  --ok-bg: rgba(74, 222, 128, 0.12);
+  --bad: #f43f5e;
+  --bad-bg: rgba(244, 63, 94, 0.13);
+  --on-status: #140a1f;
+  --lvl-junior: #86efac;
+  --lvl-middle: #fdba74;
+  --lvl-senior: #f0abfc;
+
+  --track: rgba(255, 255, 255, 0.1);
+  --ring-color: #fb923c;
+
+  --code-bg: rgba(20, 6, 26, 0.55);
+  --tok-plain: #fff1ea;
+  --tok-kw: #f9a8d4;
+  --tok-fn: #fdba74;
+  --tok-num: #c4b5fd;
+  --tok-str: #bef264;
+  --tok-cls: #fde68a;
+  --tok-punc: #b9a0b0;
+  --inline-code-bg: rgba(251, 146, 60, 0.18);
+  --inline-code-text: #fed7aa;
+}
+
+.title {
+  font-size: 23px;
+  letter-spacing: -0.02em;
+}
+
+.qtext {
+  font-size: 17px;
+}
+
+.ring-text b {
+  font-size: 28px;
+}

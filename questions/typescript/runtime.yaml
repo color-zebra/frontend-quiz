@@ -1,0 +1,333 @@
+# yaml-language-server: $schema=../../schema.json
+topic: typescript
+subtopic: runtime
+questions:
+  - id: typescript-runtime-001
+    level: junior
+    tags: [type-erasure, instanceof, interface]
+    question: |
+      Что произойдёт при компиляции?
+    code: |
+      interface User {
+        name: string;
+      }
+
+      function isUser(value: unknown) {
+        return value instanceof User;
+      }
+    codeLang: ts
+    options:
+      - text: 'Ошибка: `User` — только тип, в рантайме его нет'
+        correct: true
+        why: 'Интерфейсы полностью стираются при компиляции. `instanceof` выполняется в рантайме и требует справа значение — функцию-конструктор, а интерфейса в JavaScript нет.'
+      - text: 'Компилируется: `instanceof` работает с интерфейсами'
+        why: 'С интерфейсами `instanceof` не работает: в скомпилированном коде от `User` ничего не останется.'
+      - text: 'Компилируется, но всегда возвращает `false`'
+        why: 'До рантайма дело не дойдёт: компилятор видит, что `User` используется как значение, и сообщает об ошибке.'
+      - text: 'Ошибка: у параметра `value` тип `unknown`'
+        why: 'Слева от `instanceof` может стоять значение любого типа, включая `unknown`. Ошибка справа.'
+    explanation: |
+      TypeScript добавляет к JavaScript только проверки при компиляции. Интерфейсы, алиасы типов, аннотации и
+      дженерики удаляются (type erasure), и в рантайме о них ничего не известно. Проверить, что значение
+      «является `User`», можно только по его содержимому: пользовательский type guard
+      `(v): v is User => typeof v === 'object' && v !== null && 'name' in v` или библиотека валидации (zod,
+      valibot). `instanceof` работает с классами: класс существует и как тип, и как значение.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/basic-types.html#erased-types
+    source: own
+
+  - id: typescript-runtime-002
+    level: junior
+    tags: [type-assertion, type-erasure, output]
+    question: |
+      Что произойдёт?
+    code: |
+      const input: unknown = '42';
+      const count = input as number;
+      console.log(count.toFixed(1));
+    codeLang: ts
+    options:
+      - text: 'Скомпилируется, в рантайме будет `TypeError`'
+        correct: true
+        why: '`as` только меняет тип для компилятора, значение остаётся строкой `"42"`. У строки нет метода `toFixed`, и вызов падает.'
+      - text: 'Скомпилируется и выведет `42.0`'
+        why: 'Так было бы при настоящем преобразовании, например `Number(input)`. `as` не меняет значение.'
+      - text: 'Ошибка компиляции: `unknown` нельзя привести к `number`'
+        why: '`unknown` можно привести к любому типу через `as`. Запрещены приведения между явно несовместимыми типами, например у строкового литерала `"42" as number`.'
+      - text: 'Скомпилируется и выведет `"42"`'
+        why: 'Метод `toFixed` есть только у чисел. Строка его не имеет, поэтому до вывода дело не дойдёт.'
+    explanation: |
+      Приведение типа (type assertion) `value as T` — указание компилятору «считай, что здесь `T`». Оно не
+      порождает кода и ничего не проверяет в рантайме. Если вы ошиблись, компилятор поверит, а программа
+      сломается в другом месте. Компилятор отклоняет только явно несовместимые приведения, например строку к
+      числу, но через `unknown` можно привести что угодно к чему угодно: `x as unknown as T`. Поэтому `as`
+      уместен, когда вы знаете больше компилятора. Для данных извне нужна проверка или преобразование.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#type-assertions
+    source: own
+  - id: typescript-runtime-003
+    level: middle
+    tags: [enum, reverse-mapping, output]
+    question: |
+      Что выведется в консоль?
+    code: |
+      enum Status {
+        Idle,
+        Loading,
+        Done = 10,
+        Failed,
+      }
+
+      console.log(Status.Failed, Status[1], Object.keys(Status).length);
+    codeLang: ts
+    options:
+      - text: '`11 Loading 8`'
+        correct: true
+        why: 'После явного `Done = 10` счёт продолжается с 11. Числовой enum компилируется в объект с прямым и обратным отображением: и `Idle → 0`, и `0 → "Idle"`. Четыре члена дают восемь ключей.'
+      - text: '`3 Loading 4`'
+        why: 'Автонумерация продолжается от последнего явного значения: после `Done = 10` идёт 11, а не позиция в списке.'
+      - text: '`11 undefined 4`'
+        why: 'У числовых enum есть обратное отображение: `Status[1]` возвращает имя `"Loading"`, а ключей в объекте вдвое больше, чем членов.'
+      - text: '`11 Loading 4`'
+        why: 'В объекте лежат и имена, и числа-ключи для обратного отображения: `"0"`, `"1"`, `"10"`, `"11"`. Всего восемь ключей.'
+    explanation: |
+      Enum — одна из немногих конструкций TypeScript, которые порождают JavaScript-код. Числовой enum
+      превращается в объект вида `Status[Status["Idle"] = 0] = "Idle"`: в нём есть отображение имени в
+      число и обратно. Отсюда сюрпризы: `Object.keys` и `Object.values` возвращают вдвое больше элементов, чем
+      ожидаешь, а перебор enum требует фильтрации чисел. Строковые enum обратного отображения не имеют. Из-за
+      этих особенностей многие проекты заменяют enum объектом `as const` и типом-объединением его значений.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/enums.html#reverse-mappings
+    source: own
+
+  - id: typescript-runtime-004
+    level: middle
+    tags: [enum, string-enum]
+    question: |
+      Какая строка, отмеченная буквой, не скомпилируется?
+    code: |
+      enum Color {
+        Red = 'RED',
+        Blue = 'BLUE',
+      }
+
+      function paint(color: Color) {}
+
+      paint(Color.Red);        // A
+      paint('RED');            // B
+      paint('BLUE' as Color);  // C
+    codeLang: ts
+    options:
+      - text: 'B'
+        correct: true
+        why: 'Строковые enum ведут себя номинально: обычную строку нельзя передать вместо члена enum, даже если значение совпадает. Нужно `Color.Red` или явное приведение.'
+      - text: 'C'
+        why: 'Приведение `as Color` разрешено: строковый литерал `"BLUE"` совместим со значениями enum, и компилятор принимает указание.'
+      - text: 'A'
+        why: '`Color.Red` — член enum, ровно то, что ожидает параметр `color: Color`.'
+      - text: 'Ни одна'
+        why: 'Литерал `"RED"` не является членом `Color` для компилятора, хотя значение то же. Строка B — ошибка.'
+    explanation: |
+      Строковый enum — исключение из структурной типизации: его члены не совместимы с обычными строками.
+      Это сделано намеренно, чтобы значения шли только через имена enum. Неудобство проявляется на границе
+      с внешними данными: ответ API со строкой `'RED'` придётся приводить или проверять. Объединение
+      литералов (`type Color = 'RED' | 'BLUE'`) таких проблем не имеет: строка из данных подходит сразу после
+      проверки. Это ещё одна причина, по которой многие выбирают литералы вместо enum.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/enums.html#string-enums
+    source: own
+
+  - id: typescript-runtime-005
+    level: senior
+    tags: [erasableSyntaxOnly, type-stripping, enum, namespace]
+    question: |
+      Какие строки, отмеченные буквами, не скомпилируются с флагом `erasableSyntaxOnly`?
+    code: |
+      // @erasableSyntaxOnly: true
+      type Id = string;                                   // A
+      enum Role { Admin, User }                           // B
+      class User { constructor(public name: string) {} }  // C
+      namespace Utils { export const version = 1; }       // D
+    codeLang: ts
+    options:
+      - text: 'B, C и D'
+        correct: true
+        why: 'Флаг запрещает синтаксис, который нельзя просто вырезать: enum и namespace со значениями порождают объекты, parameter property — присваивание в конструкторе. Алиас типа удаляется без следа.'
+      - text: 'Только B'
+        why: 'Кроме enum, код порождают и parameter properties (`this.name = name`), и namespace со значениями.'
+      - text: 'B и D'
+        why: '`public name` в параметре конструктора генерирует присваивание `this.name = name`, его тоже нельзя просто стереть.'
+      - text: 'A, B, C и D'
+        why: 'Алиас типа — чистая аннотация, при удалении типов он исчезает целиком. Флаг его не трогает.'
+    explanation: |
+      Некоторые инструменты не компилируют TypeScript, а просто вырезают типы (type stripping). Так Node.js
+      запускает `.ts`-файлы без сборки: с версии 22.6 под флагом, с 23.6 и 22.18 по умолчанию. Им доступны только конструкции, после
+      удаления которых остаётся корректный JavaScript с тем же поведением. Enum, namespace со значениями,
+      parameter properties и `import x = require()` требуют генерации кода. Флаг `erasableSyntaxOnly`
+      (TypeScript 5.8) запрещает их, чтобы код гарантированно работал с такими инструментами. Замена enum —
+      объект `as const`, parameter properties — явные поля.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-8.html#the---erasablesyntaxonly-option
+      - https://nodejs.org/api/typescript.html#type-stripping
+    source: own
+
+  - id: typescript-runtime-006
+    level: middle
+    tags: [import-type, type-erasure, modules]
+    question: |
+      Зачем писать `import type { User } from './types'` вместо обычного `import`?
+    options:
+      - text: 'Гарантировать, что импорт целиком удалится из JavaScript'
+        correct: true
+        why: 'Форма `import type { … }` стирается всегда, при любых настройках. Обычный импорт удаляется, только если компилятор или сборщик сам поймёт, что имя нужно лишь для типов.'
+      - text: 'Ускорить проверку типов в большом проекте'
+        why: 'На скорость проверки `import type` практически не влияет: компилятор всё равно читает файл с типами.'
+      - text: 'Разрешить импорт типов из JavaScript-файлов'
+        why: 'Типы из JavaScript-файлов с JSDoc импортируются и обычным `import`. `import type` про другое — про стирание при компиляции.'
+      - text: 'Использовать интерфейс в `implements` и `extends`'
+        why: 'Для `implements` и `extends` интерфейса подходит и обычный импорт. Модификатор `type` не расширяет возможности, а ограничивает их.'
+    explanation: |
+      `tsc` и большинство сборщиков удаляют импорты, имена из которых используются только в позициях типов.
+      Но угадывание работает не всегда. Сборщики вроде esbuild, SWC и Babel компилируют каждый файл отдельно
+      (это ограничение описывает флаг `isolatedModules`). Для реэкспорта `export { User } from './types'` они
+      не знают, тип это или значение, и оставляют его, а в рантайме такого экспорта нет. Явная пометка
+      `type` снимает неоднозначность: сборщику не нужно ничего угадывать.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-8.html#type-only-imports-and-export
+      - https://www.typescriptlang.org/tsconfig/#verbatimModuleSyntax
+    source: own
+
+  - id: typescript-runtime-007
+    level: middle
+    tags: [type-erasure, json, validation, output]
+    question: |
+      Что произойдёт?
+    code: |
+      interface User {
+        name: string;
+        age: number;
+      }
+
+      const user: User = JSON.parse('{"name": "Ann"}');
+      console.log(user.age.toFixed(1));
+    codeLang: ts
+    options:
+      - text: 'Скомпилируется, в рантайме будет `TypeError`'
+        correct: true
+        why: '`JSON.parse` возвращает `any`, и компилятор верит аннотации `User`. В рантайме поля `age` нет, `user.age` — `undefined`, и вызов `toFixed` у него падает.'
+      - text: 'Ошибка компиляции: в JSON нет поля `age`'
+        why: 'Компилятор не разбирает содержимое строк и не знает, что окажется в JSON. Результат `JSON.parse` имеет тип `any`.'
+      - text: 'Скомпилируется и выведет `NaN`'
+        why: 'До числовых операций дело не дойдёт: `user.age` равно `undefined`, а у `undefined` нет методов.'
+      - text: 'Скомпилируется и выведет `undefined`'
+        why: 'Выражение не просто читает `user.age`, а вызывает у него метод `toFixed`. Вызов метода у `undefined` бросает исключение.'
+    explanation: |
+      Типы описывают ожидания, но не проверяют данные в рантайме. Всё, что приходит извне (ответ сервера,
+      `localStorage`, `JSON.parse`, параметры URL), имеет тот тип, который вы объявили, а не тот, что пришёл
+      на самом деле. `any` из `JSON.parse` и `response.json()` молча принимает любую аннотацию. Надёжный
+      подход — считать внешние данные `unknown` и проверять их схемой (zod, valibot, ArkType), из которой
+      заодно выводится тип. Тогда ошибка формы данных ловится на границе, а не глубоко в коде.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/basic-types.html#erased-types
+      - https://zod.dev/
+    source: own
+
+  - id: typescript-runtime-008
+    level: middle
+    tags: [declare, ambient, output]
+    question: |
+      Сборщик не подставил значение `__APP_VERSION__`. Что произойдёт?
+    code: |
+      declare const __APP_VERSION__: string;
+
+      console.log(__APP_VERSION__);
+    codeLang: ts
+    options:
+      - text: 'Скомпилируется, в рантайме будет `ReferenceError`'
+        correct: true
+        why: '`declare` сообщает компилятору, что переменная где-то существует, и не создаёт её. В JavaScript останется только обращение к необъявленной переменной.'
+      - text: 'Ошибка компиляции: переменная не инициализирована'
+        why: 'Инициализатор у `declare const` не нужен: это описание переменной, которая уже где-то существует, а не её создание.'
+      - text: 'Скомпилируется и выведет `undefined`'
+        why: 'Переменная не создаётся вовсе, а чтение необъявленной переменной бросает `ReferenceError`, а не возвращает `undefined`.'
+      - text: 'Скомпилируется и выведет пустую строку'
+        why: '`declare` не создаёт значения по типу: в рантайме от него ничего не остаётся.'
+    explanation: |
+      `declare` (ambient declaration) описывает то, что существует вне этого файла: глобальные переменные,
+      подставляемые сборщиком константы, скрипты с CDN, модули без типов. Кода он не порождает, это обещание
+      компилятору. Такие объявления обычно лежат в `.d.ts`-файлах, например `vite-env.d.ts`. Если обещание
+      не выполнено (сборщик не настроен, скрипт не загружен), ошибка проявится только в рантайме. Константы
+      из `define` в Vite и `DefinePlugin` в webpack описывают через `declare` в `.d.ts` проекта, например
+      `vite-env.d.ts`, и держат в соответствии с настройкой сборщика.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/declaration-files/by-example.html#global-variables
+      - https://vite.dev/config/shared-options.html#define
+    source: own
+
+  - id: typescript-runtime-009
+    level: senior
+    tags: [const-enum, isolatedModules, emit]
+    question: |
+      Что окажется в JavaScript, если собрать файл обычным `tsc` и если собрать его `tsc` с флагом
+      `isolatedModules`?
+    code: |
+      const enum Direction {
+        Up = 1,
+        Down = 2,
+      }
+
+      const move = Direction.Down;
+    codeLang: ts
+    options:
+      - text: '`tsc` подставит `2`, а с `isolatedModules` останется объект `Direction`'
+        correct: true
+        why: 'Полный `tsc` видит значения `const enum` и подставляет их на место использования, удаляя объект. С `isolatedModules` компилятор рассчитывает на пофайловую сборку: оставляет enum обычным объектом и обращение к нему.'
+      - text: 'В обоих случаях подставится `2`, объекта `Direction` не будет'
+        why: 'С `isolatedModules` `tsc` сохраняет `const enum` как обычный объект: при пофайловой компиляции значения enum из других файлов неизвестны, и поведение делают одинаковым для всех файлов.'
+      - text: 'В обоих случаях останется объект `Direction` и обращение к нему'
+        why: 'Без `isolatedModules` `tsc` подставляет значения: в результате будет `const move = 2 /* Direction.Down */`.'
+      - text: 'С `isolatedModules` будет ошибка компиляции'
+        why: 'Локальный `const enum` с `isolatedModules` компилируется. Ошибка возникает при использовании `const enum`, объявленного в `.d.ts`.'
+    explanation: |
+      `const enum` задумывался как enum без рантайм-объекта: значения подставляются при компиляции. Это
+      требует знать значения enum из любого файла, а инструменты, которые компилируют файлы по одному
+      (Babel, SWC, `transpileModule`), видят только текущий файл. Поэтому при `isolatedModules` TypeScript
+      сохраняет `const enum` как обычный объект. Поведение сборщиков различается: esbuild, например,
+      подставляет значения внутри файла и при бандлинге. Использовать `const enum` из `.d.ts` чужой библиотеки в таком режиме нельзя: объекта в
+      рантайме нет. Поэтому в современных проектах `const enum` не советуют. Безопасная замена — объект
+      `as const`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/enums.html#const-enum-pitfalls
+      - https://www.typescriptlang.org/tsconfig/#isolatedModules
+    source: own
+
+  - id: typescript-runtime-010
+    level: senior
+    tags: [import-type, verbatimModuleSyntax, emit, no-run]
+    question: |
+      В `tsconfig.json` включён `verbatimModuleSyntax`. Что останется от этих строк в JavaScript?
+    code: |
+      import type { User } from './types.js';   // A
+      import { type Order } from './orders.js'; // B
+    codeLang: ts
+    options:
+      - text: 'От A ничего, от B — `import {} from ''./orders.js''`'
+        correct: true
+        why: '`import type` стирается целиком. Во встроенной форме `type` относится только к имени: оно удаляется, а сама инструкция импорта остаётся, и модуль `orders.js` загрузится со всеми побочными эффектами.'
+      - text: 'Ничего не останется от обеих строк'
+        why: 'С `verbatimModuleSyntax` компилятор не удаляет импорты по догадке. Встроенный `type` убирает имя, но не инструкцию.'
+      - text: 'Обе строки останутся как есть, только без слова `type`'
+        why: 'Имена, помеченные `type`, всегда удаляются: в рантайме таких экспортов нет, и импорт сломал бы модуль.'
+      - text: 'От A — `import ''./types.js''`, от B ничего'
+        why: 'Наоборот: целиком стирается именно форма `import type`, а инструкция со встроенным `type` остаётся пустым импортом.'
+    explanation: |
+      Флаг `verbatimModuleSyntax` делает правило простым: что написано без `type`, остаётся в JavaScript,
+      что помечено `type`, удаляется. Для `import type { X }` это означает удаление всей строки. Для
+      `import { type X, y }` удаляется только `X`. А если других имён нет, остаётся `import {} from '...'`, то
+      есть импорт ради побочных эффектов: модуль загрузится и выполнится. Чаще всего это безобидно, но
+      так можно случайно затянуть в бандл тяжёлый модуль или получить циклический импорт. Поэтому для
+      импорта только типов используют форму `import type`.
+    links:
+      - https://www.typescriptlang.org/tsconfig/#verbatimModuleSyntax
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-0.html#--verbatimmodulesyntax
+    source: own
