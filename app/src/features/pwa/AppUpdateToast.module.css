@@ -1,0 +1,53 @@
+/* Сверху, а не снизу: внизу экрана сессии стоит панель «Заметка / Дальше». */
+.toast {
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top));
+  left: 50%;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(568px, calc(100% - 24px));
+  padding: 8px 8px 8px 16px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  /* Почти непрозрачная: плашка лежит поверх заголовка, и он не должен просвечивать сквозь текст. */
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  transform: translateX(-50%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  animation: drop-in 0.25s ease-out;
+}
+
+.text {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.action {
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+.close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+}
+
+@keyframes drop-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -12px);
+  }
+}

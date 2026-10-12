@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { BankDiff } from "../../data/loadQuestions";
 import { LEVELS, type QuestionBank } from "../../data/types";
 import { useNotes } from "../../features/notes/NotesProvider";
+import { promptInstall, useCanInstall } from "../../features/pwa/install";
 import {
   SESSION_LENGTHS,
   getPool,
@@ -79,6 +80,7 @@ export function HomeScreen({
   onOpenTheme,
 }: HomeScreenProps) {
   const { notes } = useNotes();
+  const canInstall = useCanInstall();
   const [subtopicsOpen, setSubtopicsOpen] = useState(false);
   const [updateState, setUpdateState] = useState<UpdateState>({ kind: "idle" });
   const bankDate = formatBankDate(bank.generatedAt);
@@ -202,6 +204,12 @@ export function HomeScreen({
           <span className={styles.tileSub}>{THEMES.find((t) => t.id === theme)?.name}</span>
         </button>
       </div>
+
+      {canInstall && (
+        <Button variant="secondary" icon="download" onClick={promptInstall}>
+          Установить приложение
+        </Button>
+      )}
 
       <SubtopicsSheet
         open={subtopicsOpen}
