@@ -5,6 +5,11 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+    # Свои наборы и примеры в сайт не входят — их правки сайт не пересобирают.
+    # Если в пуше есть и другие файлы, деплой пойдёт как обычно.
+    paths-ignore:
+      - "custom-sets/**"
+      - "examples/**"
   workflow_dispatch:
 
 permissions:
