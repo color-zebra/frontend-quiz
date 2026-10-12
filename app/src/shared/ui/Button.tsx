@@ -27,15 +27,19 @@ export function Button({ variant = "primary", icon, iconAfter, className, childr
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon: IconName;
   label: string;
+  /** Идёт действие: иконка крутится, кнопка недоступна. */
+  busy?: boolean;
 }
 
-export function IconButton({ icon, label, className, ...rest }: IconButtonProps) {
+export function IconButton({ icon, label, busy = false, className, disabled, ...rest }: IconButtonProps) {
   return (
     <button
       type="button"
-      className={clsx(styles.iconButton, glass.glass, className)}
+      className={clsx(styles.iconButton, glass.glass, busy && styles.busy, className)}
       aria-label={label}
       title={label}
+      disabled={busy || disabled}
+      aria-busy={busy || undefined}
       {...rest}
     >
       <Icon name={icon} />

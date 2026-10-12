@@ -1,4 +1,4 @@
-import { LEVELS, type Level, type Question, type QuestionBank } from "../../data/types";
+import { BUILTIN_SET_ID, LEVELS, type Level, type Question, type QuestionBank } from "../../data/types";
 import { readStorageJson, writeStorage } from "../../shared/lib/storage";
 
 export type SessionLength = 10 | 20 | 30 | "infinite";
@@ -13,7 +13,10 @@ export interface Filters {
   length: SessionLength;
 }
 
-const STORAGE_KEY = "fq.filters.v1";
+// У основной базы ключ прежний, чтобы сохранённые настройки не сбросились; у своих наборов — свой ключ на набор.
+function getStorageKey(bank: QuestionBank) {
+  return bank.setId === BUILTIN_SET_ID ? "fq.filters.v1" : `fq.filters.v1:${bank.setId}`;
+}
 
 export function getSubtopicKey(topic: string, subtopic: string) {
   return `${topic}/${subtopic}`;
@@ -35,7 +38,7 @@ function isStringArray(value: unknown): value is string[] {
 /** Читает сохранённые фильтры и выбрасывает из них то, чего больше нет в базе. */
 export function loadFilters(bank: QuestionBank): Filters {
   const defaults = getDefaultFilters(bank);
-  const saved = readStorageJson(STORAGE_KEY) as Partial<Record<keyof Filters, unknown>> | null;
+  const saved = readStorageJson(getStorageKey(bank)) as Partial<Record<keyof Filters, unknown>> | null;
   if (!saved || typeof saved !== "object") return defaults;
 
   const topics = isStringArray(saved.topics) ? saved.topics.filter((id) => bank.topicById.has(id)) : defaults.topics;
@@ -48,8 +51,8 @@ export function loadFilters(bank: QuestionBank): Filters {
   return { topics, excludedSubtopics, levels, length };
 }
 
-export function saveFilters(filters: Filters) {
-  writeStorage(STORAGE_KEY, JSON.stringify(filters));
+export function saveFilters(bank: QuestionBank, filters: Filters) {
+  writeStorage(getStorageKey(bank), JSON.stringify(filters));
 }
 
 export function getPool(bank: QuestionBank, filters: Filters): Question[] {

@@ -3,73 +3,6 @@
   gap: 8px;
 }
 
-.spinning svg {
-  animation: spin 0.9s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.updateMessage {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 10px 10px 10px 14px;
-  border-color: var(--ok);
-  color: var(--text);
-  font-size: 14px;
-}
-
-.updateError {
-  border-color: var(--bad);
-}
-
-.dismiss {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: none;
-  color: var(--muted);
-}
-
-.subtopics {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  margin-top: 14px;
-  padding: 12px 0 0;
-  border: 0;
-  border-top: 1px solid var(--glass-border);
-  background: none;
-  color: var(--text-2);
-  font-size: 13px;
-}
-
-.subtopics b {
-  color: var(--text);
-  font-weight: 600;
-}
-
-.subtopics:disabled {
-  opacity: 0.5;
-}
-
-.hint {
-  margin: -6px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-  text-align: center;
-}
-
 .tiles {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -83,6 +16,10 @@
   padding: 14px;
   color: var(--text);
   text-align: left;
+}
+
+.wide {
+  grid-column: span 2;
 }
 
 .tile svg {

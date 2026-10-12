@@ -1,8 +1,5 @@
 import { LEVELS, type Level } from "../../data/types";
 
-/** Набор вопросов, к которому относится заметка. Пока есть только встроенная база; свои наборы появятся позже. */
-export const BUILTIN_SET = "builtin";
-
 export interface Note {
   /** `${setId}:${questionId}` — так заметки к разным наборам не путаются даже при одинаковых id. */
   key: string;
@@ -16,6 +13,8 @@ export interface Note {
     topicTitle: string;
     subtopicTitle: string;
     level: Level;
+    /** Название своего набора — чтобы заметка оставалась понятной и после удаления набора. */
+    setTitle?: string;
   };
 }
 

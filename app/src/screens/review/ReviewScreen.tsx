@@ -7,7 +7,8 @@ import { QuestionView } from "../question/QuestionView";
 import styles from "./ReviewScreen.module.css";
 
 interface ReviewScreenProps {
-  bank: QuestionBank;
+  /** Нет, если набор удалён. */
+  bank: QuestionBank | undefined;
   questionId: string;
   onBack: () => void;
 }
@@ -15,7 +16,7 @@ interface ReviewScreenProps {
 /** Разбор одного вопроса: сразу с ответом и пояснениями. Открывается из итога сессии и из заметок. */
 export function ReviewScreen({ bank, questionId, onBack }: ReviewScreenProps) {
   const [noteOpen, setNoteOpen] = useState(false);
-  const question = bank.byId.get(questionId);
+  const question = bank?.byId.get(questionId);
 
   return (
     <Screen>
@@ -25,13 +26,14 @@ export function ReviewScreen({ bank, questionId, onBack }: ReviewScreenProps) {
         <span className={styles.spacer} />
       </TopBar>
 
-      {question ? (
+      {bank && question ? (
         <>
           <QuestionView
             bank={bank}
             question={question}
             optionOrder={question.options.map((_, i) => i)}
-            picked={null}
+            selected={[]}
+            answered={false}
             reveal
             onEditNote={() => setNoteOpen(true)}
           />
@@ -43,10 +45,10 @@ export function ReviewScreen({ bank, questionId, onBack }: ReviewScreenProps) {
               Назад
             </Button>
           </ActionBar>
-          <NoteSheet question={noteOpen ? question : null} onClose={() => setNoteOpen(false)} />
+          <NoteSheet bank={bank} question={noteOpen ? question : null} onClose={() => setNoteOpen(false)} />
         </>
       ) : (
-        <p className={styles.missing}>Этого вопроса больше нет в базе.</p>
+        <p className={styles.missing}>{bank ? "Этого вопроса больше нет в базе." : "Набор с этим вопросом удалён."}</p>
       )}
     </Screen>
   );

@@ -1,34 +1,35 @@
 import { useState } from "react";
-import type { Question } from "../../data/types";
+import type { Question, QuestionBank } from "../../data/types";
 import { Button } from "../../shared/ui/Button";
 import { Sheet } from "../../shared/ui/Sheet";
 import styles from "./NoteSheet.module.css";
 import { useNotes } from "./NotesProvider";
 
 interface NoteSheetProps {
+  bank: QuestionBank;
   question: Question | null;
   onClose: () => void;
 }
 
 /** Панель редактирования заметки к вопросу. Открыта, пока question не null. */
-export function NoteSheet({ question, onClose }: NoteSheetProps) {
+export function NoteSheet({ bank, question, onClose }: NoteSheetProps) {
   const { getNote } = useNotes();
-  const hasNote = !!question && !!getNote(question.id);
+  const hasNote = !!question && !!getNote(bank.setId, question.id);
 
   return (
     <Sheet open={!!question} title={hasNote ? "Заметка к вопросу" : "Новая заметка"} onClose={onClose}>
-      {question && <NoteEditor question={question} onDone={onClose} />}
+      {question && <NoteEditor bank={bank} question={question} onDone={onClose} />}
     </Sheet>
   );
 }
 
-function NoteEditor({ question, onDone }: { question: Question; onDone: () => void }) {
+function NoteEditor({ bank, question, onDone }: { bank: QuestionBank; question: Question; onDone: () => void }) {
   const { getNote, saveNote, deleteNote } = useNotes();
-  const note = getNote(question.id);
+  const note = getNote(bank.setId, question.id);
   const [text, setText] = useState(note?.text ?? "");
 
   function save() {
-    saveNote(question, text);
+    saveNote(bank, question, text);
     onDone();
   }
 

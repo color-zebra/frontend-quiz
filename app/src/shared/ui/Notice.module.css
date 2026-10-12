@@ -1,0 +1,27 @@
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 10px 10px 14px;
+  border-color: var(--ok);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.error {
+  border-color: var(--bad);
+}
+
+.close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+}

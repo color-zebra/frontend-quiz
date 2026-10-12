@@ -50,3 +50,13 @@
 .iconButton:active {
   transform: scale(0.95);
 }
+
+.busy svg {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

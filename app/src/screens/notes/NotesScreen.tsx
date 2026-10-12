@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { useRef, useState, type ChangeEvent } from "react";
-import type { QuestionBank } from "../../data/types";
+import { formatTopicLine } from "../../data/titles";
+import { BUILTIN_SET_ID, type QuestionBank } from "../../data/types";
 import { useNotes, type ImportStats } from "../../features/notes/NotesProvider";
 import { exportNotes, parseNotesFile } from "../../features/notes/notesFile";
 import type { Note } from "../../features/notes/types";
@@ -15,9 +16,10 @@ import { ScreenTitle } from "../../shared/ui/ScreenTitle";
 import styles from "./NotesScreen.module.css";
 
 interface NotesScreenProps {
-  bank: QuestionBank;
+  /** База по метке набора; undefined — набор удалён. */
+  getBank: (setId: string) => QuestionBank | undefined;
   onBack: () => void;
-  onOpenQuestion: (id: string) => void;
+  onOpenQuestion: (setId: string, questionId: string) => void;
 }
 
 type ImportMessage = { kind: "ok"; stats: ImportStats } | { kind: "error"; text: string };
@@ -30,7 +32,7 @@ function formatImportStats({ added, updated, skipped }: ImportStats) {
 
 const dateFormat = new Intl.DateTimeFormat("ru", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
 
-export function NotesScreen({ bank, onBack, onOpenQuestion }: NotesScreenProps) {
+export function NotesScreen({ getBank, onBack, onOpenQuestion }: NotesScreenProps) {
   const { notes, status, deleteNote, importNotes } = useNotes();
   const fileInput = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState<ImportMessage | null>(null);
@@ -86,7 +88,7 @@ export function NotesScreen({ bank, onBack, onOpenQuestion }: NotesScreenProps) 
       <ul className={styles.list}>
         {list.map((note) => (
           <li key={note.key}>
-            <NoteCard note={note} exists={bank.byId.has(note.questionId)} onOpen={onOpenQuestion} onDelete={deleteNote} />
+            <NoteCard note={note} bank={getBank(note.setId)} onOpen={onOpenQuestion} onDelete={deleteNote} />
           </li>
         ))}
       </ul>
@@ -96,16 +98,20 @@ export function NotesScreen({ bank, onBack, onOpenQuestion }: NotesScreenProps) 
 
 interface NoteCardProps {
   note: Note;
-  exists: boolean;
-  onOpen: (id: string) => void;
+  bank: QuestionBank | undefined;
+  onOpen: (setId: string, questionId: string) => void;
   onDelete: (key: string) => void;
 }
 
-function NoteCard({ note, exists, onOpen, onDelete }: NoteCardProps) {
+function NoteCard({ note, bank, onOpen, onDelete }: NoteCardProps) {
+  const exists = !!bank?.byId.has(note.questionId);
+  const isOwnSet = note.setId !== BUILTIN_SET_ID;
+  const setTitle = bank?.title ?? note.snapshot.setTitle ?? "свой набор";
   const body = (
     <>
+      {isOwnSet && <span className={styles.setLabel}>Набор «{setTitle}»</span>}
       <span className={styles.meta}>
-        <LevelBadge level={note.snapshot.level} /> {note.snapshot.topicTitle} · {note.snapshot.subtopicTitle}
+        <LevelBadge level={note.snapshot.level} /> {formatTopicLine(note.snapshot.topicTitle, note.snapshot.subtopicTitle)}
       </span>
       <Markdown text={note.snapshot.question} inline className={styles.question} />
       <span className={styles.text}>{note.text}</span>
@@ -115,7 +121,7 @@ function NoteCard({ note, exists, onOpen, onDelete }: NoteCardProps) {
 
   if (exists) {
     return (
-      <button type="button" className={clsx(styles.card, glass.glass)} onClick={() => onOpen(note.questionId)}>
+      <button type="button" className={clsx(styles.card, glass.glass)} onClick={() => onOpen(note.setId, note.questionId)}>
         {body}
         <Icon name="chevronRight" className={styles.chevron} />
       </button>
@@ -124,7 +130,7 @@ function NoteCard({ note, exists, onOpen, onDelete }: NoteCardProps) {
 
   return (
     <div className={clsx(styles.card, styles.orphan, glass.glass)}>
-      <span className={styles.orphanLabel}>Вопроса больше нет в базе</span>
+      <span className={styles.orphanLabel}>{bank ? "Вопроса больше нет в базе" : "Набор удалён"}</span>
       {body}
       <IconButton icon="trash" label="Удалить заметку" className={styles.chevron} onClick={() => onDelete(note.key)} />
     </div>

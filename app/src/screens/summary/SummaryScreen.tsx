@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import type { CSSProperties } from "react";
-import { getTopicTitles } from "../../data/titles";
+import { formatTopicLine, getTopicTitles } from "../../data/titles";
 import type { QuestionBank } from "../../data/types";
 import { getMistakeIds, type SessionAnswer } from "../../features/session/session";
 import { countQuestions } from "../../shared/lib/plural";
@@ -20,7 +20,9 @@ interface SummaryScreenProps {
   answers: readonly SessionAnswer[];
   onRetryMistakes: (ids: string[]) => void;
   onOpenQuestion: (id: string) => void;
-  onHome: () => void;
+  /** Подпись кнопки возврата: «На главную» или «К набору». */
+  backLabel: string;
+  onBack: () => void;
 }
 
 function getTopicStats(bank: QuestionBank, answers: readonly SessionAnswer[]) {
@@ -36,7 +38,7 @@ function getTopicStats(bank: QuestionBank, answers: readonly SessionAnswer[]) {
   return [...stats.values()];
 }
 
-export function SummaryScreen({ bank, answers, onRetryMistakes, onOpenQuestion, onHome }: SummaryScreenProps) {
+export function SummaryScreen({ bank, answers, onRetryMistakes, onOpenQuestion, backLabel, onBack }: SummaryScreenProps) {
   const correct = answers.filter((a) => a.correct).length;
   const percent = answers.length ? Math.round((correct / answers.length) * 100) : 0;
   const mistakeIds = getMistakeIds(answers);
@@ -90,7 +92,7 @@ export function SummaryScreen({ bank, answers, onRetryMistakes, onOpenQuestion, 
           return (
             <button key={id} type="button" className={clsx(styles.mistake, glass.glass)} onClick={() => onOpenQuestion(id)}>
               <span className={styles.mistakeMeta}>
-                <LevelBadge level={question.level} /> {topicTitle} · {subtopicTitle}
+                <LevelBadge level={question.level} /> {formatTopicLine(topicTitle, subtopicTitle)}
               </span>
               <Markdown text={question.question} inline className={styles.mistakeText} />
               <Icon name="chevronRight" className={styles.chevron} />
@@ -105,8 +107,8 @@ export function SummaryScreen({ bank, answers, onRetryMistakes, onOpenQuestion, 
             Прорешать ошибки · {mistakeIds.length}
           </Button>
         )}
-        <Button variant={mistakeIds.length ? "secondary" : "primary"} onClick={onHome}>
-          На главную
+        <Button variant={mistakeIds.length ? "secondary" : "primary"} onClick={onBack}>
+          {backLabel}
         </Button>
       </div>
     </Screen>

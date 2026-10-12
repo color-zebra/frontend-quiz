@@ -9,7 +9,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const QUESTIONS_DIR = join(ROOT, "questions");
 const LEVELS = ["junior", "middle", "senior"];
 const CODE_LANGS = ["html", "css", "scss", "js", "ts", "jsx", "tsx", "http", "json", "text"];
-const QUESTION_KEYS = ["id", "level", "tags", "question", "code", "codeLang", "options", "explanation", "links", "source"];
+const QUESTION_KEYS = ["id", "level", "tags", "question", "code", "codeLang", "multiple", "options", "explanation", "links", "source"];
 const OPTION_KEYS = ["text", "correct", "why"];
 
 const errors = [];
@@ -69,11 +69,20 @@ for (const path of listYamlFiles(QUESTIONS_DIR)) {
     if (!isText(q.explanation)) fail(where, "пустой explanation");
     if (q.code !== undefined && !isText(q.code)) fail(where, "пустой code");
     if (q.code !== undefined && !CODE_LANGS.includes(q.codeLang)) fail(where, "у code нет codeLang");
-    if (!Array.isArray(q.options) || q.options.length !== 4) {
+    if (q.multiple !== undefined && q.multiple !== true) fail(where, "multiple бывает только true");
+    // Вопрос с несколькими ответами: больше одного correct или явный multiple: true (галочки при одном правильном,
+    // чтобы вид вопроса не подсказывал, сколько ответов верны).
+    const correctCount = Array.isArray(q.options) ? q.options.filter((option) => option?.correct === true).length : 0;
+    const isMultiple = q.multiple === true || correctCount > 1;
+    if (!Array.isArray(q.options)) {
+      fail(where, "нет вариантов");
+    } else if (!isMultiple && q.options.length !== 4) {
       fail(where, "вариантов должно быть ровно 4");
+    } else if (isMultiple && (q.options.length < 4 || q.options.length > 6)) {
+      fail(where, "в вопросе с несколькими ответами вариантов должно быть от 4 до 6");
     } else {
-      const correctCount = q.options.filter((option) => option.correct === true).length;
-      if (correctCount !== 1) fail(where, `правильных вариантов ${correctCount}, нужен ровно 1`);
+      if (correctCount === 0) fail(where, "нет правильного варианта");
+      if (correctCount === q.options.length) fail(where, "все варианты правильные — ответ угадывается без знаний");
       q.options.forEach((option, optionIndex) => {
         for (const key of Object.keys(option ?? {})) {
           if (!OPTION_KEYS.includes(key)) fail(where, `вариант ${optionIndex + 1}: лишнее поле "${key}"`);
@@ -86,19 +95,34 @@ for (const path of listYamlFiles(QUESTIONS_DIR)) {
       });
       const texts = q.options.map((option) => option.text?.trim());
       if (new Set(texts).size !== texts.length) fail(where, "одинаковые тексты вариантов");
-      const correctOption = q.options.find((option) => option.correct === true);
-      const longestWrong = Math.max(...q.options.filter((option) => option !== correctOption).map((option) => option.text?.length ?? 0));
-      if (correctOption && correctOption.text.length > 30 && correctOption.text.length > longestWrong * LENGTH_RATIO_LIMIT) {
-        warnings.push(`${where}: правильный вариант длиннее остальных (${correctOption.text.length} против ${longestWrong})`);
+      const correctOptions = q.options.filter((option) => option.correct === true);
+      const wrongOptions = q.options.filter((option) => option.correct !== true);
+      const lengthOf = (option) => option.text?.length ?? 0;
+      if (correctOptions.length === 1) {
+        const [correctOption] = correctOptions;
+        const longestWrong = Math.max(...wrongOptions.map(lengthOf));
+        if (lengthOf(correctOption) > 30 && lengthOf(correctOption) > longestWrong * LENGTH_RATIO_LIMIT) {
+          warnings.push(`${where}: правильный вариант длиннее остальных (${lengthOf(correctOption)} против ${longestWrong})`);
+        }
+      } else if (correctOptions.length > 1) {
+        // Несколько правильных: сравниваем средние длины групп.
+        const average = (options) => Math.round(options.reduce((sum, option) => sum + lengthOf(option), 0) / options.length);
+        const correctAverage = average(correctOptions);
+        const wrongAverage = average(wrongOptions);
+        if (correctAverage > 30 && correctAverage > wrongAverage * LENGTH_RATIO_LIMIT) {
+          warnings.push(`${where}: правильные варианты в среднем длиннее неправильных (${correctAverage} против ${wrongAverage})`);
+        }
       }
-      // Обратная подсказка: пояснение после тире или двоеточия есть у всех неверных, но не у правильного (или наоборот)
+      // Обратная подсказка: пояснение после тире или двоеточия есть у всех неверных, но не у правильных (или наоборот)
       const hasTail = (text) => /\s—\s|:\s/.test((text ?? "").replace(/`[^`]*`/g, "``"));
-      const wrongTails = q.options.filter((option) => option !== correctOption).map((option) => hasTail(option.text));
-      if (correctOption && !hasTail(correctOption.text) && wrongTails.every(Boolean)) {
-        warnings.push(`${where}: только у правильного варианта нет пояснения после тире или двоеточия`);
+      const correctTails = correctOptions.map((option) => hasTail(option.text));
+      const wrongTails = wrongOptions.map((option) => hasTail(option.text));
+      const label = correctOptions.length > 1 ? "правильных вариантов" : "правильного варианта";
+      if (correctTails.length > 0 && wrongTails.length > 0 && !correctTails.some(Boolean) && wrongTails.every(Boolean)) {
+        warnings.push(`${where}: только у ${label} нет пояснения после тире или двоеточия`);
       }
-      if (correctOption && hasTail(correctOption.text) && !wrongTails.some(Boolean)) {
-        warnings.push(`${where}: только у правильного варианта есть пояснение после тире или двоеточия`);
+      if (correctTails.length > 0 && wrongTails.length > 0 && correctTails.every(Boolean) && !wrongTails.some(Boolean)) {
+        warnings.push(`${where}: только у ${label} есть пояснение после тире или двоеточия`);
       }
     }
     // Опечатки со смешанными алфавитами внутри слова (кириллица + латиница) глазом не видны
@@ -129,11 +153,17 @@ for (const [key, row] of [...stats].sort()) {
 }
 console.log(`Всего вопросов: ${allQuestions.length}`);
 
-const longestCorrect = allQuestions.filter((q) => {
-  const correctLength = q.options?.find((option) => option.correct === true)?.text?.length ?? 0;
-  return q.options?.every((option) => option.correct === true || (option.text?.length ?? 0) < correctLength);
+// Метрика имеет смысл только для вопросов с одним правильным ответом.
+const singleAnswer = allQuestions.filter((q) => q.options?.filter((option) => option.correct === true).length === 1);
+const longestCorrect = singleAnswer.filter((q) => {
+  const correctLength = q.options.find((option) => option.correct === true)?.text?.length ?? 0;
+  return q.options.every((option) => option.correct === true || (option.text?.length ?? 0) < correctLength);
 }).length;
-console.log(`Правильный вариант строго самый длинный: ${longestCorrect} из ${allQuestions.length} (норма — около четверти)`);
+console.log(
+  `Правильный вариант строго самый длинный: ${longestCorrect} из ${singleAnswer.length} вопросов с одним ответом (норма — около четверти)`,
+);
+const multipleCount = allQuestions.filter((q) => q.multiple === true || !singleAnswer.includes(q)).length;
+console.log(`Вопросов с несколькими ответами (галочки): ${multipleCount}`);
 
 if (warnings.length > 0) {
   console.warn(`\nПредупреждений: ${warnings.length}`);

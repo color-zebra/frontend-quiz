@@ -72,6 +72,8 @@ const PATHS = {
     </>
   ),
   check: <path d="m5 12 5 5 9-10" />,
+  folder: <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />,
+  plus: <path d="M12 5v14M5 12h14" />,
   sliders: (
     <>
       <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" />

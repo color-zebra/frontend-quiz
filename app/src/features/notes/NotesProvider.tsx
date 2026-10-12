@@ -1,7 +1,8 @@
 import { createContext, use, useEffect, useState, type ReactNode } from "react";
+import { getTopicTitles } from "../../data/titles";
 import type { Question, QuestionBank } from "../../data/types";
 import { deleteNoteRecord, readAllNotes, writeNote, writeNotes } from "./notesStore";
-import { BUILTIN_SET, getNoteKey, type Note } from "./types";
+import { getNoteKey, type Note } from "./types";
 
 /** ready — заметки сохраняются; unavailable — IndexedDB не работает, заметки живут до закрытия вкладки. */
 export type NotesStatus = "loading" | "ready" | "unavailable";
@@ -15,15 +16,15 @@ export interface ImportStats {
 interface NotesContextValue {
   notes: Map<string, Note>;
   status: NotesStatus;
-  getNote: (questionId: string) => Note | undefined;
-  saveNote: (question: Question, text: string) => void;
+  getNote: (setId: string, questionId: string) => Note | undefined;
+  saveNote: (bank: QuestionBank, question: Question, text: string) => void;
   deleteNote: (key: string) => void;
   importNotes: (incoming: readonly Note[]) => ImportStats;
 }
 
 const NotesContext = createContext<NotesContextValue | null>(null);
 
-export function NotesProvider({ bank, children }: { bank: QuestionBank; children: ReactNode }) {
+export function NotesProvider({ children }: { children: ReactNode }) {
   const [notes, setNotes] = useState<Map<string, Note>>(new Map());
   const [status, setStatus] = useState<NotesStatus>("loading");
 
@@ -43,8 +44,8 @@ export function NotesProvider({ bank, children }: { bank: QuestionBank; children
     operation.catch(() => setStatus("unavailable"));
   }
 
-  function getNote(questionId: string) {
-    return notes.get(getNoteKey(BUILTIN_SET, questionId));
+  function getNote(setId: string, questionId: string) {
+    return notes.get(getNoteKey(setId, questionId));
   }
 
   function deleteNote(key: string) {
@@ -56,24 +57,25 @@ export function NotesProvider({ bank, children }: { bank: QuestionBank; children
     persist(deleteNoteRecord(key));
   }
 
-  function saveNote(question: Question, text: string) {
-    const key = getNoteKey(BUILTIN_SET, question.id);
+  function saveNote(bank: QuestionBank, question: Question, text: string) {
+    const key = getNoteKey(bank.setId, question.id);
     if (!text.trim()) {
       deleteNote(key);
       return;
     }
-    const topic = bank.topicById.get(question.topic);
+    const { topicTitle, subtopicTitle } = getTopicTitles(bank, question);
     const note: Note = {
       key,
-      setId: BUILTIN_SET,
+      setId: bank.setId,
       questionId: question.id,
       text: text.trim(),
       updatedAt: Date.now(),
       snapshot: {
         question: question.question.trim(),
-        topicTitle: topic?.title ?? question.topic,
-        subtopicTitle: topic?.subtopics.find((s) => s.id === question.subtopic)?.title ?? question.subtopic,
+        topicTitle,
+        subtopicTitle,
         level: question.level,
+        ...(bank.title ? { setTitle: bank.title } : {}),
       },
     };
     setNotes((prev) => new Map(prev).set(key, note));

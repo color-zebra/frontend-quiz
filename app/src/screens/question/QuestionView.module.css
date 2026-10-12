@@ -139,6 +139,65 @@
   color: var(--muted);
 }
 
+/* Вопрос с галочками: квадратная «клавиша» вместо скруглённой и отмеченное состояние до ответа. */
+.checkbox {
+  border-radius: 6px;
+}
+
+.checked {
+  border-color: var(--accent);
+  background: linear-gradient(color-mix(in srgb, var(--accent) 16%, transparent), transparent), var(--glass-bg);
+}
+
+.checked .key {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--on-status);
+}
+
+/* Правильный, но не выбран: зелёная пунктирная рамка без заливки ключа. */
+.missed {
+  border-color: var(--ok);
+  border-style: dashed;
+}
+
+.missed .key {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.missed .status {
+  color: var(--ok);
+}
+
+.hint {
+  margin: 0;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.verdict {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid;
+  border-radius: calc(var(--radius) - 6px);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.verdictOk {
+  border-color: var(--ok);
+  background: linear-gradient(var(--ok-bg), var(--ok-bg)), var(--glass-bg);
+  color: var(--ok);
+}
+
+.verdictBad {
+  border-color: var(--bad);
+  background: linear-gradient(var(--bad-bg), var(--bad-bg)), var(--glass-bg);
+  color: var(--text);
+}
+
 .explain {
   padding: 16px;
 }

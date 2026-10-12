@@ -22,17 +22,22 @@
         "id": {
           "type": "string",
           "pattern": "^[a-z]+-[a-z0-9]+(-[a-z0-9]+)*-[0-9]{3}$",
-          "description": "<topic>-<subtopic>-NNN. Никогда не менять и не переиспользовать: к id привязан прогресс в приложении"
+          "description": "<topic>-<subtopic>-NNN. Никогда не менять и не переиспользовать: к id привязаны заметки в приложении"
         },
         "level": { "enum": ["junior", "middle", "senior"] },
         "tags": { "type": "array", "items": { "type": "string" } },
         "question": { "type": "string", "description": "Текст вопроса, Markdown" },
         "code": { "type": "string", "description": "Код к вопросу, без Markdown-обёртки" },
         "codeLang": { "enum": ["html", "css", "scss", "js", "ts", "jsx", "tsx", "http", "json", "text"] },
+        "multiple": {
+          "const": true,
+          "description": "Вопрос с галочками «выберите все подходящие». Нужен, только если правильный вариант один: при нескольких correct галочки включаются сами"
+        },
         "options": {
           "type": "array",
           "minItems": 4,
-          "maxItems": 4,
+          "maxItems": 6,
+          "description": "Ровно 4 варианта; в вопросе с несколькими ответами — от 4 до 6",
           "items": { "$ref": "#/definitions/option" }
         },
         "explanation": { "type": "string", "description": "Как это устроено, Markdown" },
@@ -46,7 +51,7 @@
       "required": ["text", "why"],
       "properties": {
         "text": { "type": "string", "description": "Текст варианта, Markdown" },
-        "correct": { "const": true, "description": "Только у правильного варианта" },
+        "correct": { "const": true, "description": "Только у правильных вариантов; если их несколько — засчитывается выбор всех сразу" },
         "why": { "type": "string", "description": "Почему вариант верен или неверен, Markdown" }
       }
     }

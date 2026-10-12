@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { BankDiff } from "../data/loadQuestions";
-import type { Question, QuestionBank } from "../data/types";
-import { getPool, loadFilters, saveFilters, type Filters } from "../features/session/filters";
+import { BUILTIN_SET_ID, type Question, type QuestionBank } from "../data/types";
+import { useSets } from "../features/sets/SetsProvider";
 import {
   getIsLastQuestion,
   goToNextQuestion,
-  pickOption,
+  selectOption,
   startSession,
+  submitAnswer,
   type Session,
   type SessionAnswer,
 } from "../features/session/session";
@@ -14,6 +15,8 @@ import { HomeScreen } from "../screens/home/HomeScreen";
 import { NotesScreen } from "../screens/notes/NotesScreen";
 import { ReviewScreen } from "../screens/review/ReviewScreen";
 import { SessionScreen } from "../screens/session/SessionScreen";
+import { SetHomeScreen } from "../screens/sets/SetHomeScreen";
+import { SetsScreen } from "../screens/sets/SetsScreen";
 import { SummaryScreen } from "../screens/summary/SummaryScreen";
 import { ThemeSheet } from "../theme/ThemeSheet";
 import { applyTheme, readSavedTheme, type ThemeId } from "../theme/themes";
@@ -24,11 +27,22 @@ interface QuizAppProps {
   onUpdate: () => Promise<BankDiff>;
 }
 
+/** Сессия вместе с базой, из которой её запустили: основной или своего набора. */
+interface ActiveSession {
+  bank: QuestionBank;
+  session: Session;
+}
+
+interface FinishedSession {
+  bank: QuestionBank;
+  answers: SessionAnswer[];
+}
+
 export function QuizApp({ bank, onUpdate }: QuizAppProps) {
-  const [filters, setFilters] = useState(() => loadFilters(bank));
-  const [session, setSession] = useState<Session | null>(null);
-  const sessionRef = useRef<Session | null>(null);
-  const [finishedAnswers, setFinishedAnswers] = useState<SessionAnswer[]>([]);
+  const { getSetBank } = useSets();
+  const [active, setActive] = useState<ActiveSession | null>(null);
+  const activeRef = useRef<ActiveSession | null>(null);
+  const [finished, setFinished] = useState<FinishedSession | null>(null);
   const [theme, setTheme] = useState<ThemeId>(readSavedTheme);
   const [themeOpen, setThemeOpen] = useState(false);
 
@@ -39,59 +53,62 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
     window.scrollTo(0, 0);
   }, [nav.screen]);
 
-  function updateSession(next: Session | null) {
-    sessionRef.current = next;
-    setSession(next);
+  function getBank(setId: string) {
+    return setId === BUILTIN_SET_ID ? bank : getSetBank(setId);
+  }
+
+  function updateActive(next: ActiveSession | null) {
+    activeRef.current = next;
+    setActive(next);
   }
 
   /** Системная кнопка «Назад» посреди сессии с ответами — показываем итог, а не теряем его. */
   function handlePop(popped: AppScreen[]) {
     if (!popped.some((s) => s.name === "session")) return;
-    const answers = sessionRef.current?.answers ?? [];
-    updateSession(null);
-    if (answers.length > 0) {
-      setFinishedAnswers(answers);
+    const current = activeRef.current;
+    updateActive(null);
+    if (current && current.session.answers.length > 0) {
+      setFinished({ bank: current.bank, answers: current.session.answers });
       nav.push({ name: "summary" });
     }
   }
 
-  function changeFilters(next: Filters) {
-    setFilters(next);
-    saveFilters(next);
-  }
-
-  function begin(ids: string[], length: number | "infinite", mode: "push" | "replace") {
-    updateSession(startSession(bank, ids, length));
+  function begin(sessionBank: QuestionBank, ids: string[], length: number | "infinite", mode: "push" | "replace") {
+    updateActive({ bank: sessionBank, session: startSession(sessionBank, ids, length) });
     if (mode === "push") nav.push({ name: "session" });
     else nav.replace({ name: "session" });
   }
 
-  function finish(current: Session) {
-    setFinishedAnswers(current.answers);
-    updateSession(null);
+  function finish(current: ActiveSession) {
+    setFinished({ bank: current.bank, answers: current.session.answers });
+    updateActive(null);
     nav.replace({ name: "summary" });
   }
 
-  function pick(question: Question, optionIndex: number) {
-    if (session) updateSession(pickOption(session, question, optionIndex));
+  function select(question: Question, optionIndex: number) {
+    if (active) updateActive({ ...active, session: selectOption(active.session, question, optionIndex) });
+  }
+
+  function submit(question: Question) {
+    if (active) updateActive({ ...active, session: submitAnswer(active.session, question) });
   }
 
   function next() {
-    if (!session || session.picked === null) return;
-    if (getIsLastQuestion(session)) {
-      finish(session);
+    if (!active || !active.session.answered) return;
+    if (getIsLastQuestion(active.session)) {
+      finish(active);
       return;
     }
-    updateSession(goToNextQuestion(bank, session));
+    updateActive({ ...active, session: goToNextQuestion(active.bank, active.session) });
     window.scrollTo(0, 0);
   }
 
   function exit() {
-    if (session && session.answers.length > 0) {
-      finish(session);
+    if (active && active.session.answers.length > 0) {
+      finish(active);
       return;
     }
-    updateSession(null);
+    updateActive(null);
     nav.back();
   }
 
@@ -115,43 +132,56 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
         return (
           <HomeScreen
             bank={bank}
-            filters={filters}
-            onFiltersChange={changeFilters}
-            onStart={() =>
-              begin(
-                getPool(bank, filters).map((q) => q.id),
-                filters.length,
-                "push",
-              )
-            }
+            onStart={(ids, length) => begin(bank, ids, length, "push")}
             onOpenNotes={() => nav.push({ name: "notes" })}
+            onOpenSets={() => nav.push({ name: "sets" })}
             onUpdate={onUpdate}
             theme={theme}
             onOpenTheme={() => setThemeOpen(true)}
           />
         );
-      case "session":
-        return session ? <SessionScreen bank={bank} session={session} onPick={pick} onNext={next} onExit={exit} /> : null;
-      case "summary":
+      case "sets":
+        return <SetsScreen onBack={nav.back} onOpenSet={(setId) => nav.push({ name: "setHome", setId })} />;
+      case "setHome":
         return (
-          <SummaryScreen
-            bank={bank}
-            answers={finishedAnswers}
-            onRetryMistakes={(ids) => begin(ids, ids.length, "replace")}
-            onOpenQuestion={(questionId) => nav.push({ name: "review", questionId })}
-            onHome={nav.backToRoot}
+          <SetHomeScreen
+            setId={screen.setId}
+            onBack={nav.back}
+            onStart={(setBank, ids, length) => begin(setBank, ids, length, "push")}
           />
         );
+      case "session":
+        return active ? (
+          <SessionScreen
+            bank={active.bank}
+            session={active.session}
+            onSelect={select}
+            onSubmit={submit}
+            onNext={next}
+            onExit={exit}
+          />
+        ) : null;
+      case "summary":
+        return finished ? (
+          <SummaryScreen
+            bank={finished.bank}
+            answers={finished.answers}
+            backLabel={finished.bank.setId === BUILTIN_SET_ID ? "На главную" : "К набору"}
+            onRetryMistakes={(ids) => begin(finished.bank, ids, ids.length, "replace")}
+            onOpenQuestion={(questionId) => nav.push({ name: "review", setId: finished.bank.setId, questionId })}
+            onBack={nav.back}
+          />
+        ) : null;
       case "notes":
         return (
           <NotesScreen
-            bank={bank}
+            getBank={getBank}
             onBack={nav.back}
-            onOpenQuestion={(questionId) => nav.push({ name: "review", questionId })}
+            onOpenQuestion={(setId, questionId) => nav.push({ name: "review", setId, questionId })}
           />
         );
       case "review":
-        return <ReviewScreen bank={bank} questionId={screen.questionId} onBack={nav.back} />;
+        return <ReviewScreen bank={getBank(screen.setId)} questionId={screen.questionId} onBack={nav.back} />;
     }
   }
 }

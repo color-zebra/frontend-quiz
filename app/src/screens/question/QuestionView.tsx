@@ -1,5 +1,6 @@
 import clsx from "clsx";
-import { getTopicTitles } from "../../data/titles";
+import { getIsAnswerCorrect, getIsMultiple } from "../../data/answers";
+import { formatTopicLine, getTopicTitles } from "../../data/titles";
 import type { Question, QuestionBank } from "../../data/types";
 import { useNotes } from "../../features/notes/NotesProvider";
 import { formatLink } from "../../shared/lib/formatLink";
@@ -15,25 +16,39 @@ interface QuestionViewProps {
   question: Question;
   /** Порядок вариантов: индексы в question.options. */
   optionOrder: readonly number[];
-  /** Выбранный вариант (индекс в question.options) или null. */
-  picked: number | null;
+  /** Выбранные варианты (индексы в question.options). */
+  selected: readonly number[];
+  /** Ответ дан — показать разбор. */
+  answered: boolean;
   /** Показать ответ без выбора — режим разбора. */
   reveal?: boolean;
-  onPick?: (optionIndex: number) => void;
+  onSelect?: (optionIndex: number) => void;
   onEditNote: () => void;
 }
 
-export function QuestionView({ bank, question, optionOrder, picked, reveal = false, onPick, onEditNote }: QuestionViewProps) {
+export function QuestionView({
+  bank,
+  question,
+  optionOrder,
+  selected,
+  answered,
+  reveal = false,
+  onSelect,
+  onEditNote,
+}: QuestionViewProps) {
   const { getNote } = useNotes();
-  const note = getNote(question.id);
-  const answered = reveal || picked !== null;
+  const note = getNote(bank.setId, question.id);
+  const multiple = getIsMultiple(question);
+  const showResult = reveal || answered;
+  // В своих наборах объяснения может не быть — тогда блок не показываем.
+  const hasExplanation = question.explanation.trim() !== "" || (question.links?.length ?? 0) > 0;
   const { topicTitle, subtopicTitle } = getTopicTitles(bank, question);
 
   return (
     <article className={styles.question}>
       <div className={styles.meta}>
         <span className={clsx(styles.pill, glass.glass)}>
-          {topicTitle} · {subtopicTitle}
+          {formatTopicLine(topicTitle, subtopicTitle)}
         </span>
         <LevelBadge level={question.level} />
       </div>
@@ -42,6 +57,9 @@ export function QuestionView({ bank, question, optionOrder, picked, reveal = fal
 
       {question.code && <CodeBlock code={question.code} lang={question.codeLang} />}
 
+      {multiple && !showResult && <p className={styles.hint}>Выберите все подходящие варианты</p>}
+      {multiple && answered && !reveal && <MultipleVerdict correct={getIsAnswerCorrect(question, selected)} />}
+
       <ol className={styles.options}>
         {optionOrder.map((optionIndex, position) => (
           <li key={optionIndex}>
@@ -49,15 +67,17 @@ export function QuestionView({ bank, question, optionOrder, picked, reveal = fal
               question={question}
               optionIndex={optionIndex}
               number={position + 1}
-              answered={answered}
-              picked={picked === optionIndex}
-              onPick={onPick}
+              multiple={multiple}
+              showResult={showResult}
+              reveal={reveal}
+              selected={selected.includes(optionIndex)}
+              onSelect={onSelect}
             />
           </li>
         ))}
       </ol>
 
-      {answered && (
+      {showResult && hasExplanation && (
         <section className={clsx(styles.explain, glass.glass)}>
           <h2 className={styles.explainTitle}>
             <Icon name="bulb" />
@@ -90,18 +110,40 @@ export function QuestionView({ bank, question, optionOrder, picked, reveal = fal
   );
 }
 
+function MultipleVerdict({ correct }: { correct: boolean }) {
+  return (
+    <p className={clsx(styles.verdict, correct ? styles.verdictOk : styles.verdictBad)} role="status">
+      {correct ? "Ответ засчитан" : "Ответ не засчитан: нужно выбрать все правильные варианты и ни одного лишнего"}
+    </p>
+  );
+}
+
 interface OptionCardProps {
   question: Question;
   optionIndex: number;
   number: number;
-  answered: boolean;
-  picked: boolean;
-  onPick?: (optionIndex: number) => void;
+  multiple: boolean;
+  /** Показать разбор: ответ дан или режим разбора. */
+  showResult: boolean;
+  /** Режим разбора: выбора не было. */
+  reveal: boolean;
+  selected: boolean;
+  onSelect?: (optionIndex: number) => void;
 }
 
-function OptionCard({ question, optionIndex, number, answered, picked, onPick }: OptionCardProps) {
+/** Пометка варианта после ответа. В режиме разбора выбора не было — отмечаем только правильные. */
+function getStatus(correct: boolean, selected: boolean, multiple: boolean, reveal: boolean) {
+  if (reveal) return correct ? "Правильный ответ" : null;
+  if (correct && selected) return "Верно";
+  if (correct) return multiple ? "Пропущен" : "Правильный ответ";
+  if (selected) return multiple ? "Лишний" : "Ваш ответ";
+  return null;
+}
+
+function OptionCard({ question, optionIndex, number, multiple, showResult, reveal, selected, onSelect }: OptionCardProps) {
   const option = question.options[optionIndex];
   const correct = option.correct === true;
+  const status = showResult ? getStatus(correct, selected, multiple, reveal) : null;
 
   return (
     <button
@@ -109,20 +151,24 @@ function OptionCard({ question, optionIndex, number, answered, picked, onPick }:
       className={clsx(
         styles.option,
         glass.glass,
-        answered && correct && styles.correct,
-        answered && picked && !correct && styles.wrong,
-        answered && !correct && !picked && styles.dim,
+        !showResult && multiple && selected && styles.checked,
+        showResult && correct && (selected || reveal || !multiple) && styles.correct,
+        showResult && correct && !selected && !reveal && multiple && styles.missed,
+        showResult && selected && !correct && styles.wrong,
+        showResult && !correct && !selected && styles.dim,
       )}
-      disabled={answered}
-      onClick={() => onPick?.(optionIndex)}
+      disabled={showResult}
+      aria-pressed={multiple && !showResult ? selected : undefined}
+      onClick={() => onSelect?.(optionIndex)}
     >
       <span className={styles.optionHead}>
-        <span className={styles.key}>{number}</span>
+        <span className={clsx(styles.key, multiple && styles.checkbox)}>
+          {multiple && !showResult && selected ? <Icon name="check" /> : number}
+        </span>
         <Markdown text={option.text} inline className={styles.optionText} />
       </span>
-      {answered && correct && <span className={styles.status}>{picked ? "Верно" : "Правильный ответ"}</span>}
-      {answered && picked && !correct && <span className={styles.status}>Ваш ответ</span>}
-      {answered && <Markdown text={option.why} inline className={styles.why} />}
+      {status && <span className={styles.status}>{status}</span>}
+      {showResult && <Markdown text={option.why} inline className={styles.why} />}
     </button>
   );
 }

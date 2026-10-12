@@ -3,6 +3,7 @@ import { loadInitialBank, updateBank } from "../data/loadQuestions";
 import type { QuestionBank } from "../data/types";
 import { NotesProvider } from "../features/notes/NotesProvider";
 import { AppUpdateToast } from "../features/pwa/AppUpdateToast";
+import { SetsProvider } from "../features/sets/SetsProvider";
 import { Background } from "../shared/ui/Background";
 import { Brand } from "../shared/ui/Brand";
 import { Button } from "../shared/ui/Button";
@@ -37,8 +38,10 @@ export function App() {
       <Background />
       <AppUpdateToast />
       {state.status === "ready" && (
-        <NotesProvider bank={state.bank}>
-          <QuizApp bank={state.bank} onUpdate={() => update(state.bank)} />
+        <NotesProvider>
+          <SetsProvider>
+            <QuizApp bank={state.bank} onUpdate={() => update(state.bank)} />
+          </SetsProvider>
         </NotesProvider>
       )}
       {state.status === "loading" && (

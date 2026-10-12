@@ -1,3 +1,4 @@
+import { getIsAnswerCorrect, getIsMultiple } from "../../data/answers";
 import type { Question, QuestionBank } from "../../data/types";
 import { shuffle } from "../../shared/lib/random";
 
@@ -15,8 +16,10 @@ export interface Session {
   index: number;
   /** Порядок вариантов текущего вопроса: индексы в question.options. */
   optionOrder: number[];
-  /** Выбранный вариант (индекс в question.options) или null, пока ответа нет. */
-  picked: number | null;
+  /** Выбранные варианты (индексы в question.options). У обычного вопроса — один, у вопроса с галочками — сколько отмечено. */
+  selected: number[];
+  /** Ответ дан: варианты больше не меняются, показан разбор. */
+  answered: boolean;
   answers: SessionAnswer[];
 }
 
@@ -35,7 +38,8 @@ export function startSession(bank: QuestionBank, ids: readonly string[], length:
     queue,
     index: 0,
     optionOrder: getOptionOrder(bank, queue[0]),
-    picked: null,
+    selected: [],
+    answered: false,
     answers: [],
   };
 }
@@ -44,13 +48,29 @@ export function getCurrentQuestion(bank: QuestionBank, session: Session): Questi
   return bank.byId.get(session.queue[session.index]);
 }
 
-export function pickOption(session: Session, question: Question, optionIndex: number): Session {
-  if (session.picked !== null) return session;
+function answer(session: Session, question: Question, selected: number[]): Session {
   return {
     ...session,
-    picked: optionIndex,
-    answers: [...session.answers, { questionId: question.id, correct: question.options[optionIndex]?.correct === true }],
+    selected,
+    answered: true,
+    answers: [...session.answers, { questionId: question.id, correct: getIsAnswerCorrect(question, selected) }],
   };
+}
+
+/** Нажатие на вариант: в обычном вопросе это сразу ответ, в вопросе с галочками — поставить или снять галочку. */
+export function selectOption(session: Session, question: Question, optionIndex: number): Session {
+  if (session.answered) return session;
+  if (!getIsMultiple(question)) return answer(session, question, [optionIndex]);
+  const selected = session.selected.includes(optionIndex)
+    ? session.selected.filter((i) => i !== optionIndex)
+    : [...session.selected, optionIndex];
+  return { ...session, selected };
+}
+
+/** Кнопка «Ответить» в вопросе с галочками. */
+export function submitAnswer(session: Session, question: Question): Session {
+  if (session.answered || session.selected.length === 0) return session;
+  return answer(session, question, session.selected);
 }
 
 export function getIsLastQuestion(session: Session) {
@@ -70,7 +90,7 @@ export function goToNextQuestion(bank: QuestionBank, session: Session): Session 
   if (session.infinite && index >= queue.length) {
     queue = [...queue, ...getNextRound(session.pool, queue[queue.length - 1])];
   }
-  return { ...session, queue, index, optionOrder: getOptionOrder(bank, queue[index]), picked: null };
+  return { ...session, queue, index, optionOrder: getOptionOrder(bank, queue[index]), selected: [], answered: false };
 }
 
 /** Id вопросов с ошибкой — без повторов, в порядке первой ошибки. */

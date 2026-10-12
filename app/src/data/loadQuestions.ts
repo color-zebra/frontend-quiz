@@ -1,19 +1,20 @@
 import { readSavedQuestions, saveQuestions } from "./questionsStore";
-import type { QuestionBank, QuestionsFile } from "./types";
+import { BUILTIN_SET_ID, type QuestionBank, type QuestionsFile } from "./types";
 
 // questions.json лежит рядом с приложением: на GitHub Pages его кладёт сборка,
 // в режиме разработки отдаёт плагин из vite.config.ts.
 const QUESTIONS_URL = `${import.meta.env.BASE_URL}questions.json`;
 
-export function createBank(file: QuestionsFile): QuestionBank {
+export function createBank(file: QuestionsFile, setId: string): QuestionBank {
   return {
     ...file,
+    setId,
     byId: new Map(file.questions.map((q) => [q.id, q])),
     topicById: new Map(file.topics.map((t) => [t.id, t])),
   };
 }
 
-function isQuestionsFile(value: unknown): value is QuestionsFile {
+export function isQuestionsFile(value: unknown): value is QuestionsFile {
   const file = value as Partial<QuestionsFile> | null;
   return !!file && Array.isArray(file.topics) && Array.isArray(file.questions);
 }
@@ -46,12 +47,12 @@ export async function fetchQuestions(): Promise<QuestionsFile> {
  */
 export async function loadInitialBank(): Promise<QuestionBank> {
   const saved = await readSavedQuestions().catch(() => undefined);
-  if (isQuestionsFile(saved)) return createBank(saved);
+  if (isQuestionsFile(saved)) return createBank(saved, BUILTIN_SET_ID);
 
   const file = await fetchQuestions();
   // Не удалось сохранить — работаем без копии, в следующий раз база скачается снова.
   await saveQuestions(file).catch(() => undefined);
-  return createBank(file);
+  return createBank(file, BUILTIN_SET_ID);
 }
 
 export interface BankDiff {
@@ -79,5 +80,5 @@ export function getBankDiff(previous: QuestionsFile, next: QuestionsFile): BankD
 export async function updateBank(current: QuestionBank): Promise<{ bank: QuestionBank; diff: BankDiff }> {
   const file = await fetchQuestions();
   await saveQuestions(file).catch(() => undefined);
-  return { bank: createBank(file), diff: getBankDiff(current, file) };
+  return { bank: createBank(file, BUILTIN_SET_ID), diff: getBankDiff(current, file) };
 }

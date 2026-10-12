@@ -5,7 +5,9 @@ export type AppScreen =
   | { name: "session" }
   | { name: "summary" }
   | { name: "notes" }
-  | { name: "review"; questionId: string };
+  | { name: "sets" }
+  | { name: "setHome"; setId: string }
+  | { name: "review"; setId: string; questionId: string };
 
 interface HistoryState {
   depth: number;
