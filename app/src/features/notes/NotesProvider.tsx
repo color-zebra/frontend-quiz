@@ -76,6 +76,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         subtopicTitle,
         level: question.level,
         ...(bank.title ? { setTitle: bank.title } : {}),
+        ...(question.type === "speech" ? { speech: true } : {}),
       },
     };
     setNotes((prev) => new Map(prev).set(key, note));

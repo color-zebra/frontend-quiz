@@ -3,12 +3,14 @@ import { LEVELS, type QuestionBank } from "../../data/types";
 import {
   SESSION_LENGTHS,
   getPool,
+  getSource,
   getSubtopicKey,
   loadFilters,
   saveFilters,
   toggleItem,
   type Filters,
   type SessionLength,
+  type TrainingKind,
 } from "../../features/session/filters";
 import { QUESTION_FORMS, countQuestions, plural } from "../../shared/lib/plural";
 import { Button } from "../../shared/ui/Button";
@@ -20,6 +22,8 @@ import styles from "./TrainingFilters.module.css";
 
 interface TrainingFiltersProps {
   bank: QuestionBank;
+  /** Раздел: тестовые вопросы или устные. У каждого свои сохранённые фильтры. */
+  kind: TrainingKind;
   onStart: (questionIds: string[], length: SessionLength) => void;
 }
 
@@ -32,11 +36,15 @@ function getStartLabel(length: SessionLength, poolSize: number) {
   return `Начать · ${n} ${plural(n, QUESTION_FORMS)}`;
 }
 
-/** Выбор тем, подтем, уровней и длины сессии. Фильтры запоминаются отдельно для каждой базы. */
-export function TrainingFilters({ bank, onStart }: TrainingFiltersProps) {
-  const [filters, setFilters] = useState(() => loadFilters(bank));
+/** Выбор тем, подтем, уровней и длины сессии. Фильтры запоминаются отдельно для каждой базы и раздела. */
+export function TrainingFilters({ bank, kind, onStart }: TrainingFiltersProps) {
+  const [filters, setFilters] = useState(() => loadFilters(bank, kind));
   const [subtopicsOpen, setSubtopicsOpen] = useState(false);
-  const pool = getPool(bank, filters);
+  // Галка имеет смысл только в тестовом разделе и только если устные вопросы вообще есть.
+  const canMixSpeech = kind === "test" && bank.speech.length > 0;
+  const effective = canMixSpeech ? filters : { ...filters, withSpeech: false };
+  const source = getSource(bank, kind, effective);
+  const pool = getPool(bank, kind, effective);
 
   const selectedTopics = bank.topics.filter((t) => filters.topics.includes(t.id));
   const subtopicKeys = selectedTopics.flatMap((t) => t.subtopics.map((s) => getSubtopicKey(t.id, s.id)));
@@ -45,7 +53,7 @@ export function TrainingFilters({ bank, onStart }: TrainingFiltersProps) {
   function update(patch: Partial<Filters>) {
     const next = { ...filters, ...patch };
     setFilters(next);
-    saveFilters(bank, next);
+    saveFilters(bank, kind, next);
   }
 
   return (
@@ -56,7 +64,7 @@ export function TrainingFilters({ bank, onStart }: TrainingFiltersProps) {
             <Chip
               key={topic.id}
               label={topic.title}
-              count={bank.questions.filter((q) => q.topic === topic.id).length}
+              count={source.filter((q) => q.topic === topic.id).length}
               on={filters.topics.includes(topic.id)}
               onClick={() => update({ topics: toggleItem(filters.topics, topic.id) })}
             />
@@ -96,6 +104,16 @@ export function TrainingFilters({ bank, onStart }: TrainingFiltersProps) {
         />
       </Card>
 
+      {canMixSpeech && (
+        <label className={styles.toggle}>
+          <input type="checkbox" checked={filters.withSpeech} onChange={(e) => update({ withSpeech: e.target.checked })} />
+          <span>
+            <b>Добавлять устные вопросы</b>
+            <span className={styles.toggleHint}>Из тех же тем и уровней — для разнообразия</span>
+          </span>
+        </label>
+      )}
+
       <Button
         iconAfter="arrowRight"
         disabled={pool.length === 0}
@@ -118,6 +136,7 @@ export function TrainingFilters({ bank, onStart }: TrainingFiltersProps) {
         open={subtopicsOpen}
         bank={bank}
         filters={filters}
+        questions={source}
         onChange={(excludedSubtopics) => update({ excludedSubtopics })}
         onClose={() => setSubtopicsOpen(false)}
       />

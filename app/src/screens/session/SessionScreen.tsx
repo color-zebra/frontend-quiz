@@ -1,10 +1,9 @@
-import clsx from "clsx";
 import { useEffect, useState } from "react";
-import { getIsMultiple } from "../../data/answers";
+import { getIsMultiple, getIsSpeech } from "../../data/answers";
 import type { Question, QuestionBank } from "../../data/types";
 import { NoteSheet } from "../../features/notes/NoteSheet";
 import { useNotes } from "../../features/notes/NotesProvider";
-import { getCurrentQuestion, getIsLastQuestion, type Session } from "../../features/session/session";
+import { getCurrentQuestion, getIsLastQuestion, type Session, type SpeechGrade } from "../../features/session/session";
 import { Button, IconButton } from "../../shared/ui/Button";
 import { ActionBar, Screen, TopBar } from "../../shared/ui/Screen";
 import { QuestionView } from "../question/QuestionView";
@@ -15,32 +14,61 @@ interface SessionScreenProps {
   session: Session;
   onSelect: (question: Question, optionIndex: number) => void;
   onSubmit: (question: Question) => void;
+  onGiveUp: (question: Question) => void;
+  /** Самооценка устного вопроса: сразу переход дальше. */
+  onGrade: (question: Question, grade: SpeechGrade) => void;
   onNext: () => void;
   onExit: () => void;
 }
 
-export function SessionScreen({ bank, session, onSelect, onSubmit, onNext, onExit }: SessionScreenProps) {
+/** Кнопки и клавиши самооценки устного ответа. */
+const GRADES: { grade: SpeechGrade; label: string; key: string }[] = [
+  { grade: "didnt", label: "Не знал", key: "1" },
+  { grade: "partly", label: "Частично", key: "2" },
+  { grade: "knew", label: "Знал", key: "3" },
+];
+
+export function SessionScreen({ bank, session, onSelect, onSubmit, onGiveUp, onGrade, onNext, onExit }: SessionScreenProps) {
   const { getNote } = useNotes();
   const [noteOpen, setNoteOpen] = useState(false);
+  // У устного вопроса эталон открывают кнопкой; запоминаем, у какого по счёту вопроса он открыт.
+  const [revealedIndex, setRevealedIndex] = useState(-1);
   const question = getCurrentQuestion(bank, session);
-  const multiple = !!question && getIsMultiple(question);
+  const speech = !!question && getIsSpeech(question);
+  const revealed = speech && revealedIndex === session.index;
+  const multiple = !!question && !speech && getIsMultiple(question);
   const isLast = getIsLastQuestion(session);
-  // В вопросе с галочками до ответа главная кнопка — «Ответить».
-  const waitingForSubmit = multiple && !session.answered;
 
-  // Клавиатура на ноутбуке: цифры — выбрать вариант (в вопросе с галочками — отметить), Enter или → — ответить или дальше.
+  // Клавиатура на ноутбуке.
+  // Тестовый вопрос: цифры — выбрать (отметить) вариант, 0 — «Не знаю», Enter или → — ответить или дальше.
+  // Устный: Enter или пробел — показать эталон, затем 1 / 2 / 3 — не знал / частично / знал.
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (!question || e.ctrlKey || e.metaKey || e.altKey) return;
       if (document.querySelector("dialog[open]")) return;
       if (e.target instanceof HTMLElement && e.target.closest("input, textarea")) return;
 
-      const position = Number(e.key);
       const isProceed = e.key === "Enter" || e.key === "ArrowRight";
-      if (!session.answered && Number.isInteger(position) && position >= 1 && position <= session.optionOrder.length) {
+      if (speech) {
+        const grade = GRADES.find((g) => g.key === e.key);
+        if (!revealed && (isProceed || e.key === " ")) {
+          e.preventDefault();
+          setRevealedIndex(session.index);
+        } else if (revealed && grade) {
+          e.preventDefault();
+          onGrade(question, grade.grade);
+        }
+        return;
+      }
+
+      const position = Number(e.key);
+      if (!session.answered && e.key === "0") {
+        e.preventDefault();
+        onGiveUp(question);
+      } else if (!session.answered && Number.isInteger(position) && position >= 1 && position <= session.optionOrder.length) {
         e.preventDefault();
         onSelect(question, session.optionOrder[position - 1]);
-      } else if (isProceed && waitingForSubmit) {
+      } else if (isProceed && multiple && !session.answered) {
         e.preventDefault();
         onSubmit(question);
       } else if (isProceed && session.answered) {
@@ -50,12 +78,13 @@ export function SessionScreen({ bank, session, onSelect, onSubmit, onNext, onExi
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [question, session.answered, session.optionOrder, waitingForSubmit, onSelect, onSubmit, onNext]);
+  }, [question, speech, revealed, multiple, session.index, session.answered, session.optionOrder, onSelect, onSubmit, onGiveUp, onGrade, onNext]);
 
   if (!question) return null;
 
   const correctCount = session.answers.filter((a) => a.correct).length;
   const number = session.index + 1;
+  const hasNote = !!getNote(bank.setId, question.id);
 
   return (
     <Screen>
@@ -71,7 +100,12 @@ export function SessionScreen({ bank, session, onSelect, onSubmit, onNext, onExi
             </div>
           )}
         </div>
-        <span className={styles.spacer} />
+        <IconButton
+          icon="pencil"
+          label={hasNote ? "Изменить заметку" : "Заметка"}
+          marked={hasNote}
+          onClick={() => setNoteOpen(true)}
+        />
       </TopBar>
 
       <QuestionView
@@ -81,31 +115,56 @@ export function SessionScreen({ bank, session, onSelect, onSubmit, onNext, onExi
         optionOrder={session.optionOrder}
         selected={session.selected}
         answered={session.answered}
+        reveal={session.gaveUp || revealed}
+        gaveUp={session.gaveUp}
         onSelect={(optionIndex) => onSelect(question, optionIndex)}
-        onEditNote={() => setNoteOpen(true)}
       />
 
-      <ActionBar>
-        <Button
-          variant="secondary"
-          icon="pencil"
-          className={clsx(getNote(bank.setId, question.id) && styles.hasNote)}
-          onClick={() => setNoteOpen(true)}
-        >
-          Заметка
-        </Button>
-        {waitingForSubmit ? (
-          <Button icon="check" disabled={session.selected.length === 0} onClick={() => onSubmit(question)}>
-            Ответить
-          </Button>
-        ) : (
-          <Button iconAfter={isLast ? undefined : "arrowRight"} disabled={!session.answered} onClick={onNext}>
-            {isLast ? "Завершить" : "Дальше"}
-          </Button>
-        )}
-      </ActionBar>
+      <ActionBar>{speech ? renderSpeechActions() : renderTestActions()}</ActionBar>
 
       <NoteSheet bank={bank} question={noteOpen ? question : null} onClose={() => setNoteOpen(false)} />
     </Screen>
   );
+
+  function renderSpeechActions() {
+    if (!revealed) {
+      return (
+        <Button icon="speech" onClick={() => setRevealedIndex(session.index)}>
+          Показать ответ
+        </Button>
+      );
+    }
+    return GRADES.map(({ grade, label }) => (
+      <Button
+        key={grade}
+        className={styles.grade}
+        variant={grade === "knew" ? "primary" : "secondary"}
+        onClick={() => onGrade(question!, grade)}
+      >
+        {label}
+      </Button>
+    ));
+  }
+
+  function renderTestActions() {
+    if (session.answered) {
+      return (
+        <Button iconAfter={isLast ? undefined : "arrowRight"} onClick={onNext}>
+          {isLast ? "Завершить" : "Дальше"}
+        </Button>
+      );
+    }
+    return (
+      <>
+        <Button variant="secondary" onClick={() => onGiveUp(question!)}>
+          Не знаю
+        </Button>
+        {multiple && (
+          <Button icon="check" disabled={session.selected.length === 0} onClick={() => onSubmit(question!)}>
+            Ответить
+          </Button>
+        )}
+      </>
+    );
+  }
 }

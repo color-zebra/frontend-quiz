@@ -38,8 +38,19 @@ function getTopicStats(bank: QuestionBank, answers: readonly SessionAnswer[]) {
   return [...stats.values()];
 }
 
+/** «Отвечено 10 вопросов», а если были устные — ещё и разбивка самооценки. */
+function getSubtitle(answers: readonly SessionAnswer[]) {
+  const total = `Отвечено ${countQuestions(answers.length)}`;
+  const graded = answers.filter((a) => a.grade);
+  if (graded.length === 0) return total;
+  const count = (grade: string) => graded.filter((a) => a.grade === grade).length;
+  return `${total} · устно: знал ${count("knew")}, частично ${count("partly")}, не знал ${count("didnt")}`;
+}
+
 export function SummaryScreen({ bank, answers, onRetryMistakes, onOpenQuestion, backLabel, onBack }: SummaryScreenProps) {
   const correct = answers.filter((a) => a.correct).length;
+  // Сессия только из устных вопросов — подписи про «знал», а не про «верно».
+  const speechOnly = answers.length > 0 && answers.every((a) => a.grade);
   const percent = answers.length ? Math.round((correct / answers.length) * 100) : 0;
   const mistakeIds = getMistakeIds(answers);
   const topicStats = getTopicStats(bank, answers);
@@ -50,7 +61,7 @@ export function SummaryScreen({ bank, answers, onRetryMistakes, onOpenQuestion, 
         <Brand />
       </TopBar>
 
-      <ScreenTitle title="Сессия завершена" subtitle={`Отвечено ${countQuestions(answers.length)}`} />
+      <ScreenTitle title="Сессия завершена" subtitle={getSubtitle(answers)} />
 
       <section className={clsx(styles.score, glass.glass)}>
         <div className={styles.ringWrap}>
@@ -59,7 +70,9 @@ export function SummaryScreen({ bank, answers, onRetryMistakes, onOpenQuestion, 
             <b>
               {correct} / {answers.length}
             </b>
-            <span>{percent}% верно</span>
+            <span>
+              {percent}% {speechOnly ? "знал" : "верно"}
+            </span>
           </div>
         </div>
       </section>
@@ -83,7 +96,7 @@ export function SummaryScreen({ bank, answers, onRetryMistakes, onOpenQuestion, 
       )}
 
       <div className={styles.mistakes}>
-        <SectionLabel>{mistakeIds.length ? `Ошибки · ${mistakeIds.length}` : "Ошибок нет"}</SectionLabel>
+        <SectionLabel>{mistakeIds.length ? `${speechOnly ? "Слабые места" : "Ошибки"} · ${mistakeIds.length}` : "Ошибок нет"}</SectionLabel>
         {mistakeIds.length === 0 && <p className={styles.clean}>Все ответы верные — можно брать уровень посложнее.</p>}
         {mistakeIds.map((id) => {
           const question = bank.byId.get(id);
@@ -104,7 +117,7 @@ export function SummaryScreen({ bank, answers, onRetryMistakes, onOpenQuestion, 
       <div className={styles.buttons}>
         {mistakeIds.length > 0 && (
           <Button icon="refresh" onClick={() => onRetryMistakes(mistakeIds)}>
-            Прорешать ошибки · {mistakeIds.length}
+            {speechOnly ? "Повторить слабые" : "Прорешать ошибки"} · {mistakeIds.length}
           </Button>
         )}
         <Button variant={mistakeIds.length ? "secondary" : "primary"} onClick={onBack}>

@@ -2,9 +2,15 @@ import { getIsAnswerCorrect, getIsMultiple } from "../../data/answers";
 import type { Question, QuestionBank } from "../../data/types";
 import { shuffle } from "../../shared/lib/random";
 
+/** Самооценка устного ответа. */
+export type SpeechGrade = "knew" | "partly" | "didnt";
+
 export interface SessionAnswer {
   questionId: string;
+  /** Для устного вопроса — «знал». */
   correct: boolean;
+  /** Самооценка, только у устных вопросов. */
+  grade?: SpeechGrade;
 }
 
 export interface Session {
@@ -20,6 +26,8 @@ export interface Session {
   selected: number[];
   /** Ответ дан: варианты больше не меняются, показан разбор. */
   answered: boolean;
+  /** Ответ открыт кнопкой «Не знаю»: вариант не выбран, вопрос засчитан как ошибка. */
+  gaveUp: boolean;
   answers: SessionAnswer[];
 }
 
@@ -40,6 +48,7 @@ export function startSession(bank: QuestionBank, ids: readonly string[], length:
     optionOrder: getOptionOrder(bank, queue[0]),
     selected: [],
     answered: false,
+    gaveUp: false,
     answers: [],
   };
 }
@@ -67,6 +76,28 @@ export function selectOption(session: Session, question: Question, optionIndex: 
   return { ...session, selected };
 }
 
+/** Кнопка «Не знаю»: открыть разбор без выбора и засчитать вопрос как ошибку. */
+export function giveUp(session: Session, question: Question): Session {
+  if (session.answered) return session;
+  return {
+    ...session,
+    selected: [],
+    answered: true,
+    gaveUp: true,
+    answers: [...session.answers, { questionId: question.id, correct: false }],
+  };
+}
+
+/** Самооценка устного ответа: «знал» засчитывается как верный, «частично» и «не знал» — в слабые места. */
+export function gradeSpeech(session: Session, question: Question, grade: SpeechGrade): Session {
+  if (session.answered) return session;
+  return {
+    ...session,
+    answered: true,
+    answers: [...session.answers, { questionId: question.id, correct: grade === "knew", grade }],
+  };
+}
+
 /** Кнопка «Ответить» в вопросе с галочками. */
 export function submitAnswer(session: Session, question: Question): Session {
   if (session.answered || session.selected.length === 0) return session;
@@ -90,7 +121,7 @@ export function goToNextQuestion(bank: QuestionBank, session: Session): Session 
   if (session.infinite && index >= queue.length) {
     queue = [...queue, ...getNextRound(session.pool, queue[queue.length - 1])];
   }
-  return { ...session, queue, index, optionOrder: getOptionOrder(bank, queue[index]), selected: [], answered: false };
+  return { ...session, queue, index, optionOrder: getOptionOrder(bank, queue[index]), selected: [], answered: false, gaveUp: false };
 }
 
 /** Id вопросов с ошибкой — без повторов, в порядке первой ошибки. */

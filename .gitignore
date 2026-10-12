@@ -6,6 +6,9 @@ dist/
 # Сборка приложения.
 app/dist/
 
+# Скриншоты сквозных тестов.
+app/e2e/.output/
+
 *.log
 .DS_Store
 Thumbs.db

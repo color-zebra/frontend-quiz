@@ -27,6 +27,8 @@ export function SetHomeScreen({ setId, onBack, onStart }: SetHomeScreenProps) {
   const [message, setMessage] = useState<Message | null>(null);
   const record = sets.find((s) => s.id === setId);
   const bank = getSetBank(setId);
+  // Набор целиком либо тестовый, либо устный (kind: speech).
+  const isSpeechSet = !!bank && bank.speech.length > 0 && bank.questions.length === 0;
 
   async function refresh() {
     setBusy(true);
@@ -62,13 +64,14 @@ export function SetHomeScreen({ setId, onBack, onStart }: SetHomeScreenProps) {
 
       <ScreenTitle
         title={record.title}
-        subtitle={`${countQuestions(bank.questions.length)} · обновлён ${formatShortDate(record.updatedAt)}`}
+        subtitle={`${isSpeechSet ? "Устные вопросы" : "Тест"} · ${countQuestions(isSpeechSet ? bank.speech.length : bank.questions.length)} · обновлён ${formatShortDate(record.updatedAt)}`}
       />
 
       {message && <Notice kind={message.kind} text={message.text} onClose={() => setMessage(null)} />}
 
       {/* key: после обновления набора фильтры перечитываются под новые темы */}
-      <TrainingFilters key={record.updatedAt} bank={bank} onStart={(ids, length) => onStart(bank, ids, length)} />
+      <TrainingFilters key={record.updatedAt} bank={bank} kind={isSpeechSet ? "speech" : "test"}
+        onStart={(ids, length) => onStart(bank, ids, length)} />
     </Screen>
   );
 }

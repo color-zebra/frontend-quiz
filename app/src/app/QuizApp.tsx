@@ -4,12 +4,15 @@ import { BUILTIN_SET_ID, type Question, type QuestionBank } from "../data/types"
 import { useSets } from "../features/sets/SetsProvider";
 import {
   getIsLastQuestion,
+  giveUp,
+  gradeSpeech,
   goToNextQuestion,
   selectOption,
   startSession,
   submitAnswer,
   type Session,
   type SessionAnswer,
+  type SpeechGrade,
 } from "../features/session/session";
 import { HelpScreen } from "../screens/help/HelpScreen";
 import { SetsHelpScreen } from "../screens/help/SetsHelpScreen";
@@ -19,6 +22,7 @@ import { ReviewScreen } from "../screens/review/ReviewScreen";
 import { SessionScreen } from "../screens/session/SessionScreen";
 import { SetHomeScreen } from "../screens/sets/SetHomeScreen";
 import { SetsScreen } from "../screens/sets/SetsScreen";
+import { SpeechHomeScreen } from "../screens/speech/SpeechHomeScreen";
 import { SummaryScreen } from "../screens/summary/SummaryScreen";
 import { ThemeSheet } from "../theme/ThemeSheet";
 import { applyTheme, readSavedTheme, type ThemeId } from "../theme/themes";
@@ -98,6 +102,22 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
     if (active) updateActive({ ...active, session: selectOption(active.session, question, optionIndex) });
   }
 
+/** Самооценка устного ответа — сразу переход к следующему вопросу или к итогу. */
+  function grade(question: Question, value: SpeechGrade) {
+    if (!active) return;
+    const graded = { ...active, session: gradeSpeech(active.session, question, value) };
+    if (getIsLastQuestion(graded.session)) {
+      finish(graded);
+      return;
+    }
+    updateActive({ ...graded, session: goToNextQuestion(graded.bank, graded.session) });
+    window.scrollTo(0, 0);
+  }
+
+  function surrender(question: Question) {
+    if (active) updateActive({ ...active, session: giveUp(active.session, question) });
+  }
+
   function submit(question: Question) {
     if (active) updateActive({ ...active, session: submitAnswer(active.session, question) });
   }
@@ -144,12 +164,15 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
             onStart={(ids, length) => begin(bank, ids, length, "push")}
             onOpenNotes={() => nav.push({ name: "notes" })}
             onOpenSets={() => nav.push({ name: "sets" })}
+            onOpenSpeech={() => nav.push({ name: "speechHome" })}
             onOpenHelp={() => nav.push({ name: "help" })}
             onUpdate={onUpdate}
             theme={theme}
             onOpenTheme={() => setThemeOpen(true)}
           />
         );
+      case "speechHome":
+        return <SpeechHomeScreen bank={bank} onBack={nav.back} onStart={(ids, length) => begin(bank, ids, length, "push")} />;
       case "sets":
         return (
           <SetsScreen
@@ -177,6 +200,8 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
             session={active.session}
             onSelect={select}
             onSubmit={submit}
+            onGiveUp={surrender}
+            onGrade={grade}
             onNext={next}
             onExit={exit}
           />

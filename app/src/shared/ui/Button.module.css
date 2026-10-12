@@ -60,3 +60,22 @@
     transform: rotate(360deg);
   }
 }
+
+/* Метка «здесь что-то есть»: цвет темы и точка в углу. */
+.marked {
+  position: relative;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.marked::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}

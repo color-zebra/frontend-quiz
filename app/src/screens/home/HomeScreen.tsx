@@ -24,6 +24,7 @@ import styles from "./HomeScreen.module.css";
 interface HomeScreenProps {
   bank: QuestionBank;
   onStart: (questionIds: string[], length: SessionLength) => void;
+  onOpenSpeech: () => void;
   onOpenNotes: () => void;
   onOpenSets: () => void;
   onOpenHelp: () => void;
@@ -48,6 +49,7 @@ export function HomeScreen({
   onStart,
   onOpenNotes,
   onOpenSets,
+  onOpenSpeech,
   onOpenHelp,
   onUpdate,
   theme,
@@ -126,9 +128,18 @@ export function HomeScreen({
       )}
 
       {/* key: после обновления базы фильтры перечитываются — новые темы не должны потеряться */}
-      <TrainingFilters key={bank.generatedAt} bank={bank} onStart={onStart} />
+      <TrainingFilters key={bank.generatedAt} bank={bank} kind="test" onStart={onStart} />
 
       <div className={styles.tiles}>
+        {bank.speech.length > 0 && (
+          <button type="button" className={clsx(styles.tile, styles.wide, glass.glass)} onClick={onOpenSpeech}>
+            <Icon name="speech" />
+            <span className={styles.tileTitle}>Устные вопросы</span>
+            <span className={styles.tileSub}>
+              {countQuestions(bank.speech.length)} · ответь сам, потом сверься с эталоном
+            </span>
+          </button>
+        )}
         <button type="button" className={clsx(styles.tile, styles.wide, glass.glass)} onClick={onOpenSets}>
           <Icon name="folder" />
           <span className={styles.tileTitle}>Мои наборы</span>

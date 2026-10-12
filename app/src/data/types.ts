@@ -29,7 +29,14 @@ export interface Question {
   codeLang?: CodeLang;
   /** Галочки «выберите все подходящие» даже при одном правильном варианте. */
   multiple?: boolean;
+  /** Варианты ответа. У устного вопроса (type: "speech") их нет — пустой массив. */
   options: Option[];
+  /** Устный вопрос: отвечаешь про себя или вслух, потом сверяешься с эталоном и оцениваешь себя сам. */
+  type?: "speech";
+  /** Эталонный ответ устного вопроса, Markdown. */
+  answer?: string;
+  /** Ключевые тезисы, которые стоит упомянуть в устном ответе. */
+  points?: string[];
   explanation: string;
   links?: string[];
   source?: string;
@@ -53,12 +60,18 @@ export interface QuestionsFile {
   /** Время сборки базы, ISO-строка. */
   generatedAt?: string;
   topics: Topic[];
+  /** Тестовые вопросы — с вариантами ответа. */
   questions: Question[];
+  /** Устные вопросы — отдельным списком, с ними не смешиваются. */
+  speech?: Question[];
 }
 
 export interface QuestionBank extends QuestionsFile {
   /** Чья это база: BUILTIN_SET_ID или id своего набора. */
   setId: string;
+  /** Устные вопросы (пустой список, если их нет). */
+  speech: Question[];
+  /** Все вопросы базы по id — и тестовые, и устные: так их находят заметки и разбор. */
   byId: Map<string, Question>;
   topicById: Map<string, Topic>;
 }

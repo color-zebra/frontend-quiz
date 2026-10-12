@@ -3,17 +3,18 @@ import { createBank, getBankDiff, type BankDiff } from "../../data/loadQuestions
 import type { QuestionBank } from "../../data/types";
 import { toRawUrl } from "./setUrl";
 import { fetchSet } from "./loadSet";
-import { parseSetFile } from "./parseSet";
+import { parseSetFile, type SkippedQuestion } from "./parseSet";
 import { deleteSetRecord, getSetId, readAllSets, writeSet, type SetRecord } from "./setsStore";
 
 export interface AddResult {
   record: SetRecord;
-  skipped: number;
+  /** Пропущенные вопросы с причинами — для отчёта автору набора. */
+  skipped: SkippedQuestion[];
 }
 
 export interface UpdateResult {
   diff: BankDiff;
-  skipped: number;
+  skipped: SkippedQuestion[];
 }
 
 /** Загрузка файла: новый набор или обновление уже загруженного файла с тем же именем. */
@@ -74,7 +75,7 @@ export function SetsProvider({ children }: { children: ReactNode }) {
 
     const { file, skipped } = await fetchSet(url);
     const now = Date.now();
-    const record: SetRecord = { id, url, title: file.title ?? "Набор вопросов", addedAt: now, updatedAt: now, skipped, file };
+    const record: SetRecord = { id, url, title: file.title ?? "Набор вопросов", addedAt: now, updatedAt: now, skipped: skipped.length, file };
     put(record);
     return { record, skipped };
   }
@@ -88,11 +89,11 @@ export function SetsProvider({ children }: { children: ReactNode }) {
     const now = Date.now();
     const title = file.title ?? "Набор вопросов";
     if (existing) {
-      const record: SetRecord = { ...existing, title, updatedAt: now, skipped, file };
+      const record: SetRecord = { ...existing, title, updatedAt: now, skipped: skipped.length, file };
       put(record);
       return { kind: "updated", record, diff: getBankDiff(existing.file, file), skipped };
     }
-    const record: SetRecord = { id, fileName, title, addedAt: now, updatedAt: now, skipped, file };
+    const record: SetRecord = { id, fileName, title, addedAt: now, updatedAt: now, skipped: skipped.length, file };
     put(record);
     return { kind: "added", record, skipped };
   }
@@ -102,7 +103,7 @@ export function SetsProvider({ children }: { children: ReactNode }) {
     if (!current) throw new Error("Набор не найден");
     if (!current.url) throw new Error("Этот набор загружен из файла — загрузи файл ещё раз");
     const { file, skipped } = await fetchSet(current.url);
-    put({ ...current, title: file.title ?? current.title, updatedAt: Date.now(), skipped, file });
+    put({ ...current, title: file.title ?? current.title, updatedAt: Date.now(), skipped: skipped.length, file });
     return { diff: getBankDiff(current.file, file), skipped };
   }
 

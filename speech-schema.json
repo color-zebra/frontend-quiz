@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Файл устных вопросов одной подтемы (speech/<тема>/<подтема>.yaml)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["topic", "subtopic", "questions"],
+  "properties": {
+    "topic": { "type": "string", "description": "id темы из topics.yaml, например javascript" },
+    "subtopic": { "type": "string", "description": "id подтемы из topics.yaml, например event-loop" },
+    "questions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/question" }
+    }
+  },
+  "definitions": {
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "level", "question", "answer"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^speech-[a-z]+-[a-z0-9]+(-[a-z0-9]+)*-[0-9]{3}$",
+          "description": "speech-<topic>-<subtopic>-NNN. Никогда не менять и не переиспользовать: к id привязаны заметки"
+        },
+        "level": { "enum": ["junior", "middle", "senior"] },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "question": { "type": "string", "description": "Вопрос, как его задали бы на собеседовании. Markdown" },
+        "code": { "type": "string", "description": "Код к вопросу, без Markdown-обёртки" },
+        "codeLang": { "enum": ["html", "css", "scss", "js", "ts", "jsx", "tsx", "http", "json", "text"] },
+        "answer": { "type": "string", "description": "Эталонный ответ — каким он был бы у хорошего кандидата. Markdown" },
+        "points": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Ключевые тезисы, которые стоит упомянуть, — короткий чек-лист для самопроверки"
+        },
+        "explanation": { "type": "string", "description": "Необязательно: подробности «как это устроено». Markdown" },
+        "links": { "type": "array", "items": { "type": "string", "format": "uri" } },
+        "source": { "type": "string", "description": "own или <репозиторий>#<номер>" }
+      }
+    }
+  }
+}

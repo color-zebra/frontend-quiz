@@ -110,6 +110,7 @@ function NoteCard({ note, bank, onOpen, onDelete }: NoteCardProps) {
   const body = (
     <>
       {isOwnSet && <span className={styles.setLabel}>Набор «{setTitle}»</span>}
+      {note.snapshot.speech && <span className={styles.setLabel}>Устный вопрос</span>}
       <span className={styles.meta}>
         <LevelBadge level={note.snapshot.level} /> {formatTopicLine(note.snapshot.topicTitle, note.snapshot.subtopicTitle)}
       </span>

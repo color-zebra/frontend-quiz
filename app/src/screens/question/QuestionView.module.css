@@ -242,27 +242,27 @@
   font-size: 11.5px;
 }
 
-.note {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 14px 16px;
+
+/* Устный вопрос: эталонный ответ и тезисы. */
+.answer {
   border-color: var(--accent);
+}
+
+.pointsTitle {
+  margin: 14px 0 6px;
   color: var(--text);
-  text-align: left;
+  font-family: var(--font-heading);
+  font-size: 13.5px;
 }
 
-.noteHead {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--accent);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.noteText {
+.points {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text-2);
   font-size: 14px;
-  line-height: 1.5;
-  white-space: pre-wrap;
+  line-height: 1.55;
+}
+
+.points li + li {
+  margin-top: 4px;
 }

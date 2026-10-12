@@ -3,6 +3,7 @@ import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { SAMPLE_SET_URL } from "../../config";
 import { formatDiff } from "../../data/formatDiff";
 import { useSets } from "../../features/sets/SetsProvider";
+import type { SkippedQuestion } from "../../features/sets/parseSet";
 import type { SetRecord } from "../../features/sets/setsStore";
 import { formatShortDate } from "../../shared/lib/formatDate";
 import { countQuestions } from "../../shared/lib/plural";
@@ -16,14 +17,31 @@ import { ScreenTitle } from "../../shared/ui/ScreenTitle";
 import { Sheet } from "../../shared/ui/Sheet";
 import styles from "./SetsScreen.module.css";
 
-type Message = { kind: "ok" | "error"; text: string };
+type Message = { kind: "ok" | "error"; text: string; skipped?: SkippedQuestion[] };
 
 function getErrorText(error: unknown) {
   return error instanceof Error ? error.message : "Неизвестная ошибка";
 }
 
-function getSkippedText(skipped: number) {
-  return skipped ? ` Пропущено ${skipped}: их не удалось прочитать или повторился id.` : "";
+/** Вопросов в наборе: тестовый набор — тестовые, устный — устные. */
+function getQuestionCount(record: SetRecord) {
+  return record.file.questions.length + (record.file.speech?.length ?? 0);
+}
+
+/** Пометка устного набора в списке. */
+function getKindLabel(record: SetRecord) {
+  return record.file.speech?.length ? "устные · " : "";
+}
+
+function getSkippedText(skipped: readonly SkippedQuestion[]) {
+  return skipped.length ? ` Пропущено ${skipped.length} — причины ниже.` : "";
+}
+
+/** Подробности для сообщения: какие вопросы набора пропущены и почему. */
+function getSkippedDetails(message: Message) {
+  return message.skipped?.length
+    ? { title: "Что пропущено", items: message.skipped.map((s) => `${s.label}: ${s.reason}`) }
+    : undefined;
 }
 
 /**
@@ -74,7 +92,8 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
       const { record, skipped } = await addSet(link);
       setAddMessage({
         kind: "ok",
-        text: `Добавлен «${record.title}»: ${countQuestions(record.file.questions.length)}.${getSkippedText(skipped)}`,
+        text: `Добавлен «${record.title}»: ${countQuestions(getQuestionCount(record))}.${getSkippedText(skipped)}`,
+        skipped,
       });
       setLink("");
     } catch (error) {
@@ -95,9 +114,9 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
       const title = result.record.title;
       const text =
         result.kind === "added"
-          ? `Добавлен «${title}»: ${countQuestions(result.record.file.questions.length)}.`
+          ? `Добавлен «${title}»: ${countQuestions(getQuestionCount(result.record))}.`
           : formatDiff(result.diff, `Набор «${title}» обновлён`, `Набор «${title}» не изменился.`);
-      setAddMessage({ kind: "ok", text: text + getSkippedText(result.skipped) });
+      setAddMessage({ kind: "ok", text: text + getSkippedText(result.skipped), skipped: result.skipped });
     } catch (error) {
       setAddMessage({ kind: "error", text: getErrorText(error) });
     } finally {
@@ -113,6 +132,7 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
       showSetMessage(record.id, {
         kind: "ok",
         text: formatDiff(diff, "Набор обновлён", "Набор не изменился.") + getSkippedText(skipped),
+        skipped,
       });
     } catch (error) {
       showSetMessage(record.id, { kind: "error", text: `Не удалось обновить: ${getErrorText(error)}` });
@@ -174,7 +194,12 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
         </button>
       </Card>
 
-      {addMessage && <Notice kind={addMessage.kind} text={addMessage.text} onClose={() => setAddMessage(null)} />}
+      {addMessage && <Notice
+          kind={addMessage.kind}
+          text={addMessage.text}
+          details={getSkippedDetails(addMessage)}
+          onClose={() => setAddMessage(null)}
+        />}
 
       {sets.length === 0 && <p className={styles.empty}>Наборов пока нет.</p>}
 
@@ -187,7 +212,8 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
                 <button type="button" className={styles.open} onClick={() => onOpenSet(record.id)}>
                   <span className={styles.title}>{record.title}</span>
                   <span className={styles.meta}>
-                    {countQuestions(record.file.questions.length)} · обновлён {formatShortDate(record.updatedAt)}
+                    {getKindLabel(record)}
+                    {countQuestions(getQuestionCount(record))} · обновлён {formatShortDate(record.updatedAt)}
                   </span>
                   <span className={styles.source}>{formatSource(record)}</span>
                 </button>
@@ -205,7 +231,12 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
                 </div>
               </div>
               {message && (
-                <Notice kind={message.kind} text={message.text} onClose={() => showSetMessage(record.id, null)} />
+                <Notice
+                  kind={message.kind}
+                  text={message.text}
+                  details={getSkippedDetails(message)}
+                  onClose={() => showSetMessage(record.id, null)}
+                />
               )}
             </li>
           );

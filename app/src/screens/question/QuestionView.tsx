@@ -1,8 +1,7 @@
 import clsx from "clsx";
-import { getIsAnswerCorrect, getIsMultiple } from "../../data/answers";
+import { getIsAnswerCorrect, getIsMultiple, getIsSpeech } from "../../data/answers";
 import { formatTopicLine, getTopicTitles } from "../../data/titles";
 import type { Question, QuestionBank } from "../../data/types";
-import { useNotes } from "../../features/notes/NotesProvider";
 import { formatLink } from "../../shared/lib/formatLink";
 import glass from "../../shared/ui/glass.module.css";
 import { Icon } from "../../shared/ui/Icon";
@@ -22,8 +21,9 @@ interface QuestionViewProps {
   answered: boolean;
   /** Показать ответ без выбора — режим разбора. */
   reveal?: boolean;
+  /** Ответ открыт кнопкой «Не знаю». */
+  gaveUp?: boolean;
   onSelect?: (optionIndex: number) => void;
-  onEditNote: () => void;
 }
 
 export function QuestionView({
@@ -33,12 +33,11 @@ export function QuestionView({
   selected,
   answered,
   reveal = false,
+  gaveUp = false,
   onSelect,
-  onEditNote,
 }: QuestionViewProps) {
-  const { getNote } = useNotes();
-  const note = getNote(bank.setId, question.id);
   const multiple = getIsMultiple(question);
+  const speech = getIsSpeech(question);
   const showResult = reveal || answered;
   // В своих наборах объяснения может не быть — тогда блок не показываем.
   const hasExplanation = question.explanation.trim() !== "" || (question.links?.length ?? 0) > 0;
@@ -58,9 +57,17 @@ export function QuestionView({
       {question.code && <CodeBlock code={question.code} lang={question.codeLang} />}
 
       {multiple && !showResult && <p className={styles.hint}>Выберите все подходящие варианты</p>}
+      {gaveUp && (
+        <p className={clsx(styles.verdict, styles.verdictBad)} role="status">
+          Ответ показан — вопрос попадёт в «Прорешать ошибки»
+        </p>
+      )}
       {multiple && answered && !reveal && <MultipleVerdict correct={getIsAnswerCorrect(question, selected)} />}
 
-      <ol className={styles.options}>
+      {speech && !showResult && <p className={styles.hint}>Ответь про себя или вслух, потом открой эталон</p>}
+      {speech && showResult && <SpeechAnswer question={question} />}
+
+      <ol className={styles.options} hidden={speech}>
         {optionOrder.map((optionIndex, position) => (
           <li key={optionIndex}>
             <OptionCard
@@ -97,16 +104,32 @@ export function QuestionView({
         </section>
       )}
 
-      {note && (
-        <button type="button" className={clsx(styles.note, glass.glass)} onClick={onEditNote}>
-          <span className={styles.noteHead}>
-            <Icon name="pencil" />
-            Моя заметка
-          </span>
-          <span className={styles.noteText}>{note.text}</span>
-        </button>
-      )}
     </article>
+  );
+}
+
+/** Эталонный ответ устного вопроса и тезисы, с которыми стоит сверить свой ответ. */
+function SpeechAnswer({ question }: { question: Question }) {
+  return (
+    <section className={clsx(styles.explain, styles.answer, glass.glass)}>
+      <h2 className={styles.explainTitle}>
+        <Icon name="check" />
+        Эталонный ответ
+      </h2>
+      {question.answer && <Markdown text={question.answer} className={styles.explainText} />}
+      {question.points && question.points.length > 0 && (
+        <>
+          <h3 className={styles.pointsTitle}>Что стоит упомянуть</h3>
+          <ul className={styles.points}>
+            {question.points.map((point) => (
+              <li key={point}>
+                <Markdown text={point} inline />
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
   );
 }
 

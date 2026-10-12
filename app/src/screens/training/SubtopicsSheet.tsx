@@ -1,4 +1,4 @@
-import type { QuestionBank } from "../../data/types";
+import type { Question, QuestionBank } from "../../data/types";
 import { getSubtopicKey, toggleItem, type Filters } from "../../features/session/filters";
 import { Chip, ChipGroup } from "../../shared/ui/Chip";
 import { Sheet } from "../../shared/ui/Sheet";
@@ -8,12 +8,14 @@ interface SubtopicsSheetProps {
   open: boolean;
   bank: QuestionBank;
   filters: Filters;
+  /** Вопросы раздела — по ним считаются числа у подтем. */
+  questions: readonly Question[];
   onChange: (excludedSubtopics: string[]) => void;
   onClose: () => void;
 }
 
 /** Подтемы выбранных тем. Выключенная подтема попадает в excludedSubtopics. */
-export function SubtopicsSheet({ open, bank, filters, onChange, onClose }: SubtopicsSheetProps) {
+export function SubtopicsSheet({ open, bank, filters, questions, onChange, onClose }: SubtopicsSheetProps) {
   const topics = bank.topics.filter((t) => filters.topics.includes(t.id));
 
   return (
@@ -43,7 +45,7 @@ export function SubtopicsSheet({ open, bank, filters, onChange, onClose }: Subto
                     <Chip
                       key={key}
                       label={sub.title}
-                      count={bank.questions.filter((q) => q.topic === topic.id && q.subtopic === sub.id).length}
+                      count={questions.filter((q) => q.topic === topic.id && q.subtopic === sub.id).length}
                       on={!filters.excludedSubtopics.includes(key)}
                       onClick={() => onChange(toggleItem(filters.excludedSubtopics, key))}
                     />

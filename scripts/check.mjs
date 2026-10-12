@@ -138,6 +138,57 @@ for (const path of listYamlFiles(QUESTIONS_DIR)) {
   });
 }
 
+// Устные вопросы — отдельная папка speech/<тема>/<подтема>.yaml, с тестовыми не смешиваются.
+// Вместо вариантов эталонный ответ answer и необязательные тезисы points.
+const SPEECH_DIR = join(ROOT, "speech");
+const SPEECH_KEYS = ["id", "level", "tags", "question", "code", "codeLang", "answer", "points", "explanation", "links", "source"];
+const allSpeech = [];
+const speechFiles = statSync(SPEECH_DIR, { throwIfNoEntry: false })?.isDirectory() ? listYamlFiles(SPEECH_DIR) : [];
+
+for (const path of speechFiles) {
+  const file = relative(ROOT, path);
+  let doc;
+  try {
+    doc = yaml.load(readFileSync(path, "utf8"));
+  } catch (error) {
+    fail(file, `YAML не разобрался: ${error.message}`);
+    continue;
+  }
+  const { topic, subtopic, questions } = doc ?? {};
+  if (!subtopicsByTopic.has(topic)) fail(file, `тема "${topic}" не описана в topics.yaml`);
+  else if (!subtopicsByTopic.get(topic).has(subtopic)) fail(file, `подтема "${subtopic}" не описана в topics.yaml`);
+  if (!Array.isArray(questions) || questions.length === 0) {
+    fail(file, "нет вопросов");
+    continue;
+  }
+  questions.forEach((q, index) => {
+    const where = `${file} [${q?.id ?? `#${index + 1}`}]`;
+    for (const key of Object.keys(q ?? {})) {
+      if (!SPEECH_KEYS.includes(key)) fail(where, `лишнее поле "${key}"${key === "options" ? " — у устного вопроса вариантов нет" : ""}`);
+    }
+    if (!isText(q.id) || !q.id.startsWith(`speech-${topic}-${subtopic}-`) || !/-\d{3}$/.test(q.id)) {
+      fail(where, `id должен быть вида speech-${topic}-${subtopic}-NNN`);
+    } else if (seenIds.has(q.id)) {
+      fail(where, `id повторяется, первый раз в ${seenIds.get(q.id)}`);
+    } else {
+      seenIds.set(q.id, file);
+    }
+    if (!LEVELS.includes(q.level)) fail(where, `level должен быть одним из ${LEVELS.join(", ")}`);
+    if (!isText(q.question)) fail(where, "пустой question");
+    if (!isText(q.answer)) fail(where, "пустой answer — эталонный ответ обязателен");
+    if (q.points !== undefined && (!Array.isArray(q.points) || !q.points.every(isText))) fail(where, "points — список непустых строк");
+    if (q.code !== undefined && !isText(q.code)) fail(where, "пустой code");
+    if (q.code !== undefined && !CODE_LANGS.includes(q.codeLang)) fail(where, "у code нет codeLang");
+    (q.links ?? []).forEach((link) => {
+      if (!/^https:\/\//.test(link)) fail(where, `ссылка не https: ${link}`);
+    });
+    const prose = [q.question, q.answer, q.explanation, ...(q.points ?? [])].join(" ").replace(/`[^`]*`/g, " ");
+    const mixed = prose.match(/[а-яё][a-z]|[a-z][а-яё]/gi);
+    if (mixed) warnings.push(`${where}: в слове смешаны кириллица и латиница: ${mixed.join(", ")}`);
+    allSpeech.push({ topic, subtopic, type: "speech", options: [], explanation: "", ...q });
+  });
+}
+
 // Сводка: сколько вопросов каждого уровня в каждой подтеме
 const stats = new Map();
 for (const q of allQuestions) {
@@ -164,6 +215,7 @@ console.log(
 );
 const multipleCount = allQuestions.filter((q) => q.multiple === true || !singleAnswer.includes(q)).length;
 console.log(`Вопросов с несколькими ответами (галочки): ${multipleCount}`);
+console.log(`Устных вопросов (speech/): ${allSpeech.length}`);
 
 if (warnings.length > 0) {
   console.warn(`\nПредупреждений: ${warnings.length}`);
@@ -179,7 +231,7 @@ if (errors.length > 0) {
 if (process.argv.includes("--build")) {
   mkdirSync(join(ROOT, "dist"), { recursive: true });
   // generatedAt приложение показывает как «база от …».
-  const output = { generatedAt: new Date().toISOString(), topics: topicsDoc.topics, questions: allQuestions };
+  const output = { generatedAt: new Date().toISOString(), topics: topicsDoc.topics, questions: allQuestions, speech: allSpeech };
   writeFileSync(join(ROOT, "dist", "questions.json"), JSON.stringify(output, null, 2));
   console.log("Собрано: dist/questions.json");
 }

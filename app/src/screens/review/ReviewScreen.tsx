@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { QuestionBank } from "../../data/types";
 import { NoteSheet } from "../../features/notes/NoteSheet";
+import { useNotes } from "../../features/notes/NotesProvider";
 import { Button, IconButton } from "../../shared/ui/Button";
 import { ActionBar, Screen, TopBar } from "../../shared/ui/Screen";
 import { QuestionView } from "../question/QuestionView";
@@ -17,6 +18,8 @@ interface ReviewScreenProps {
 export function ReviewScreen({ bank, questionId, onBack }: ReviewScreenProps) {
   const [noteOpen, setNoteOpen] = useState(false);
   const question = bank?.byId.get(questionId);
+  const { getNote } = useNotes();
+  const hasNote = !!bank && !!question && !!getNote(bank.setId, question.id);
 
   return (
     <Screen>
@@ -35,10 +38,9 @@ export function ReviewScreen({ bank, questionId, onBack }: ReviewScreenProps) {
             selected={[]}
             answered={false}
             reveal
-            onEditNote={() => setNoteOpen(true)}
           />
           <ActionBar>
-            <Button variant="secondary" icon="pencil" onClick={() => setNoteOpen(true)}>
+            <Button variant="secondary" icon="pencil" marked={hasNote} onClick={() => setNoteOpen(true)}>
               Заметка
             </Button>
             <Button icon="arrowLeft" onClick={onBack}>

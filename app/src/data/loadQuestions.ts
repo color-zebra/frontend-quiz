@@ -6,10 +6,12 @@ import { BUILTIN_SET_ID, type QuestionBank, type QuestionsFile } from "./types";
 const QUESTIONS_URL = `${import.meta.env.BASE_URL}questions.json`;
 
 export function createBank(file: QuestionsFile, setId: string): QuestionBank {
+  const speech = file.speech ?? [];
   return {
     ...file,
     setId,
-    byId: new Map(file.questions.map((q) => [q.id, q])),
+    speech,
+    byId: new Map([...file.questions, ...speech].map((q) => [q.id, q])),
     topicById: new Map(file.topics.map((t) => [t.id, t])),
   };
 }
@@ -62,11 +64,16 @@ export interface BankDiff {
 }
 
 /** Сравнение баз по id: новые, изменённые (любое поле) и удалённые вопросы. */
+/** Все вопросы файла — тестовые и устные. */
+function getAllQuestions(file: QuestionsFile) {
+  return [...file.questions, ...(file.speech ?? [])];
+}
+
 export function getBankDiff(previous: QuestionsFile, next: QuestionsFile): BankDiff {
-  const before = new Map(previous.questions.map((q) => [q.id, JSON.stringify(q)]));
+  const before = new Map(getAllQuestions(previous).map((q) => [q.id, JSON.stringify(q)]));
   const diff: BankDiff = { added: 0, changed: 0, removed: 0 };
   const nextIds = new Set<string>();
-  for (const question of next.questions) {
+  for (const question of getAllQuestions(next)) {
     nextIds.add(question.id);
     const old = before.get(question.id);
     if (old === undefined) diff.added++;

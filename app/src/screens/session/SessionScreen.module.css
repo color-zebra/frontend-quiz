@@ -28,12 +28,9 @@
   transition: width 0.3s;
 }
 
-.spacer {
-  width: 42px;
-  flex: none;
-}
 
-.hasNote {
-  border-color: var(--accent);
-  color: var(--accent);
+/* Три оценки в одной строке телефона: подписи не переносятся, поля у краёв уже обычных. */
+.grade {
+  padding-inline: 10px;
+  white-space: nowrap;
 }
