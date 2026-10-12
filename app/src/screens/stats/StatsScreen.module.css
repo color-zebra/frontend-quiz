@@ -1,0 +1,147 @@
+.empty {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.seen {
+  margin: 0 0 6px;
+  font-size: 17px;
+}
+
+.accuracy {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.accuracy b,
+.seen b {
+  color: var(--text);
+}
+
+.topics {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.topicHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.topicShare {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Полоска темы: зелёное — освоено, красное — в ошибках, остаток дорожки — не видел. */
+.bar {
+  display: flex;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--track);
+}
+
+.mastered {
+  background: var(--ok);
+}
+
+.mistakes {
+  background: var(--bad);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.dotMastered,
+.dotMistakes,
+.dotUnseen {
+  width: 8px;
+  height: 8px;
+  margin-left: 6px;
+  border-radius: 50%;
+}
+
+.dotMastered {
+  margin-left: 0;
+  background: var(--ok);
+}
+
+.dotMistakes {
+  background: var(--bad);
+}
+
+.dotUnseen {
+  background: var(--track);
+}
+
+.weakList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weak {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 14px;
+  color: var(--text);
+  text-align: left;
+}
+
+.weakText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+
+.weakCount {
+  color: var(--bad);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.weakAction {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.confirm p {
+  margin: 0 0 16px;
+  color: var(--text-2);
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+.confirmButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}

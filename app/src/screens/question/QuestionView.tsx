@@ -92,7 +92,7 @@ export function QuestionView({
       {showResult && hasExplanation && (
         <section ref={explanationRef} className={clsx(styles.explain, glass.glass)}>
           <h2 className={styles.explainTitle}>
-            <Icon name="bulb" />
+            <Icon name="bulb" className={styles.bulb} />
             Как это устроено
           </h2>
           <ExplanationBody question={question} />

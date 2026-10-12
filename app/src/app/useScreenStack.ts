@@ -5,6 +5,7 @@ export type AppScreen =
   | { name: "session" }
   | { name: "summary" }
   | { name: "notes" }
+  | { name: "stats" }
   | { name: "sets" }
   | { name: "speechHome" }
   | { name: "setHome"; setId: string }

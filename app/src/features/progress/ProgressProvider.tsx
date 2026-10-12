@@ -1,15 +1,19 @@
 import { createContext, use, useEffect, useRef, useState, type ReactNode } from "react";
 import type { SessionAnswer } from "../session/session";
-import { createRecordKey, readAllAnswers, writeAnswer } from "./progressStore";
+import { clearAnswers, createRecordKey, readAllAnswers, writeAnswer } from "./progressStore";
 import { applyRecord, getProgressKey, type AnswerRecord, type QuestionProgress } from "./types";
 
 interface ProgressContextValue {
+  /** Вся лента ответов, от старых к новым: для статистики («последние 100») и будущих ачивок. */
+  records: readonly AnswerRecord[];
   /** Сводка по вопросу; нет — на вопрос ещё ни разу не отвечали. */
   getProgress: (setId: string, questionId: string) => QuestionProgress | undefined;
   /** Ответ из сессии — сразу в ленту, не дожидаясь конца сессии. */
   recordAnswer: (setId: string, answer: SessionAnswer) => void;
   /** Вопросы исправили в базе — выводим их из ошибок. */
   resetQuestions: (setId: string, questionIds: readonly string[]) => void;
+  /** Стереть всю ленту на устройстве: ошибки, новые вопросы и статистика — с нуля. */
+  resetAll: () => void;
 }
 
 const ProgressContext = createContext<ProgressContextValue | null>(null);
@@ -23,8 +27,9 @@ function buildProgress(records: readonly AnswerRecord[]) {
   return progress;
 }
 
-/** Лента ответов на устройстве и сводка по вопросам: ошибки и новые вопросы для фильтров. */
+/** Лента ответов на устройстве и сводка по вопросам: ошибки и новые вопросы для фильтров, статистика. */
 export function ProgressProvider({ children }: { children: ReactNode }) {
+  const [records, setRecords] = useState<AnswerRecord[]>([]);
   const [progress, setProgress] = useState<Map<string, QuestionProgress>>(new Map());
   // Записи этой вкладки: если лента дочитается уже после первых ответов, они не потеряются.
   const local = useRef(new Map<string, AnswerRecord>());
@@ -32,23 +37,25 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     readAllAnswers().then(
       (saved) => {
-        const all = new Map([...saved, ...local.current]);
-        setProgress(buildProgress([...all.values()].sort((a, b) => a.at - b.at)));
+        const all = [...new Map([...saved, ...local.current]).values()].sort((a, b) => a.at - b.at);
+        setRecords(all);
+        setProgress(buildProgress(all));
       },
       // IndexedDB недоступна — ответы считаются до закрытия вкладки.
       () => undefined,
     );
   }, []);
 
-  function add(records: readonly AnswerRecord[]) {
-    for (const record of records) {
+  function add(added: readonly AnswerRecord[]) {
+    for (const record of added) {
       const key = createRecordKey(record);
       local.current.set(key, record);
       writeAnswer(key, record).catch(() => undefined);
     }
+    setRecords((prev) => [...prev, ...added]);
     setProgress((prev) => {
       const next = new Map(prev);
-      for (const record of records) {
+      for (const record of added) {
         const key = getProgressKey(record.setId, record.questionId);
         next.set(key, applyRecord(next.get(key), record));
       }
@@ -67,13 +74,21 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   function resetQuestions(setId: string, questionIds: readonly string[]) {
     const at = Date.now();
     // Отметка нужна только тем, кто сейчас в ошибках.
-    const records = questionIds
+    const marks = questionIds
       .filter((id) => progress.get(getProgressKey(setId, id))?.mistake)
       .map((questionId): AnswerRecord => ({ setId, questionId, at, reset: true }));
-    if (records.length) add(records);
+    if (marks.length) add(marks);
   }
 
-  return <ProgressContext value={{ getProgress, recordAnswer, resetQuestions }}>{children}</ProgressContext>;
+  function resetAll() {
+    local.current.clear();
+    setRecords([]);
+    setProgress(new Map());
+    clearAnswers().catch(() => undefined);
+  }
+
+  const value = { records, getProgress, recordAnswer, resetQuestions, resetAll };
+  return <ProgressContext value={value}>{children}</ProgressContext>;
 }
 
 export function useProgress() {

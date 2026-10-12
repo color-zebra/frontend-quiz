@@ -25,6 +25,7 @@ import { SessionScreen } from "../screens/session/SessionScreen";
 import { SetHomeScreen } from "../screens/sets/SetHomeScreen";
 import { SetsScreen } from "../screens/sets/SetsScreen";
 import { SpeechHomeScreen } from "../screens/speech/SpeechHomeScreen";
+import { StatsScreen } from "../screens/stats/StatsScreen";
 import { SummaryScreen } from "../screens/summary/SummaryScreen";
 import { ThemeSheet } from "../theme/ThemeSheet";
 import { applyTheme, readSavedTheme, type ThemeId } from "../theme/themes";
@@ -176,6 +177,7 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
             bank={bank}
             onStart={(ids, length) => begin(bank, ids, length, "push")}
             onOpenNotes={() => nav.push({ name: "notes" })}
+            onOpenStats={() => nav.push({ name: "stats" })}
             onOpenSets={() => nav.push({ name: "sets" })}
             onOpenSpeech={() => nav.push({ name: "speechHome" })}
             onOpenHelp={() => nav.push({ name: "help" })}
@@ -183,6 +185,10 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
             theme={theme}
             onOpenTheme={() => setThemeOpen(true)}
           />
+        );
+      case "stats":
+        return (
+          <StatsScreen bank={bank} onBack={nav.back} onStart={(ids, length) => begin(bank, ids, length, "push")} />
         );
       case "speechHome":
         return <SpeechHomeScreen bank={bank} onBack={nav.back} onStart={(ids, length) => begin(bank, ids, length, "push")} />;

@@ -1,4 +1,4 @@
-import { createStore, entries, set } from "idb-keyval";
+import { clear, createStore, entries, set } from "idb-keyval";
 import { isAnswerRecord, type AnswerRecord } from "./types";
 
 // Отдельная база IndexedDB под ленту ответов. Ключ — время записи и случайный хвост: записи только добавляются.
@@ -14,6 +14,11 @@ export async function readAllAnswers(): Promise<[string, AnswerRecord][]> {
 
 export function writeAnswer(key: string, record: AnswerRecord) {
   return set(key, record, store);
+}
+
+/** Сброс статистики: вся лента стирается. */
+export function clearAnswers() {
+  return clear(store);
 }
 
 export function createRecordKey(record: AnswerRecord) {

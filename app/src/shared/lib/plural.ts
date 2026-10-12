@@ -9,6 +9,7 @@ export function plural(n: number, forms: readonly [string, string, string]) {
 
 export const QUESTION_FORMS = ["вопрос", "вопроса", "вопросов"] as const;
 export const NOTE_FORMS = ["заметка", "заметки", "заметок"] as const;
+export const ANSWER_FORMS = ["ответа", "ответов", "ответов"] as const;
 
 export function countQuestions(n: number) {
   return `${n} ${plural(n, QUESTION_FORMS)}`;

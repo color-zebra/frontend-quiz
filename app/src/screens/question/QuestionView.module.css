@@ -215,6 +215,13 @@
   color: var(--accent);
 }
 
+/* Лампочка разбора — такая же «горящая», как на кнопке «Почему?». */
+.explainTitle .bulb {
+  color: var(--bulb);
+  fill: color-mix(in srgb, var(--bulb) 30%, transparent);
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--bulb) 70%, transparent));
+}
+
 .explainText {
   color: var(--text-2);
   font-size: 14px;

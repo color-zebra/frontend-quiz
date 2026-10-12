@@ -6,7 +6,7 @@ import { chromium } from "playwright-core";
 import { preview } from "vite";
 import { APP_DIR, DIST_DIR, createReport, ensureOutDir, findChrome, getAccessHash, visible } from "./lib.mjs";
 
-const SUITES = ["base", "multi", "features", "screen", "progress", "complaint", "speech", "sets", "files", "help", "pwa", "gate"];
+const SUITES = ["base", "multi", "features", "screen", "progress", "stats", "complaint", "speech", "sets", "files", "help", "pwa", "gate"];
 const PORT = 4730;
 const URL_ = `http://127.0.0.1:${PORT}/`;
 

@@ -27,6 +27,7 @@ interface HomeScreenProps {
   onStart: (questionIds: string[], length: SessionLength) => void;
   onOpenSpeech: () => void;
   onOpenNotes: () => void;
+  onOpenStats: () => void;
   onOpenSets: () => void;
   onOpenHelp: () => void;
   onUpdate: () => Promise<BankDiff>;
@@ -49,6 +50,7 @@ export function HomeScreen({
   bank,
   onStart,
   onOpenNotes,
+  onOpenStats,
   onOpenSets,
   onOpenSpeech,
   onOpenHelp,
@@ -58,7 +60,8 @@ export function HomeScreen({
 }: HomeScreenProps) {
   const { notes } = useNotes();
   const { sets } = useSets();
-  const { resetQuestions } = useProgress();
+  const { resetQuestions, getProgress } = useProgress();
+  const seen = bank.questions.filter((q) => (getProgress(bank.setId, q.id)?.answered ?? 0) > 0).length;
   const canInstall = useCanInstall();
   const [updateState, setUpdateState] = useState<UpdateState>({ kind: "idle" });
   const bankDate = formatShortDate(bank.generatedAt);
@@ -145,11 +148,18 @@ export function HomeScreen({
             </span>
           </button>
         )}
-        <button type="button" className={clsx(styles.tile, styles.wide, glass.glass)} onClick={onOpenSets}>
+        <button type="button" className={clsx(styles.tile, glass.glass)} onClick={onOpenSets}>
           <Icon name="folder" />
           <span className={styles.tileTitle}>Мои наборы</span>
           <span className={styles.tileSub}>
             {sets.length ? `${sets.length} ${plural(sets.length, SET_FORMS)}` : "Свои вопросы — из файла или по ссылке"}
+          </span>
+        </button>
+        <button type="button" className={clsx(styles.tile, glass.glass)} onClick={onOpenStats}>
+          <Icon name="chart" />
+          <span className={styles.tileTitle}>Статистика</span>
+          <span className={styles.tileSub}>
+            {seen ? `видел ${seen} из ${bank.questions.length}` : "ещё нет ответов"}
           </span>
         </button>
         <button type="button" className={clsx(styles.tile, glass.glass)} onClick={onOpenNotes}>

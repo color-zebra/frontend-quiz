@@ -91,6 +91,7 @@ const PATHS = {
       <path d="M8.5 17.5q3.5-3 7 0" />
     </>
   ),
+  chart: <path d="M4 20V11M10 20V5M16 20v-6M21 20H3" />,
   help: (
     <>
       <circle cx="12" cy="12" r="9" />
