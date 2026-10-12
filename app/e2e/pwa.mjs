@@ -79,7 +79,8 @@ export default async function pwa(t) {
     check("«Перезапустить» перезагружает приложение", await navigated);
     await page.getByText("Что тренируем?").waitFor();
     check("после перезапуска плашки нет", !(await visible(page.getByText("Вышла новая версия приложения"), 2000)));
-    check("заметка пережила обновление", await page.getByText("1 заметка").isVisible());
+    await page.getByRole("button", { name: "Кабинет" }).click();
+    check("заметка пережила обновление", await visible(page.getByText("1 заметка")));
   } finally {
     writeFileSync(SW, originalSw);
     await context.close();

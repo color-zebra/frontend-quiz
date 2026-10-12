@@ -132,16 +132,3 @@
   font-size: 13.5px;
   font-weight: 600;
 }
-
-.confirm p {
-  margin: 0 0 16px;
-  color: var(--text-2);
-  font-size: 14.5px;
-  line-height: 1.5;
-}
-
-.confirmButtons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}

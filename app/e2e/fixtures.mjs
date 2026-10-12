@@ -50,3 +50,35 @@ export async function withBank({ questions, speech = [] }, fn) {
 
 /** Файл для загрузки через «Загрузить файл с устройства». */
 export const fileInput = (name, text) => ({ name, mimeType: "application/octet-stream", buffer: Buffer.from(text, "utf8") });
+
+/** Запись ленты ответов основной базы. */
+export const answerRecord = (questionId, at, correct) => ({ setId: "builtin", questionId, at, correct });
+
+/**
+ * Кладёт записи прямо в ленту ответов на устройстве — порядок вопросов в сессии на них не влияет.
+ * Приложение уже должно быть открыто (оно создаёт хранилище); прочитает записи после перезагрузки.
+ */
+export function seedAnswers(page, records) {
+  return page.evaluate(
+    (list) =>
+      new Promise((resolve, reject) => {
+        const open = indexedDB.open("frontend-quiz-progress");
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const tx = open.result.transaction("answers", "readwrite");
+          list.forEach((record, i) => tx.objectStore("answers").put(record, `seed-${record.at}-${i}`));
+          tx.oncomplete = () => resolve(undefined);
+          tx.onerror = () => reject(tx.error);
+        };
+      }),
+    records,
+  );
+}
+
+/** Открывает кабинет с главной. */
+export async function openCabinet(page, url) {
+  await page.goto(url);
+  await page.getByText("Что тренируем?").waitFor();
+  await page.getByRole("button", { name: "Кабинет" }).click();
+  await page.getByRole("heading", { name: "Кабинет" }).waitFor();
+}

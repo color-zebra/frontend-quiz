@@ -3,14 +3,13 @@ import { useState } from "react";
 import { formatDiff } from "../../data/formatDiff";
 import type { BankDiff } from "../../data/loadQuestions";
 import { BUILTIN_SET_ID, type QuestionBank } from "../../data/types";
-import { useNotes } from "../../features/notes/NotesProvider";
 import { useProgress } from "../../features/progress/ProgressProvider";
 import { promptInstall, useCanInstall } from "../../features/pwa/install";
 import type { SessionLength } from "../../features/session/filters";
 import { useSets } from "../../features/sets/SetsProvider";
 import { formatShortDate } from "../../shared/lib/formatDate";
 import { readStorage, writeStorage } from "../../shared/lib/storage";
-import { NOTE_FORMS, countQuestions, plural } from "../../shared/lib/plural";
+import { countQuestions, plural } from "../../shared/lib/plural";
 import { Brand } from "../../shared/ui/Brand";
 import { Button, IconButton } from "../../shared/ui/Button";
 import glass from "../../shared/ui/glass.module.css";
@@ -18,7 +17,6 @@ import { Icon } from "../../shared/ui/Icon";
 import { Notice } from "../../shared/ui/Notice";
 import { Screen, TopBar } from "../../shared/ui/Screen";
 import { ScreenTitle } from "../../shared/ui/ScreenTitle";
-import { THEMES, type ThemeId } from "../../theme/themes";
 import { TrainingFilters } from "../training/TrainingFilters";
 import styles from "./HomeScreen.module.css";
 
@@ -26,13 +24,10 @@ interface HomeScreenProps {
   bank: QuestionBank;
   onStart: (questionIds: string[], length: SessionLength) => void;
   onOpenSpeech: () => void;
-  onOpenNotes: () => void;
-  onOpenStats: () => void;
+  onOpenCabinet: () => void;
   onOpenSets: () => void;
   onOpenHelp: () => void;
   onUpdate: () => Promise<BankDiff>;
-  theme: ThemeId;
-  onOpenTheme: () => void;
 }
 
 type UpdateState =
@@ -49,19 +44,14 @@ const HELP_HINT_KEY = "fq.helpHintSeen";
 export function HomeScreen({
   bank,
   onStart,
-  onOpenNotes,
-  onOpenStats,
+  onOpenCabinet,
   onOpenSets,
   onOpenSpeech,
   onOpenHelp,
   onUpdate,
-  theme,
-  onOpenTheme,
 }: HomeScreenProps) {
-  const { notes } = useNotes();
   const { sets } = useSets();
-  const { resetQuestions, getProgress } = useProgress();
-  const seen = bank.questions.filter((q) => (getProgress(bank.setId, q.id)?.answered ?? 0) > 0).length;
+  const { resetQuestions } = useProgress();
   const canInstall = useCanInstall();
   const [updateState, setUpdateState] = useState<UpdateState>({ kind: "idle" });
   const bankDate = formatShortDate(bank.generatedAt);
@@ -95,7 +85,7 @@ export function HomeScreen({
         <Brand />
         <div className={styles.topActions}>
           <IconButton icon="refresh" label="Обновить базу" busy={updateState.kind === "loading"} onClick={refreshBank} />
-          <IconButton icon="palette" label="Оформление" onClick={onOpenTheme} />
+          <IconButton icon="user" label="Кабинет" onClick={onOpenCabinet} />
           <IconButton icon="help" label="Помощь" onClick={openHelp} />
         </div>
       </TopBar>
@@ -148,31 +138,12 @@ export function HomeScreen({
             </span>
           </button>
         )}
-        <button type="button" className={clsx(styles.tile, glass.glass)} onClick={onOpenSets}>
+        <button type="button" className={clsx(styles.tile, styles.wide, glass.glass)} onClick={onOpenSets}>
           <Icon name="folder" />
           <span className={styles.tileTitle}>Мои наборы</span>
           <span className={styles.tileSub}>
             {sets.length ? `${sets.length} ${plural(sets.length, SET_FORMS)}` : "Свои вопросы — из файла или по ссылке"}
           </span>
-        </button>
-        <button type="button" className={clsx(styles.tile, glass.glass)} onClick={onOpenStats}>
-          <Icon name="chart" />
-          <span className={styles.tileTitle}>Статистика</span>
-          <span className={styles.tileSub}>
-            {seen ? `видел ${seen} из ${bank.questions.length}` : "ещё нет ответов"}
-          </span>
-        </button>
-        <button type="button" className={clsx(styles.tile, glass.glass)} onClick={onOpenNotes}>
-          <Icon name="pencil" />
-          <span className={styles.tileTitle}>Мои заметки</span>
-          <span className={styles.tileSub}>
-            {notes.size} {plural(notes.size, NOTE_FORMS)}
-          </span>
-        </button>
-        <button type="button" className={clsx(styles.tile, glass.glass)} onClick={onOpenTheme}>
-          <Icon name="palette" />
-          <span className={styles.tileTitle}>Оформление</span>
-          <span className={styles.tileSub}>{THEMES.find((t) => t.id === theme)?.name}</span>
         </button>
       </div>
 

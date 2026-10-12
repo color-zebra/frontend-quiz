@@ -92,6 +92,12 @@ const PATHS = {
     </>
   ),
   chart: <path d="M4 20V11M10 20V5M16 20v-6M21 20H3" />,
+  user: (
+    <>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
+    </>
+  ),
   help: (
     <>
       <circle cx="12" cy="12" r="9" />

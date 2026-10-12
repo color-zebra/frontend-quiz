@@ -99,9 +99,11 @@ export default async function base(t) {
     await page.getByRole("button", { name: "Обновить базу" }).click();
     check("возврат исходной базы", await visible(page.getByText("База обновлена: новых 1, исправлено 1, удалено 2.")));
 
-    // Заметки.
+    // Заметки — в кабинете.
+    await page.getByRole("button", { name: "Кабинет" }).click();
     await page.getByRole("button", { name: /Мои заметки/ }).click();
     check("заметка в списке заметок", await visible(page.getByText("Проверочная заметка")));
+    await page.getByRole("button", { name: "Назад" }).click();
     await page.getByRole("button", { name: "Назад" }).click();
 
     // Бесконечный режим и системная «Назад».

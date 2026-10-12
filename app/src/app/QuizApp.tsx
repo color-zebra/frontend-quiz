@@ -15,6 +15,7 @@ import {
   type SessionAnswer,
   type SpeechGrade,
 } from "../features/session/session";
+import { CabinetScreen } from "../screens/cabinet/CabinetScreen";
 import { HelpHubScreen } from "../screens/help/HelpHubScreen";
 import { HelpScreen } from "../screens/help/HelpScreen";
 import { SetsHelpScreen } from "../screens/help/SetsHelpScreen";
@@ -176,13 +177,21 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
           <HomeScreen
             bank={bank}
             onStart={(ids, length) => begin(bank, ids, length, "push")}
-            onOpenNotes={() => nav.push({ name: "notes" })}
-            onOpenStats={() => nav.push({ name: "stats" })}
+            onOpenCabinet={() => nav.push({ name: "cabinet" })}
             onOpenSets={() => nav.push({ name: "sets" })}
             onOpenSpeech={() => nav.push({ name: "speechHome" })}
             onOpenHelp={() => nav.push({ name: "help" })}
             onUpdate={onUpdate}
+          />
+        );
+      case "cabinet":
+        return (
+          <CabinetScreen
+            bank={bank}
             theme={theme}
+            onBack={nav.back}
+            onOpenStats={() => nav.push({ name: "stats" })}
+            onOpenNotes={() => nav.push({ name: "notes" })}
             onOpenTheme={() => setThemeOpen(true)}
           />
         );

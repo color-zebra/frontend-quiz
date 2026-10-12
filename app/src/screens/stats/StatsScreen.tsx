@@ -1,17 +1,15 @@
 import clsx from "clsx";
-import { useState } from "react";
 import { formatTopicLine } from "../../data/titles";
 import type { QuestionBank } from "../../data/types";
 import { useProgress } from "../../features/progress/ProgressProvider";
 import { getBankStats, RECENT_ANSWERS, type TopicStats } from "../../features/progress/stats";
 import { ANSWER_FORMS, plural } from "../../shared/lib/plural";
-import { Button, IconButton } from "../../shared/ui/Button";
+import { IconButton } from "../../shared/ui/Button";
 import { Card } from "../../shared/ui/Card";
 import glass from "../../shared/ui/glass.module.css";
 import { Icon } from "../../shared/ui/Icon";
 import { Screen, TopBar } from "../../shared/ui/Screen";
 import { ScreenTitle } from "../../shared/ui/ScreenTitle";
-import { Sheet } from "../../shared/ui/Sheet";
 import styles from "./StatsScreen.module.css";
 
 interface StatsScreenProps {
@@ -23,13 +21,10 @@ interface StatsScreenProps {
 
 const percent = (share: number) => `${Math.round(share * 100)} %`;
 
-/** Статистика основной базы: что видел, точность, какие темы отстают, слабые подтемы; сброс всей ленты ответов. */
+/** Статистика основной базы: что видел, точность, какие темы отстают, слабые подтемы. Сброс — в кабинете. */
 export function StatsScreen({ bank, onBack, onStart }: StatsScreenProps) {
-  const { records, getProgress, resetAll } = useProgress();
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const { records, getProgress } = useProgress();
   const stats = getBankStats(bank, records, (id) => getProgress(bank.setId, id));
-  // Сброс стирает и ответы в наборах — кнопка нужна, если хоть что-то записано.
-  const hasRecords = records.length > 0;
 
   return (
     <Screen>
@@ -104,34 +99,6 @@ export function StatsScreen({ bank, onBack, onStart }: StatsScreenProps) {
         </>
       )}
 
-      {hasRecords && (
-        <Button variant="secondary" icon="trash" onClick={() => setConfirmOpen(true)}>
-          Сбросить статистику
-        </Button>
-      )}
-
-      <Sheet open={confirmOpen} title="Сбросить статистику?" onClose={() => setConfirmOpen(false)}>
-        <div className={styles.confirm}>
-          <p>
-            Удалятся все твои ответы на этом устройстве — и в основной базе, и в своих наборах: ошибки, новые вопросы
-            и статистика начнутся с нуля. Заметки и наборы останутся. Отменить сброс нельзя.
-          </p>
-          <div className={styles.confirmButtons}>
-            <Button variant="secondary" onClick={() => setConfirmOpen(false)}>
-              Отмена
-            </Button>
-            <Button
-              icon="trash"
-              onClick={() => {
-                resetAll();
-                setConfirmOpen(false);
-              }}
-            >
-              Сбросить
-            </Button>
-          </div>
-        </div>
-      </Sheet>
     </Screen>
   );
 }

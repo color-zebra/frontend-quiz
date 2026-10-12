@@ -6,28 +6,6 @@
   font-size: 13.5px;
 }
 
-.fileButtons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.hint {
-  margin: -4px 0 0;
-  color: var(--muted);
-  font-size: 12.5px;
-}
-
-.message {
-  margin: 0;
-  color: var(--ok);
-  font-size: 13.5px;
-}
-
-.error {
-  color: var(--bad);
-}
-
 .empty {
   margin: 24px 0 0;
   color: var(--muted);

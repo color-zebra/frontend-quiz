@@ -1,0 +1,71 @@
+/* Плитки — как на главной. */
+.tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  color: var(--text);
+  text-align: left;
+}
+
+.wide {
+  grid-column: span 2;
+}
+
+.tile svg {
+  margin-bottom: 6px;
+  color: var(--accent);
+}
+
+.tileTitle {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tileSub {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.hint {
+  margin: 0 0 12px;
+  color: var(--text-2);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+/* Друг под другом: «Сохранить копию» и «Загрузить копию» в половину ширины не помещаются. */
+.fileButtons {
+  display: grid;
+  gap: 10px;
+}
+
+.message {
+  margin: 12px 0 0;
+  color: var(--ok);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.error {
+  color: var(--bad);
+}
+
+.confirm p {
+  margin: 0 0 16px;
+  color: var(--text-2);
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+.confirmButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}

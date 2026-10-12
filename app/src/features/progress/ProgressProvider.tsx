@@ -14,9 +14,16 @@ interface ProgressContextValue {
   resetQuestions: (setId: string, questionIds: readonly string[]) => void;
   /** Стереть всю ленту на устройстве: ошибки, новые вопросы и статистика — с нуля. */
   resetAll: () => void;
+  /** Ответы из резервной копии: добавляются только те, которых ещё нет. Возвращает, сколько добавлено. */
+  importRecords: (incoming: readonly AnswerRecord[]) => number;
 }
 
 const ProgressContext = createContext<ProgressContextValue | null>(null);
+
+/** Одна и та же запись из разных копий совпадает по всем полям — так повторная загрузка не задваивает ленту. */
+function getSignature(r: AnswerRecord) {
+  return [r.setId, r.questionId, r.at, r.correct, r.grade, r.reset].join("|");
+}
 
 function buildProgress(records: readonly AnswerRecord[]) {
   const progress = new Map<string, QuestionProgress>();
@@ -80,6 +87,25 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     if (marks.length) add(marks);
   }
 
+  function importRecords(incoming: readonly AnswerRecord[]) {
+    const known = new Set(records.map(getSignature));
+    const fresh = incoming.filter((record) => {
+      const signature = getSignature(record);
+      if (known.has(signature)) return false;
+      known.add(signature);
+      return true;
+    });
+    for (const record of fresh) {
+      const key = createRecordKey(record);
+      local.current.set(key, record);
+      writeAnswer(key, record).catch(() => undefined);
+    }
+    const all = [...records, ...fresh].sort((a, b) => a.at - b.at);
+    setRecords(all);
+    setProgress(buildProgress(all));
+    return fresh.length;
+  }
+
   function resetAll() {
     local.current.clear();
     setRecords([]);
@@ -87,7 +113,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
     clearAnswers().catch(() => undefined);
   }
 
-  const value = { records, getProgress, recordAnswer, resetQuestions, resetAll };
+  const value = { records, getProgress, recordAnswer, resetQuestions, resetAll, importRecords };
   return <ProgressContext value={value}>{children}</ProgressContext>;
 }
 

@@ -1,12 +1,10 @@
 import clsx from "clsx";
-import { useRef, useState, type ChangeEvent } from "react";
 import { formatTopicLine } from "../../data/titles";
 import { BUILTIN_SET_ID, type QuestionBank } from "../../data/types";
-import { useNotes, type ImportStats } from "../../features/notes/NotesProvider";
-import { exportNotes, parseNotesFile } from "../../features/notes/notesFile";
+import { useNotes } from "../../features/notes/NotesProvider";
 import type { Note } from "../../features/notes/types";
 import { NOTE_FORMS, plural } from "../../shared/lib/plural";
-import { Button, IconButton } from "../../shared/ui/Button";
+import { IconButton } from "../../shared/ui/Button";
 import glass from "../../shared/ui/glass.module.css";
 import { Icon } from "../../shared/ui/Icon";
 import { LevelBadge } from "../../shared/ui/LevelBadge";
@@ -22,32 +20,11 @@ interface NotesScreenProps {
   onOpenQuestion: (setId: string, questionId: string) => void;
 }
 
-type ImportMessage = { kind: "ok"; stats: ImportStats } | { kind: "error"; text: string };
-
-function formatImportStats({ added, updated, skipped }: ImportStats) {
-  const parts = [`добавлено ${added}`, `обновлено ${updated}`];
-  if (skipped) parts.push(`пропущено ${skipped} — у тебя версия новее или такая же`);
-  return `Загружено: ${parts.join(", ")}.`;
-}
-
 const dateFormat = new Intl.DateTimeFormat("ru", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
 
 export function NotesScreen({ getBank, onBack, onOpenQuestion }: NotesScreenProps) {
-  const { notes, status, deleteNote, importNotes } = useNotes();
-  const fileInput = useRef<HTMLInputElement>(null);
-  const [message, setMessage] = useState<ImportMessage | null>(null);
+  const { notes, status, deleteNote } = useNotes();
   const list = [...notes.values()].sort((a, b) => b.updatedAt - a.updatedAt);
-
-  async function handleFile(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    try {
-      setMessage({ kind: "ok", stats: importNotes(parseNotesFile(await file.text())) });
-    } catch (error) {
-      setMessage({ kind: "error", text: error instanceof Error ? error.message : "Не удалось прочитать файл" });
-    }
-  }
 
   return (
     <Screen>
@@ -59,25 +36,8 @@ export function NotesScreen({ getBank, onBack, onOpenQuestion }: NotesScreenProp
 
       {status === "unavailable" && (
         <p className={clsx(styles.banner, glass.glass)}>
-          Браузер не даёт сохранять данные, поэтому заметки пропадут после закрытия вкладки. Выгрузи их в файл, чтобы не
-          потерять.
-        </p>
-      )}
-
-      <div className={styles.fileButtons}>
-        <Button variant="secondary" icon="download" disabled={list.length === 0} onClick={() => exportNotes(list)}>
-          Выгрузить
-        </Button>
-        <Button variant="secondary" icon="upload" onClick={() => fileInput.current?.click()}>
-          Загрузить
-        </Button>
-        <input ref={fileInput} type="file" accept="application/json,.json" hidden onChange={handleFile} />
-      </div>
-      <p className={styles.hint}>Файл выгрузки — это резервная копия и способ перенести заметки на другое устройство.</p>
-
-      {message && (
-        <p className={clsx(styles.message, message.kind === "error" && styles.error)} role="status">
-          {message.kind === "ok" ? formatImportStats(message.stats) : message.text}
+          Браузер не даёт сохранять данные, поэтому заметки пропадут после закрытия вкладки. Сохрани копию в кабинете,
+          чтобы не потерять.
         </p>
       )}
 

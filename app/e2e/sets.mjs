@@ -149,6 +149,7 @@ questions:
 
   // Заметки к удалённому набору.
   await page.getByRole("button", { name: "Назад" }).click();
+  await page.getByRole("button", { name: "Кабинет" }).click();
   await page.getByRole("button", { name: /Мои заметки/ }).click();
   check("заметка помнит набор после его удаления", await visible(page.getByText("Набор «Пример набора — сложность и Git»")));
   check("заметка помечена «Набор удалён»", await visible(page.getByText("Набор удалён")));
