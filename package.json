@@ -7,7 +7,8 @@
     "check": "node scripts/check.mjs",
     "build": "node scripts/check.mjs --build",
     "dev": "pnpm -F frontend-quiz-app dev",
-    "app:build": "pnpm build && pnpm -F frontend-quiz-app build"
+    "app:build": "pnpm build && pnpm -F frontend-quiz-app build",
+    "password": "node scripts/set-password.mjs"
   },
   "devDependencies": {
     "@types/react": "19.3.0",

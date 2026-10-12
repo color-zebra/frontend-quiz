@@ -32,6 +32,11 @@
   border-color: var(--accent);
 }
 
+.fileButton {
+  width: 100%;
+  margin-top: 8px;
+}
+
 .help {
   margin: 12px 0 0;
   color: var(--text-2);

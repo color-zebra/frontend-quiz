@@ -56,7 +56,8 @@ export function SetHomeScreen({ setId, onBack, onStart }: SetHomeScreenProps) {
     <Screen>
       <TopBar>
         <IconButton icon="arrowLeft" label="Назад" onClick={onBack} />
-        <IconButton icon="refresh" label="Обновить набор" busy={busy} onClick={refresh} />
+        {/* Набор из файла обновляется повторной загрузкой файла на экране «Мои наборы». */}
+        {record.url && <IconButton icon="refresh" label="Обновить набор" busy={busy} onClick={refresh} />}
       </TopBar>
 
       <ScreenTitle

@@ -9,3 +9,6 @@ app/dist/
 *.log
 .DS_Store
 Thumbs.db
+
+# Пароль на вход в приложение — только локально, в репозиторий попадает лишь его SHA-256 (app/src/config.ts).
+.access-password

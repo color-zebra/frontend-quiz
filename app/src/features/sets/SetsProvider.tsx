@@ -3,6 +3,7 @@ import { createBank, getBankDiff, type BankDiff } from "../../data/loadQuestions
 import type { QuestionBank } from "../../data/types";
 import { toRawGithubUrl } from "./githubUrl";
 import { fetchSet } from "./loadSet";
+import { parseSetFile } from "./parseSet";
 import { deleteSetRecord, getSetId, readAllSets, writeSet, type SetRecord } from "./setsStore";
 
 export interface AddResult {
@@ -15,6 +16,9 @@ export interface UpdateResult {
   skipped: number;
 }
 
+/** Загрузка файла: новый набор или обновление уже загруженного файла с тем же именем. */
+export type FileImportResult = ({ kind: "added" } & AddResult) | ({ kind: "updated"; record: SetRecord } & UpdateResult);
+
 interface SetsContextValue {
   /** Наборы в порядке добавления. */
   sets: SetRecord[];
@@ -22,6 +26,7 @@ interface SetsContextValue {
   persistent: boolean;
   getSetBank: (id: string) => QuestionBank | undefined;
   addSet: (link: string) => Promise<AddResult>;
+  importSetFile: (file: File) => Promise<FileImportResult>;
   updateSet: (id: string) => Promise<UpdateResult>;
   removeSet: (id: string) => void;
 }
@@ -74,9 +79,28 @@ export function SetsProvider({ children }: { children: ReactNode }) {
     return { record, skipped };
   }
 
+  /** Набор из файла с устройства. Файл с тем же именем, что уже загружен, обновляет набор. */
+  async function importSetFile(source: File): Promise<FileImportResult> {
+    const fileName = source.name;
+    const { file, skipped } = parseSetFile(await source.text(), fileName.replace(/\.ya?ml$/i, "") || "Набор вопросов");
+    const id = getSetId(`file:${fileName}`);
+    const existing = sets.find((s) => s.id === id);
+    const now = Date.now();
+    const title = file.title ?? "Набор вопросов";
+    if (existing) {
+      const record: SetRecord = { ...existing, title, updatedAt: now, skipped, file };
+      put(record);
+      return { kind: "updated", record, diff: getBankDiff(existing.file, file), skipped };
+    }
+    const record: SetRecord = { id, fileName, title, addedAt: now, updatedAt: now, skipped, file };
+    put(record);
+    return { kind: "added", record, skipped };
+  }
+
   async function updateSet(id: string): Promise<UpdateResult> {
     const current = sets.find((s) => s.id === id);
     if (!current) throw new Error("Набор не найден");
+    if (!current.url) throw new Error("Этот набор загружен из файла — загрузи файл ещё раз");
     const { file, skipped } = await fetchSet(current.url);
     put({ ...current, title: file.title ?? current.title, updatedAt: Date.now(), skipped, file });
     return { diff: getBankDiff(current.file, file), skipped };
@@ -88,7 +112,7 @@ export function SetsProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <SetsContext value={{ sets, persistent, getSetBank, addSet, updateSet, removeSet }}>{children}</SetsContext>
+    <SetsContext value={{ sets, persistent, getSetBank, addSet, importSetFile, updateSet, removeSet }}>{children}</SetsContext>
   );
 }
 

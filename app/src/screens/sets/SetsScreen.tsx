@@ -1,5 +1,6 @@
 import clsx from "clsx";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { SAMPLE_SET_URL } from "../../config";
 import { formatDiff } from "../../data/formatDiff";
 import { useSets } from "../../features/sets/SetsProvider";
 import type { SetRecord } from "../../features/sets/setsStore";
@@ -15,8 +16,6 @@ import { ScreenTitle } from "../../shared/ui/ScreenTitle";
 import { Sheet } from "../../shared/ui/Sheet";
 import styles from "./SetsScreen.module.css";
 
-import { SAMPLE_SET_URL } from "../../config";
-
 type Message = { kind: "ok" | "error"; text: string };
 
 function getErrorText(error: unknown) {
@@ -28,7 +27,9 @@ function getSkippedText(skipped: number) {
 }
 
 /** «raw.githubusercontent.com/…/sample-set.yaml» → «color-zebra/frontend-quiz › sample-set.yaml». */
-function formatSource(url: string) {
+function formatSource(record: SetRecord) {
+  if (!record.url) return `Файл с устройства · ${record.fileName}`;
+  const url = record.url;
   const parts = new URL(url).pathname.split("/").filter(Boolean);
   const file = decodeURIComponent(parts[parts.length - 1] ?? "");
   return parts.length >= 2 ? `${parts[0]}/${parts[1]} › ${file}` : url;
@@ -41,7 +42,8 @@ interface SetsScreenProps {
 }
 
 export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
-  const { sets, persistent, addSet, updateSet, removeSet } = useSets();
+  const { sets, persistent, addSet, importSetFile, updateSet, removeSet } = useSets();
+  const fileInput = useRef<HTMLInputElement>(null);
   const [link, setLink] = useState("");
   const [adding, setAdding] = useState(false);
   const [addMessage, setAddMessage] = useState<Message | null>(null);
@@ -77,6 +79,27 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
     }
   }
 
+  async function handleFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || adding) return;
+    setAdding(true);
+    setAddMessage(null);
+    try {
+      const result = await importSetFile(file);
+      const title = result.record.title;
+      const text =
+        result.kind === "added"
+          ? `Добавлен «${title}»: ${countQuestions(result.record.file.questions.length)}.`
+          : formatDiff(result.diff, `Набор «${title}» обновлён`, `Набор «${title}» не изменился.`);
+      setAddMessage({ kind: "ok", text: text + getSkippedText(result.skipped) });
+    } catch (error) {
+      setAddMessage({ kind: "error", text: getErrorText(error) });
+    } finally {
+      setAdding(false);
+    }
+  }
+
   async function handleUpdate(record: SetRecord) {
     setBusyId(record.id);
     showSetMessage(record.id, null);
@@ -99,7 +122,7 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
         <IconButton icon="arrowLeft" label="Назад" onClick={onBack} />
       </TopBar>
 
-      <ScreenTitle title="Мои наборы" subtitle="Свои вопросы из YAML-файла на GitHub" />
+      <ScreenTitle title="Мои наборы" subtitle="Свои вопросы из YAML-файла — по ссылке на GitHub или с устройства" />
 
       {!persistent && (
         <p className={clsx(styles.banner, glass.glass)}>
@@ -122,8 +145,20 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
             {adding ? "Загружаем…" : "Добавить"}
           </Button>
         </form>
+        <Button
+          variant="secondary"
+          icon="upload"
+          className={styles.fileButton}
+          disabled={adding}
+          onClick={() => fileInput.current?.click()}
+        >
+          Загрузить файл с устройства
+        </Button>
+        {/* Без accept: Android часто не знает тип .yaml и прячет такие файлы из выбора. */}
+        <input ref={fileInput} type="file" hidden onChange={handleFile} />
         <p className={styles.help}>
-          Подойдёт ссылка на YAML-файл в публичном репозитории или gist. Как добавить, написать свой набор и
+          Подойдёт ссылка на YAML-файл в публичном репозитории или gist либо сам файл. Файл с тем же именем, загруженный
+          ещё раз, обновит набор. Как добавить, написать свой набор и
           поделиться им —{" "}
           <button type="button" className={styles.helpLink} onClick={onOpenHelp}>
             инструкция
@@ -150,15 +185,17 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
                   <span className={styles.meta}>
                     {countQuestions(record.file.questions.length)} · обновлён {formatShortDate(record.updatedAt)}
                   </span>
-                  <span className={styles.source}>{formatSource(record.url)}</span>
+                  <span className={styles.source}>{formatSource(record)}</span>
                 </button>
                 <div className={styles.actions}>
-                  <IconButton
-                    icon="refresh"
-                    label={`Обновить «${record.title}»`}
-                    busy={busyId === record.id}
-                    onClick={() => handleUpdate(record)}
-                  />
+                  {record.url && (
+                    <IconButton
+                      icon="refresh"
+                      label={`Обновить «${record.title}»`}
+                      busy={busyId === record.id}
+                      onClick={() => handleUpdate(record)}
+                    />
+                  )}
                   <IconButton icon="trash" label={`Удалить «${record.title}»`} onClick={() => setToDelete(record)} />
                   <Icon name="chevronRight" className={styles.chevron} />
                 </div>

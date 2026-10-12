@@ -25,6 +25,7 @@ examples/                           — пример своего набора �
 pnpm install     — один раз, ставит зависимости базы и приложения
 pnpm dev         — запустить приложение локально (нужен собранный dist/questions.json)
 pnpm app:build   — собрать базу и приложение, как при деплое
+pnpm password <пароль>   — задать пароль на вход в приложение (--off — без пароля), потом закоммитить
 pnpm check       — проверить базу и показать, сколько вопросов каждого уровня в каждой подтеме
 pnpm build       — проверить и собрать dist/questions.json
 node scripts/run-js.mjs questions/javascript/event-loop.yaml [id]   — сверить ответы с реальным выводом Node
