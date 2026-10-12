@@ -54,7 +54,9 @@ const pwa = VitePWA({
     lang: "ru",
     start_url: "./",
     scope: "./",
-    display: "standalone",
+    // Во весь экран: на Android установленное приложение прячет системные панели (часы сверху и кнопки снизу),
+    // кнопки выезжают по свайпу от нижнего края. Айфоны так не умеют и открывают как обычное окно приложения.
+    display: "fullscreen",
     background_color: "#0b0920",
     theme_color: "#0b0920",
     icons: [
