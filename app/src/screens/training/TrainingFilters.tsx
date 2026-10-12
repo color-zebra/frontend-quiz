@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { LEVELS, type QuestionBank } from "../../data/types";
+import { useProgress } from "../../features/progress/ProgressProvider";
 import {
   SESSION_LENGTHS,
+  getIsInMode,
   getPool,
   getSource,
   getSubtopicKey,
@@ -9,6 +11,7 @@ import {
   saveFilters,
   toggleItem,
   type Filters,
+  type QuestionMode,
   type SessionLength,
   type TrainingKind,
 } from "../../features/session/filters";
@@ -40,11 +43,22 @@ function getStartLabel(length: SessionLength, poolSize: number) {
 export function TrainingFilters({ bank, kind, onStart }: TrainingFiltersProps) {
   const [filters, setFilters] = useState(() => loadFilters(bank, kind));
   const [subtopicsOpen, setSubtopicsOpen] = useState(false);
+  const { getProgress } = useProgress();
   // Галка имеет смысл только в тестовом разделе и только если устные вопросы вообще есть.
   const canMixSpeech = kind === "test" && bank.speech.length > 0;
   const effective = canMixSpeech ? filters : { ...filters, withSpeech: false };
-  const source = getSource(bank, kind, effective);
-  const pool = getPool(bank, kind, effective);
+  const all = getSource(bank, kind, effective);
+  const isIn = (mode: QuestionMode) => all.filter((q) => getIsInMode(mode, getProgress(bank.setId, q.id)));
+  const counts = { new: isIn("new").length, mistakes: isIn("mistakes").length };
+  // Запомнено «Ошибки», а ошибок не осталось, — показываем все, а не пустой список.
+  const mode = filters.mode !== "all" && counts[filters.mode] === 0 ? "all" : filters.mode;
+  const source = mode === "all" ? all : isIn(mode);
+  const pool = getPool(source, effective);
+  const modeOptions = [
+    { value: "all" as const, label: "Все" },
+    { value: "new" as const, label: `Новые · ${counts.new}`, disabled: counts.new === 0 },
+    { value: "mistakes" as const, label: `Ошибки · ${counts.mistakes}`, disabled: counts.mistakes === 0 },
+  ];
 
   const selectedTopics = bank.topics.filter((t) => filters.topics.includes(t.id));
   const subtopicKeys = selectedTopics.flatMap((t) => t.subtopics.map((s) => getSubtopicKey(t.id, s.id)));
@@ -58,6 +72,15 @@ export function TrainingFilters({ bank, kind, onStart }: TrainingFiltersProps) {
 
   return (
     <>
+      <Card label="Какие вопросы">
+        <Segmented
+          label="Какие вопросы"
+          options={modeOptions}
+          isOn={(m) => mode === m}
+          onSelect={(m) => update({ mode: m })}
+        />
+      </Card>
+
       <Card label="Темы">
         <ChipGroup>
           {bank.topics.map((topic) => (

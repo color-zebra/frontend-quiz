@@ -123,6 +123,9 @@ export function SummaryScreen({ bank, answers, onRetryMistakes, onOpenQuestion, 
         <Button variant={mistakeIds.length ? "secondary" : "primary"} onClick={onBack}>
           {backLabel}
         </Button>
+        {mistakeIds.length > 0 && (
+          <p className={styles.saved}>Ошибки сохранены — их можно прорешать и позже: в фильтрах «Ошибки».</p>
+        )}
       </div>
     </Screen>
   );

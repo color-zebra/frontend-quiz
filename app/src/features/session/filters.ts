@@ -1,4 +1,5 @@
 import { BUILTIN_SET_ID, LEVELS, type Level, type Question, type QuestionBank } from "../../data/types";
+import type { QuestionProgress } from "../progress/types";
 import { readStorageJson, writeStorage } from "../../shared/lib/storage";
 
 export type SessionLength = 10 | 20 | 30 | "infinite";
@@ -8,6 +9,11 @@ export type TrainingKind = "test" | "speech";
 
 export const SESSION_LENGTHS: readonly SessionLength[] = [10, 20, 30, "infinite"];
 
+/** Какие вопросы: все, ни разу не отвеченные или из списка ошибок. */
+export type QuestionMode = "all" | "new" | "mistakes";
+
+export const QUESTION_MODES: readonly QuestionMode[] = ["all", "new", "mistakes"];
+
 export interface Filters {
   topics: string[];
   /** Выключенные подтемы в виде "topic/subtopic". Храним исключения, чтобы новые подтемы включались сами. */
@@ -16,6 +22,7 @@ export interface Filters {
   length: SessionLength;
   /** Только в тестовом разделе: примешивать устные вопросы из тех же тем и уровней. */
   withSpeech: boolean;
+  mode: QuestionMode;
 }
 
 // У тестового раздела основной базы ключ прежний, чтобы сохранённые настройки не сбросились;
@@ -36,6 +43,7 @@ function getDefaultFilters(bank: QuestionBank): Filters {
     levels: [...LEVELS],
     length: 20,
     withSpeech: false,
+    mode: "all",
   };
 }
 
@@ -56,8 +64,9 @@ export function loadFilters(bank: QuestionBank, kind: TrainingKind): Filters {
     : defaults.levels;
   const length = SESSION_LENGTHS.includes(saved.length as SessionLength) ? (saved.length as SessionLength) : defaults.length;
   const withSpeech = saved.withSpeech === true;
+  const mode = QUESTION_MODES.includes(saved.mode as QuestionMode) ? (saved.mode as QuestionMode) : defaults.mode;
 
-  return { topics, excludedSubtopics, levels, length, withSpeech };
+  return { topics, excludedSubtopics, levels, length, withSpeech, mode };
 }
 
 export function saveFilters(bank: QuestionBank, kind: TrainingKind, filters: Filters) {
@@ -70,11 +79,19 @@ export function getSource(bank: QuestionBank, kind: TrainingKind, filters: Filte
   return filters.withSpeech ? [...bank.questions, ...bank.speech] : bank.questions;
 }
 
-export function getPool(bank: QuestionBank, kind: TrainingKind, filters: Filters): Question[] {
+/** Подходит ли вопрос под «какие вопросы»: progress — его сводка из ленты ответов. */
+export function getIsInMode(mode: QuestionMode, progress: QuestionProgress | undefined) {
+  if (mode === "new") return !progress || progress.answered === 0;
+  if (mode === "mistakes") return !!progress?.mistake;
+  return true;
+}
+
+/** Вопросы из questions, подходящие под темы, подтемы и уровни. */
+export function getPool(questions: readonly Question[], filters: Filters): Question[] {
   const topics = new Set(filters.topics);
   const excluded = new Set(filters.excludedSubtopics);
   const levels = new Set(filters.levels);
-  return getSource(bank, kind, filters).filter(
+  return questions.filter(
     (q) => topics.has(q.topic) && levels.has(q.level) && !excluded.has(getSubtopicKey(q.topic, q.subtopic)),
   );
 }

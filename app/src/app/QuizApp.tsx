@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { BankDiff } from "../data/loadQuestions";
 import { BUILTIN_SET_ID, type Question, type QuestionBank } from "../data/types";
+import { useProgress } from "../features/progress/ProgressProvider";
 import { useSets } from "../features/sets/SetsProvider";
 import {
   getIsLastQuestion,
@@ -55,6 +56,7 @@ interface FinishedSession {
 
 export function QuizApp({ bank, onUpdate }: QuizAppProps) {
   const { getSetBank } = useSets();
+  const { recordAnswer } = useProgress();
   const [active, setActive] = useState<ActiveSession | null>(null);
   const activeRef = useRef<ActiveSession | null>(null);
   const [finished, setFinished] = useState<FinishedSession | null>(null);
@@ -72,7 +74,14 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
     return setId === BUILTIN_SET_ID ? bank : getSetBank(setId);
   }
 
+  /** Каждый новый ответ — сразу в ленту: не теряется, даже если сессию бросили посреди. */
+  function recordNewAnswers(next: ActiveSession) {
+    const before = activeRef.current?.session.answers.length ?? 0;
+    for (const answer of next.session.answers.slice(before)) recordAnswer(next.bank.setId, answer);
+  }
+
   function updateActive(next: ActiveSession | null) {
+    if (next) recordNewAnswers(next);
     activeRef.current = next;
     setActive(next);
   }
@@ -95,6 +104,8 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
   }
 
   function finish(current: ActiveSession) {
+    // Последний ответ устной сессии сразу ведёт сюда, минуя updateActive.
+    recordNewAnswers(current);
     setFinished({ bank: current.bank, answers: current.session.answers });
     updateActive(null);
     nav.replace({ name: "summary" });

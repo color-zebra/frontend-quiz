@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { loadInitialBank, updateBank } from "../data/loadQuestions";
 import type { QuestionBank } from "../data/types";
 import { NotesProvider } from "../features/notes/NotesProvider";
+import { ProgressProvider } from "../features/progress/ProgressProvider";
 import { AppUpdateToast } from "../features/pwa/AppUpdateToast";
 import { SetsProvider } from "../features/sets/SetsProvider";
 import { Background } from "../shared/ui/Background";
@@ -39,9 +40,11 @@ export function App() {
       <AppUpdateToast />
       {state.status === "ready" && (
         <NotesProvider>
-          <SetsProvider>
-            <QuizApp bank={state.bank} onUpdate={() => update(state.bank)} />
-          </SetsProvider>
+          <ProgressProvider>
+            <SetsProvider>
+              <QuizApp bank={state.bank} onUpdate={() => update(state.bank)} />
+            </SetsProvider>
+          </ProgressProvider>
         </NotesProvider>
       )}
       {state.status === "loading" && (

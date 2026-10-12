@@ -2,8 +2,9 @@ import clsx from "clsx";
 import { useState } from "react";
 import { formatDiff } from "../../data/formatDiff";
 import type { BankDiff } from "../../data/loadQuestions";
-import type { QuestionBank } from "../../data/types";
+import { BUILTIN_SET_ID, type QuestionBank } from "../../data/types";
 import { useNotes } from "../../features/notes/NotesProvider";
+import { useProgress } from "../../features/progress/ProgressProvider";
 import { promptInstall, useCanInstall } from "../../features/pwa/install";
 import type { SessionLength } from "../../features/session/filters";
 import { useSets } from "../../features/sets/SetsProvider";
@@ -57,6 +58,7 @@ export function HomeScreen({
 }: HomeScreenProps) {
   const { notes } = useNotes();
   const { sets } = useSets();
+  const { resetQuestions } = useProgress();
   const canInstall = useCanInstall();
   const [updateState, setUpdateState] = useState<UpdateState>({ kind: "idle" });
   const bankDate = formatShortDate(bank.generatedAt);
@@ -75,7 +77,10 @@ export function HomeScreen({
   function refreshBank() {
     setUpdateState({ kind: "loading" });
     onUpdate().then(
-      (diff) => setUpdateState({ kind: "done", diff }),
+      (diff) => {
+        resetQuestions(BUILTIN_SET_ID, diff.changedIds);
+        setUpdateState({ kind: "done", diff });
+      },
       (error: unknown) =>
         setUpdateState({ kind: "error", message: error instanceof Error ? error.message : "Неизвестная ошибка" }),
     );

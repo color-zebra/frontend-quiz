@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 import styles from "./Segmented.module.css";
 
 interface SegmentedProps<T extends string | number> {
-  options: readonly { value: T; label: string }[];
+  options: readonly { value: T; label: string; disabled?: boolean }[];
   isOn: (value: T) => boolean;
   onSelect: (value: T) => void;
   label: string;
@@ -19,6 +19,7 @@ export function Segmented<T extends string | number>({ options, isOn, onSelect, 
           type="button"
           className={clsx(styles.seg, isOn(o.value) && styles.on)}
           aria-pressed={isOn(o.value)}
+          disabled={o.disabled}
           onClick={() => onSelect(o.value)}
         >
           {o.label}

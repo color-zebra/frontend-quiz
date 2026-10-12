@@ -25,3 +25,7 @@
   color: var(--seg-on-text);
   box-shadow: var(--seg-on-shadow);
 }
+
+.seg:disabled {
+  opacity: 0.4;
+}
