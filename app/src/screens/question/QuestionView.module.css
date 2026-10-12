@@ -104,9 +104,10 @@
   line-height: 1.5;
 }
 
+/* Цвет ответа лежит поверх тёмного стекла: иначе яркое пятно фона просвечивает и съедает контраст текста. */
 .correct {
   border-color: var(--ok);
-  background: var(--ok-bg);
+  background: linear-gradient(var(--ok-bg), var(--ok-bg)), var(--glass-bg);
 }
 
 .correct .key {
@@ -121,7 +122,7 @@
 
 .wrong {
   border-color: var(--bad);
-  background: var(--bad-bg);
+  background: linear-gradient(var(--bad-bg), var(--bad-bg)), var(--glass-bg);
 }
 
 .wrong .key {
