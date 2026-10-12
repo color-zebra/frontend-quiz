@@ -48,9 +48,9 @@ const pwa = VitePWA({
   // Регистрацию делает React-хук из virtual:pwa-register/react.
   injectRegister: false,
   manifest: {
-    name: "Frontend Quiz",
-    short_name: "Frontend Quiz",
-    description: "Тренажёр вопросов для подготовки к фронтенд-собеседованиям",
+    name: "Zubrilka",
+    short_name: "Zubrilka",
+    description: "Тренажёр вопросов: встроенная база для фронтенд-собеседований и свои наборы на любую тему",
     lang: "ru",
     start_url: "./",
     scope: "./",

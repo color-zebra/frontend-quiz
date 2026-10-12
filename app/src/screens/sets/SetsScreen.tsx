@@ -26,13 +26,18 @@ function getSkippedText(skipped: number) {
   return skipped ? ` Пропущено ${skipped}: их не удалось прочитать или повторился id.` : "";
 }
 
-/** «raw.githubusercontent.com/…/sample-set.yaml» → «color-zebra/frontend-quiz › sample-set.yaml». */
+/**
+ * Откуда набор: GitHub — «владелец/репозиторий › файл», остальные сайты — «сайт › файл».
+ * «raw.githubusercontent.com/color-zebra/frontend-quiz/main/examples/sample-set.yaml» → «color-zebra/frontend-quiz › sample-set.yaml».
+ */
 function formatSource(record: SetRecord) {
   if (!record.url) return `Файл с устройства · ${record.fileName}`;
-  const url = record.url;
-  const parts = new URL(url).pathname.split("/").filter(Boolean);
+  const { hostname, pathname } = new URL(record.url);
+  const parts = pathname.split("/").filter(Boolean);
   const file = decodeURIComponent(parts[parts.length - 1] ?? "");
-  return parts.length >= 2 ? `${parts[0]}/${parts[1]} › ${file}` : url;
+  const isGitHub = hostname === "raw.githubusercontent.com" || hostname === "gist.githubusercontent.com";
+  if (isGitHub && parts.length >= 2) return `${parts[0]}/${parts[1]} › ${file}`;
+  return file ? `${hostname} › ${file}` : hostname;
 }
 
 interface SetsScreenProps {
@@ -122,7 +127,7 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
         <IconButton icon="arrowLeft" label="Назад" onClick={onBack} />
       </TopBar>
 
-      <ScreenTitle title="Мои наборы" subtitle="Свои вопросы из YAML-файла — по ссылке на GitHub или с устройства" />
+      <ScreenTitle title="Мои наборы" subtitle="Свои вопросы из YAML-файла — по ссылке или с устройства" />
 
       {!persistent && (
         <p className={clsx(styles.banner, glass.glass)}>
@@ -138,8 +143,8 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
             inputMode="url"
             value={link}
             onChange={(e) => setLink(e.target.value)}
-            placeholder="https://github.com/…/questions.yaml"
-            aria-label="Ссылка на YAML-файл на GitHub"
+            placeholder="https://…/questions.yaml"
+            aria-label="Ссылка на YAML-файл"
           />
           <Button type="submit" icon="plus" disabled={!link.trim() || adding}>
             {adding ? "Загружаем…" : "Добавить"}
@@ -157,9 +162,8 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
         {/* Без accept: Android часто не знает тип .yaml и прячет такие файлы из выбора. */}
         <input ref={fileInput} type="file" hidden onChange={handleFile} />
         <p className={styles.help}>
-          Подойдёт ссылка на YAML-файл в публичном репозитории или gist либо сам файл. Файл с тем же именем, загруженный
-          ещё раз, обновит набор. Как добавить, написать свой набор и
-          поделиться им —{" "}
+          Подойдёт прямая ссылка на YAML-файл — например, на GitHub или в gist — либо сам файл. Файл с тем же именем,
+          загруженный ещё раз, обновит набор. Как добавить, написать свой набор и поделиться им —{" "}
           <button type="button" className={styles.helpLink} onClick={onOpenHelp}>
             инструкция
           </button>

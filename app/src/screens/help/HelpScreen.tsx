@@ -22,9 +22,10 @@ export function HelpScreen({ onBack, onOpenSetsHelp }: HelpScreenProps) {
 
       <HelpSection title="Что это за приложение" defaultOpen>
         <p>
-          Frontend Quiz — тренажёр вопросов для подготовки к собеседованиям на фронтенд-разработчика. В нём больше
-          700 вопросов по HTML, CSS и SCSS, JavaScript, TypeScript, React, работе браузера с сетью и Next.js, на трёх
-          уровнях: junior, middle и senior.
+          Zubrilka — тренажёр вопросов с вариантами ответов. В нём есть встроенная база для подготовки к
+          собеседованиям на фронтенд-разработчика: больше 700 вопросов по HTML, CSS и SCSS, JavaScript, TypeScript,
+          React, работе браузера с сетью и Next.js, на трёх уровнях — junior, middle и senior. А ещё можно добавить
+          свои наборы вопросов на любую тему.
         </p>
         <p>
           Главное здесь — не угадать ответ, а понять, почему он такой. После каждого ответа приложение объясняет
@@ -49,7 +50,7 @@ export function HelpScreen({ onBack, onOpenSetsHelp }: HelpScreenProps) {
             Пролистай главную вниз и нажми <b>«Установить приложение»</b>. Если кнопки нет — открой меню Chrome (три
             точки справа вверху) и выбери <b>«Установить приложение»</b> или <b>«Добавить на главный экран»</b>.
           </li>
-          <li>Иконка «Frontend Quiz» появится на рабочем столе.</li>
+          <li>Иконка «Zubrilka» появится на рабочем столе.</li>
         </ol>
         <h3>iPhone и iPad</h3>
         <ol>
@@ -215,8 +216,8 @@ export function HelpScreen({ onBack, onOpenSetsHelp }: HelpScreenProps) {
       <HelpSection title="Свои наборы вопросов">
         <p>
           Кроме основной базы можно тренироваться на своих вопросах: своих или от друга. Набор — это YAML-файл с
-          вопросами. В разделе <b>«Мои наборы»</b> на главной его можно добавить по ссылке на GitHub или загрузить с
-          устройства.
+          вопросами. В разделе <b>«Мои наборы»</b> на главной его можно добавить по ссылке (например, на GitHub) или
+          загрузить с устройства.
         </p>
         <p>
           Набор тренируется отдельно от основной базы: у него свои темы и фильтры, а заметки к его вопросам
@@ -289,7 +290,7 @@ export function HelpScreen({ onBack, onOpenSetsHelp }: HelpScreenProps) {
         </p>
       </HelpSection>
 
-      <ShareLinkButton hash="#help" title="Frontend Quiz — как пользоваться" />
+      <ShareLinkButton hash="#help" title="Zubrilka — как пользоваться" />
     </Screen>
   );
 }

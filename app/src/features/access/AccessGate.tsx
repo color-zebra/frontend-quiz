@@ -54,7 +54,7 @@ export function AccessGate({ children }: { children: ReactNode }) {
         <form className={`${styles.card} ${glass.glass}`} onSubmit={submit}>
           <Brand />
           <p className={styles.text}>
-            Тренажёр вопросов для фронтенд-собеседований. Вход по паролю — спроси его у того, кто дал ссылку.
+            Тренажёр вопросов с вариантами ответов. Вход по паролю — спроси его у того, кто дал ссылку.
           </p>
           <input
             className={styles.input}

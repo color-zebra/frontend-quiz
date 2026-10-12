@@ -6,7 +6,7 @@ export function Brand() {
       <span className={styles.logo} aria-hidden="true">
         {"{ }"}
       </span>
-      Frontend Quiz
+      Zubrilka
     </div>
   );
 }

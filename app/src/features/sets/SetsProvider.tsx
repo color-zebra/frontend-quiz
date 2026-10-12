@@ -1,7 +1,7 @@
 import { createContext, use, useEffect, useState, type ReactNode } from "react";
 import { createBank, getBankDiff, type BankDiff } from "../../data/loadQuestions";
 import type { QuestionBank } from "../../data/types";
-import { toRawGithubUrl } from "./githubUrl";
+import { toRawUrl } from "./setUrl";
 import { fetchSet } from "./loadSet";
 import { parseSetFile } from "./parseSet";
 import { deleteSetRecord, getSetId, readAllSets, writeSet, type SetRecord } from "./setsStore";
@@ -67,7 +67,7 @@ export function SetsProvider({ children }: { children: ReactNode }) {
   }
 
   async function addSet(link: string): Promise<AddResult> {
-    const url = toRawGithubUrl(link);
+    const url = toRawUrl(link);
     const id = getSetId(url);
     const existing = sets.find((s) => s.id === id);
     if (existing) throw new Error(`Этот набор уже добавлен: «${existing.title}»`);
