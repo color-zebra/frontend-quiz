@@ -213,7 +213,11 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
         return <AchievementsScreen bank={bank} onBack={nav.back} />;
       case "stats":
         return (
-          <StatsScreen bank={bank} onBack={nav.back} onStart={(ids, length) => begin(bank, ids, length, "push")} />
+          <StatsScreen
+            bank={bank}
+            onBack={nav.back}
+            onStart={(from, ids, length) => begin(from, ids, length, "push")}
+          />
         );
       case "speechHome":
         return <SpeechHomeScreen bank={bank} onBack={nav.back} onStart={(ids, length) => begin(bank, ids, length, "push")} />;

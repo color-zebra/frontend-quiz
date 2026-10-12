@@ -26,10 +26,98 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin: 0;
+  margin: 16px 0 0;
   padding: 0;
   list-style: none;
 }
+
+.speech {
+  margin-top: 12px;
+}
+
+/* Свой набор: сворачиваемая карточка; рамка, заголовок и дорожка полосок — цветом ссылок. */
+.setCard {
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--link) 45%, transparent);
+}
+
+.setSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.setSummary::-webkit-details-marker {
+  display: none;
+}
+
+.setHead {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.setLine {
+  color: var(--text-2);
+  font-size: 14px;
+}
+
+.setMarker {
+  flex: none;
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+
+.setCard[open] .setMarker {
+  transform: rotate(90deg);
+}
+
+/* Раскрыт: строка итогов в заголовке не нужна — те же цифры крупно внутри. */
+.setCard[open] .setLine {
+  display: none;
+}
+
+.setBody {
+  padding: 0 16px 16px;
+}
+
+.setWeakLabel {
+  margin: 18px 0 10px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.setLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  color: var(--link);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.setLabel svg {
+  width: 14px;
+  height: 14px;
+}
+
+.setCard .bar {
+  background: color-mix(in srgb, var(--link) 18%, var(--track));
+}
+
+
 
 .topicHead {
   display: flex;

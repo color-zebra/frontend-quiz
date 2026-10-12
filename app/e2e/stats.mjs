@@ -1,6 +1,6 @@
 // Статистика: пусто до ответов, «видел» и точность, отстающие темы сверху, «Прорешать» из слабых мест,
 // устные вопросы, «последние 100». Вход — через кабинет.
-import { answerRecord, openCabinet, option, question, seedAnswers, speechQuestion, withBank } from "./fixtures.mjs";
+import { answerRecord, fileInput, openCabinet, option, question, seedAnswers, speechQuestion, withBank } from "./fixtures.mjs";
 
 const four = (id) => [option(`${id}-верно`, true), option(`${id}-нет1`), option(`${id}-нет2`), option(`${id}-нет3`)];
 const react = { topic: "react", subtopic: "effects" };
@@ -93,6 +93,54 @@ export default async function stats(t) {
     await p.getByRole("button", { name: /^Статистика/ }).click();
     check("точность за всё время: 83 % из 120", await visible(p.getByText("Верных ответов: 83 % — из 120 ответов")));
     check("за последние 100 — 100 %", await visible(p.getByText("За последние 100: 100 %")));
+
+    // Свой набор: пока на него не отвечали — его нет в статистике; после ответов — своя карточка и слабые места.
+    const setYaml = `title: Мой набор
+questions:
+${["s1", "s2", "s3"]
+  .map(
+    (id) =>
+      `  - id: ${id}\n    level: junior\n    topic: Протокол\n    question: НАБОР-${id}\n    options:\n` +
+      `      - text: ${id}-верно\n        correct: true\n      - text: ${id}-нет\n`,
+  )
+  .join("")}`;
+    await p.goto(t.url);
+    await p.getByRole("button", { name: /Мои наборы/ }).click();
+    await p.locator('input[type="file"]').setInputFiles(fileInput("my.yaml", setYaml));
+    await openCabinet(p, t.url);
+    await p.getByRole("button", { name: /^Статистика/ }).click();
+    check("набор без ответов в статистике не показан", !(await p.getByText("Набор «Мой набор»").isVisible()));
+
+    await p.goto(t.url);
+    await p.getByRole("button", { name: /Мои наборы/ }).click();
+    await p.getByRole("button", { name: /^Мой набор/ }).click();
+    await p.getByRole("button", { name: /^Начать/ }).click();
+    const wrongId = (await p.locator("article").first().innerText()).match(/НАБОР-(s\d)/)[1];
+    await p.locator("ol li button").filter({ hasText: `${wrongId}-нет` }).click();
+    await p.getByRole("button", { name: "Выйти из сессии" }).click();
+    await openCabinet(p, t.url);
+    await p.getByRole("button", { name: /^Статистика/ }).click();
+    const setCard = p.locator("details").filter({ hasText: "Набор «Мой набор»" });
+    const setWeak = setCard.getByRole("button", { name: /^Прорешать: Протокол/ });
+    check("после ответа — карточка набора, свёрнутая", (await visible(setCard)) && !(await setCard.getAttribute("open") !== null));
+    check("в свёрнутой — строка итогов «видел 1 из 3 · верных 0 %»", await visible(setCard.getByText("видел 1 из 3 · верных 0 %")));
+    check("основная база посчитана отдельно: 120 ответов", await visible(p.getByText("Верных ответов: 83 % — из 120 ответов")));
+    await t.shot(p, "with-set-closed", true);
+
+    await setCard.getByText("Набор «Мой набор»").click();
+    check("по нажатию раскрывается: «Видел 1 из 3 вопросов»", await visible(setCard.getByText("Видел 1 из 3 вопросов")));
+    check("слабые места набора — внутри его карточки", await visible(setWeak));
+    check(
+      "слабые места базы — отдельно, под базой, без подтемы набора",
+      (await p.locator("section").filter({ hasText: "Слабые места" }).getByRole("button", { name: /Протокол/ }).count()) === 0,
+    );
+    await t.shot(p, "with-set-open", true);
+    await openCabinet(p, t.url);
+    await p.getByRole("button", { name: /^Статистика/ }).click();
+    await setCard.waitFor();
+    check("раскрытый набор запомнен", (await setCard.getAttribute("open")) !== null);
+    await setWeak.click();
+    check("«Прорешать» запускает ошибку из набора", await visible(p.getByText(`НАБОР-${wrongId}`)));
     await seeded.close();
   });
 }
