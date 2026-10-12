@@ -49,3 +49,51 @@
   height: 22px;
   background: var(--glass-border);
 }
+
+/* Итог ответа и заглушка до ответа — ячейка слева от кнопки, той же высоты. */
+.verdict,
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+  padding: 0 12px;
+  border-radius: var(--btn-radius);
+  white-space: nowrap;
+}
+
+.verdict b {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+}
+
+.verdict svg {
+  flex: none;
+}
+
+.verdict span {
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+}
+
+.verdictOk {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.verdictBad {
+  background: var(--bad-bg);
+  color: var(--bad);
+}
+
+.placeholder {
+  align-items: center;
+  background: var(--seg-bg);
+  color: var(--muted);
+  font-size: 13px;
+}

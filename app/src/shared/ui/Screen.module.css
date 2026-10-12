@@ -26,15 +26,24 @@
   grid-auto-flow: column;
   gap: 10px;
   margin-top: auto;
+  /* Внизу страницы панель стоит там же, где прилипает при прокрутке: у экрана поле снизу 24px, у прилипшей — 10px.
+     Иначе на коротком вопросе кнопки после ответа прыгают на 14px вниз. */
+  margin-bottom: -14px;
   padding: 8px;
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
   background: var(--bar-bg);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  /* Без -webkit- вручную: сборка допишет его сама, а написанный руками она оставляет вместо обычного — и Chrome
+     остаётся без размытия. */
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
 }
 
 .actionBar > :last-child:not(:first-child) {
   grid-column: span 2;
+}
+
+/* Поровну: кнопка справа одного размера и на одном месте, что бы ни стояло слева. */
+.actionBar.even > :last-child:not(:first-child) {
+  grid-column: auto;
 }

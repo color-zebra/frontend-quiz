@@ -49,7 +49,7 @@ export default async function features(t) {
     // «Не знаю» кнопкой.
     await page.getByRole("button", { name: "Не знаю" }).click();
     check("«Не знаю» показывает разбор", await visible(page.getByText("Ответ показан — вопрос попадёт в «Прорешать ошибки»")));
-    check("«Не знаю» отмечает правильный ответ", await visible(page.getByText("Правильный ответ")));
+    check("«Не знаю» отмечает правильный ответ", await visible(page.getByText("Правильный ответ", { exact: true })));
     check("заметка не появилась и после ответа", !(await page.getByText("Мнемоника: ответ — да").isVisible()));
     await page.getByRole("button", { name: /^(Дальше|Завершить)$/ }).click();
 

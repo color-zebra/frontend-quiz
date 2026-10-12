@@ -1,12 +1,13 @@
 import clsx from "clsx";
 import { useEffect, useState } from "react";
-import { getIsMultiple, getIsSpeech } from "../../data/answers";
+import { getIsAnswerCorrect, getIsMultiple, getIsSpeech } from "../../data/answers";
 import type { Question, QuestionBank } from "../../data/types";
 import { ComplaintButton, ComplaintSheet } from "../../features/complaint/ComplaintSheet";
 import { NoteSheet } from "../../features/notes/NoteSheet";
 import { useNotes } from "../../features/notes/NotesProvider";
 import { getCurrentQuestion, getIsLastQuestion, type Session, type SpeechGrade } from "../../features/session/session";
 import { Button, IconButton } from "../../shared/ui/Button";
+import { Icon } from "../../shared/ui/Icon";
 import glass from "../../shared/ui/glass.module.css";
 import { ActionBar, Screen, TopBar } from "../../shared/ui/Screen";
 import { QuestionView } from "../question/QuestionView";
@@ -129,7 +130,7 @@ export function SessionScreen({ bank, session, onSelect, onSubmit, onGiveUp, onG
         onSelect={(optionIndex) => onSelect(question, optionIndex)}
       />
 
-      <ActionBar>{speech ? renderSpeechActions() : renderTestActions()}</ActionBar>
+      <ActionBar even={!speech}>{speech ? renderSpeechActions() : renderTestActions()}</ActionBar>
 
       <NoteSheet bank={bank} question={noteOpen ? question : null} onClose={() => setNoteOpen(false)} />
       <ComplaintSheet bank={bank} question={complaintOpen ? question : null} onClose={() => setComplaintOpen(false)} />
@@ -156,25 +157,69 @@ export function SessionScreen({ bank, session, onSelect, onSubmit, onGiveUp, onG
     ));
   }
 
+  // Справа всегда кнопка одного размера и на одном месте: «Не знаю» или «Ответить» до ответа, «Дальше» после.
   function renderTestActions() {
     if (session.answered) {
       return (
-        <Button iconAfter={isLast ? undefined : "arrowRight"} onClick={onNext}>
-          {isLast ? "Завершить" : "Дальше"}
-        </Button>
+        <>
+          <AnswerVerdict question={question!} session={session} />
+          <Button iconAfter={isLast ? undefined : "arrowRight"} onClick={onNext}>
+            {isLast ? "Завершить" : "Дальше"}
+          </Button>
+        </>
+      );
+    }
+    const giveUp = (
+      <Button variant="secondary" onClick={() => onGiveUp(question!)}>
+        Не знаю
+      </Button>
+    );
+    if (!multiple) {
+      return (
+        <>
+          <span className={styles.placeholder} aria-hidden="true">
+            Выбери вариант
+          </span>
+          {giveUp}
+        </>
       );
     }
     return (
       <>
-        <Button variant="secondary" onClick={() => onGiveUp(question!)}>
-          Не знаю
+        {giveUp}
+        <Button icon="check" disabled={session.selected.length === 0} onClick={() => onSubmit(question!)}>
+          Ответить
         </Button>
-        {multiple && (
-          <Button icon="check" disabled={session.selected.length === 0} onClick={() => onSubmit(question!)}>
-            Ответить
-          </Button>
-        )}
       </>
     );
   }
+}
+
+/**
+ * Итог ответа в нижней панели, слева от «Дальше». Пояснения под вариантами раздвигают список, и выбранный вариант
+ * может уехать из виду, — а панель видна всегда. При ошибке сразу говорит номер правильного варианта.
+ */
+function AnswerVerdict({ question, session }: { question: Question; session: Session }) {
+  const ok = !session.gaveUp && getIsAnswerCorrect(question, session.selected);
+  // Номера правильных вариантов — в том порядке, в каком варианты стоят на экране.
+  const numbers = session.optionOrder.flatMap((optionIndex, position) =>
+    question.options[optionIndex].correct ? [position + 1] : [],
+  );
+
+  return (
+    <div className={clsx(styles.verdict, ok ? styles.verdictOk : styles.verdictBad)} role="status">
+      <b>
+        <Icon name={ok ? "check" : "close"} />
+        {getVerdictText(ok, session.gaveUp)}
+      </b>
+      {!ok && <span>{`${numbers.length > 1 ? "верные" : "верный"}: ${numbers.join(", ")}`}</span>}
+    </div>
+  );
+}
+
+// Слова короткие и одни для всех вопросов: на экране в 320px длиннее не влезает. Подробности про вопросы
+// с несколькими ответами («нужно все правильные и ни одного лишнего») — в самом вопросе.
+function getVerdictText(ok: boolean, gaveUp: boolean) {
+  if (gaveUp) return "Не знаю";
+  return ok ? "Верно" : "Неверно";
 }

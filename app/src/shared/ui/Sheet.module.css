@@ -25,8 +25,9 @@
   border-radius: var(--radius) var(--radius) 0 0;
   background: var(--sheet-bg);
   box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.45);
+  /* Без -webkit- вручную: сборка допишет его сама, а написанный руками она оставляет вместо обычного — и Chrome
+     остаётся без размытия. */
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
   animation: slide-up 0.22s ease-out;
 }
 
@@ -47,6 +48,8 @@
 
 .body {
   overflow-y: auto;
+  /* Докрутил список до конца — дальше палец не крутит страницу под шторкой. */
+  overscroll-behavior: contain;
   padding: 8px 16px 16px;
 }
 

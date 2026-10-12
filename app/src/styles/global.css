@@ -10,6 +10,17 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Жест «потянуть вниз — обновить» перезагружал страницу и сбрасывал идущую сессию. Прокрутка остаётся. */
+html,
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* Пока открыта шторка, страница под ней не прокручивается. */
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
 body {
   margin: 0;
   min-height: 100dvh;

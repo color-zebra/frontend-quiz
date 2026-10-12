@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import type { ReactNode } from "react";
 import styles from "./Screen.module.css";
 
@@ -12,6 +13,6 @@ export function TopBar({ children }: { children: ReactNode }) {
 }
 
 /** Панель кнопок, прилипающая к низу экрана. Плотнее обычного стекла, чтобы текст под ней не просвечивал. */
-export function ActionBar({ children }: { children: ReactNode }) {
-  return <div className={styles.actionBar}>{children}</div>;
+export function ActionBar({ even = false, children }: { even?: boolean; children: ReactNode }) {
+  return <div className={clsx(styles.actionBar, even && styles.even)}>{children}</div>;
 }

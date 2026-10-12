@@ -15,8 +15,9 @@
   background: color-mix(in srgb, var(--bg) 94%, transparent);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
   transform: translateX(-50%);
+  /* Без -webkit- вручную: сборка допишет его сама, а написанный руками она оставляет вместо обычного — и Chrome
+     остаётся без размытия. */
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
   animation: drop-in 0.25s ease-out;
 }
 

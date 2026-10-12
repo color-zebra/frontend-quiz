@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { useLayoutEffect, useRef, type RefObject } from "react";
 import { getIsAnswerCorrect, getIsMultiple, getIsSpeech } from "../../data/answers";
 import { formatTopicLine, getTopicTitles } from "../../data/titles";
 import type { Question, QuestionBank } from "../../data/types";
@@ -42,6 +43,8 @@ export function QuestionView({
   // В своих наборах объяснения может не быть — тогда блок не показываем.
   const hasExplanation = question.explanation.trim() !== "" || (question.links?.length ?? 0) > 0;
   const { topicTitle, subtopicTitle } = getTopicTitles(bank, question);
+  const optionsRef = useRef<HTMLOListElement>(null);
+  useKeepAnswerInPlace(optionsRef, showResult, selected[0]);
 
   return (
     <article className={styles.question}>
@@ -67,7 +70,7 @@ export function QuestionView({
       {speech && !showResult && <p className={styles.hint}>Ответь про себя или вслух, потом открой эталон</p>}
       {speech && showResult && <SpeechAnswer question={question} />}
 
-      <ol className={styles.options} hidden={speech}>
+      <ol ref={optionsRef} className={styles.options} hidden={speech}>
         {optionOrder.map((optionIndex, position) => (
           <li key={optionIndex}>
             <OptionCard
@@ -106,6 +109,39 @@ export function QuestionView({
 
     </article>
   );
+}
+
+/**
+ * После ответа под каждым вариантом раскрывается пояснение, и список раздвигается: выбранный вариант уезжал вниз,
+ * а под палец приезжал другой. Пока ответа нет, запоминаем, где стоит каждый вариант, а после ответа подкручиваем
+ * страницу так, чтобы выбранный остался на том же месте экрана. Срабатывает до отрисовки — прыжка не видно.
+ */
+function useKeepAnswerInPlace(
+  listRef: RefObject<HTMLOListElement | null>,
+  showResult: boolean,
+  anchorIndex: number | undefined,
+) {
+  // Позиция варианта от начала страницы: от прокрутки она не меняется, в отличие от позиции на экране.
+  const offsets = useRef(new Map<number, number>());
+
+  useLayoutEffect(() => {
+    const items = [...(listRef.current?.querySelectorAll<HTMLElement>("[data-option]") ?? [])];
+    const getOffset = (el: HTMLElement) => el.getBoundingClientRect().top + window.scrollY;
+    if (!showResult) {
+      offsets.current = new Map(items.map((el) => [Number(el.dataset.option), getOffset(el)]));
+      return;
+    }
+    const before = anchorIndex === undefined ? undefined : offsets.current.get(anchorIndex);
+    const anchor = items.find((el) => Number(el.dataset.option) === anchorIndex);
+    offsets.current.clear();
+    if (before === undefined || !anchor) return;
+    const shift = getOffset(anchor) - before;
+    // У короткого вопроса внизу может не хватить места, чтобы подкрутить, — добавляем его под этим вопросом.
+    const room = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
+    const article = anchor.closest("article");
+    if (shift > room && article) article.style.paddingBottom = `${shift - room}px`;
+    window.scrollBy(0, shift);
+  });
 }
 
 /** Эталонный ответ устного вопроса и тезисы, с которыми стоит сверить свой ответ. */
@@ -182,6 +218,7 @@ function OptionCard({ question, optionIndex, number, multiple, showResult, revea
       )}
       disabled={showResult}
       aria-pressed={multiple && !showResult ? selected : undefined}
+      data-option={optionIndex}
       onClick={() => onSelect?.(optionIndex)}
     >
       <span className={styles.optionHead}>

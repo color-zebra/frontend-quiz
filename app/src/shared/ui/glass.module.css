@@ -4,6 +4,7 @@
   border-radius: var(--radius);
   background: var(--glass-bg);
   box-shadow: var(--glass-shadow);
+  /* Без -webkit- вручную: сборка допишет его сама, а написанный руками она оставляет вместо обычного — и Chrome
+     остаётся без размытия. */
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
 }

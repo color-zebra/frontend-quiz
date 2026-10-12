@@ -38,7 +38,7 @@ export default async function multi(t) {
         await page.keyboard.press(String(await positionOf("A3")));
         await page.keyboard.press("Enter");
         check("A: Enter отвечает, все правильные — засчитано", await visible(page.getByText("Ответ засчитан")));
-        check("A: обе правильные помечены «Верно»", (await page.getByText("Верно", { exact: true }).count()) === 2);
+        check("A: обе правильные помечены «Верно»", (await page.locator("ol").getByText("Верно", { exact: true }).count()) === 2);
       } else if (text.includes("MULTI-B")) {
         check("B: multiple: true с одним правильным — тоже галочки", await visible(page.getByText("Выберите все подходящие варианты")));
         await optionButton("B2").click();
