@@ -15,6 +15,8 @@ import {
   type SessionAnswer,
   type SpeechGrade,
 } from "../features/session/session";
+import { getAchievements } from "../features/achievements/compute";
+import { AchievementsScreen } from "../screens/achievements/AchievementsScreen";
 import { CabinetScreen } from "../screens/cabinet/CabinetScreen";
 import { HelpHubScreen } from "../screens/help/HelpHubScreen";
 import { HelpScreen } from "../screens/help/HelpScreen";
@@ -49,16 +51,19 @@ interface QuizAppProps {
 interface ActiveSession {
   bank: QuestionBank;
   session: Session;
+  /** Ачивки, полученные до начала сессии: в итоге покажем те, что добавились. */
+  earnedBefore: ReadonlySet<string>;
 }
 
 interface FinishedSession {
   bank: QuestionBank;
   answers: SessionAnswer[];
+  earnedBefore: ReadonlySet<string>;
 }
 
 export function QuizApp({ bank, onUpdate }: QuizAppProps) {
   const { getSetBank } = useSets();
-  const { recordAnswer } = useProgress();
+  const { recordAnswer, records } = useProgress();
   const [active, setActive] = useState<ActiveSession | null>(null);
   const activeRef = useRef<ActiveSession | null>(null);
   const [finished, setFinished] = useState<FinishedSession | null>(null);
@@ -94,13 +99,21 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
     const current = activeRef.current;
     updateActive(null);
     if (current && current.session.answers.length > 0) {
-      setFinished({ bank: current.bank, answers: current.session.answers });
+      setFinished({ bank: current.bank, answers: current.session.answers, earnedBefore: current.earnedBefore });
       nav.push({ name: "summary" });
     }
   }
 
+  function getEarnedIds() {
+    return new Set(
+      getAchievements(bank, records)
+        .filter((s) => s.earnedAt)
+        .map((s) => s.achievement.id),
+    );
+  }
+
   function begin(sessionBank: QuestionBank, ids: string[], length: number | "infinite", mode: "push" | "replace") {
-    updateActive({ bank: sessionBank, session: startSession(sessionBank, ids, length) });
+    updateActive({ bank: sessionBank, session: startSession(sessionBank, ids, length), earnedBefore: getEarnedIds() });
     if (mode === "push") nav.push({ name: "session" });
     else nav.replace({ name: "session" });
   }
@@ -108,7 +121,7 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
   function finish(current: ActiveSession) {
     // Последний ответ устной сессии сразу ведёт сюда, минуя updateActive.
     recordNewAnswers(current);
-    setFinished({ bank: current.bank, answers: current.session.answers });
+    setFinished({ bank: current.bank, answers: current.session.answers, earnedBefore: current.earnedBefore });
     updateActive(null);
     nav.replace({ name: "summary" });
   }
@@ -191,10 +204,13 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
             theme={theme}
             onBack={nav.back}
             onOpenStats={() => nav.push({ name: "stats" })}
+            onOpenAchievements={() => nav.push({ name: "achievements" })}
             onOpenNotes={() => nav.push({ name: "notes" })}
             onOpenTheme={() => setThemeOpen(true)}
           />
         );
+      case "achievements":
+        return <AchievementsScreen bank={bank} onBack={nav.back} />;
       case "stats":
         return (
           <StatsScreen bank={bank} onBack={nav.back} onStart={(ids, length) => begin(bank, ids, length, "push")} />
@@ -247,6 +263,9 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
           <SummaryScreen
             bank={finished.bank}
             answers={finished.answers}
+            achievements={getAchievements(bank, records)
+              .filter((s) => s.earnedAt && !finished.earnedBefore.has(s.achievement.id))
+              .map((s) => s.achievement)}
             backLabel={finished.bank.setId === BUILTIN_SET_ID ? "На главную" : "К набору"}
             onRetryMistakes={(ids) => begin(finished.bank, ids, ids.length, "replace")}
             onOpenQuestion={(questionId) => nav.push({ name: "review", setId: finished.bank.setId, questionId })}

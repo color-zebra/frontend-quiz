@@ -1,0 +1,28 @@
+.badge {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--size);
+  height: var(--size);
+  border: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent) 22%, transparent), var(--seg-bg) 70%);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.badge img {
+  width: 60%;
+  height: 60%;
+}
+
+/* Не получена: серая, полупрозрачная, без свечения. */
+.locked {
+  border-color: var(--glass-border);
+  background: var(--seg-bg);
+  box-shadow: none;
+}
+
+.locked img {
+  opacity: 0.45;
+  filter: grayscale(1);
+}

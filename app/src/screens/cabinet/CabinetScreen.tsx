@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { useRef, useState, type ChangeEvent } from "react";
 import type { QuestionBank } from "../../data/types";
+import { getAchievements } from "../../features/achievements/compute";
 import { exportBackup, parseBackupFile } from "../../features/backup/backupFile";
 import { useNotes, type ImportStats } from "../../features/notes/NotesProvider";
 import { useProgress } from "../../features/progress/ProgressProvider";
@@ -21,6 +22,7 @@ interface CabinetScreenProps {
   theme: ThemeId;
   onBack: () => void;
   onOpenStats: () => void;
+  onOpenAchievements: () => void;
   onOpenNotes: () => void;
   onOpenTheme: () => void;
 }
@@ -30,12 +32,21 @@ type Message = { kind: "ok" | "error"; text: string };
 function formatImport(notes: ImportStats, answers: number | null) {
   const skipped = notes.skipped ? `, пропущено ${notes.skipped} — у тебя версия новее или такая же` : "";
   const notesPart = `Заметки: добавлено ${notes.added}, обновлено ${notes.updated}${skipped}.`;
-  const answersPart = answers === null ? "Ответов в файле нет — это старая копия с одними заметками." : `Ответы: добавлено ${answers}.`;
+  const answersPart =
+    answers === null ? "Ответов в файле нет — это старая копия с одними заметками." : `Ответы: добавлено ${answers}.`;
   return `Копия загружена. ${notesPart} ${answersPart}`;
 }
 
 /** Кабинет: статистика, заметки, оформление и всё, что хранится на устройстве, — копия и сброс. */
-export function CabinetScreen({ bank, theme, onBack, onOpenStats, onOpenNotes, onOpenTheme }: CabinetScreenProps) {
+export function CabinetScreen({
+  bank,
+  theme,
+  onBack,
+  onOpenStats,
+  onOpenAchievements,
+  onOpenNotes,
+  onOpenTheme,
+}: CabinetScreenProps) {
   const { notes, importNotes } = useNotes();
   const { records, getProgress, importRecords, resetAll } = useProgress();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -45,6 +56,8 @@ export function CabinetScreen({ bank, theme, onBack, onOpenStats, onOpenNotes, o
   const statsLine = stats.seen
     ? `видел ${stats.seen} из ${stats.total} · верных ${Math.round(stats.answers.accuracy * 100)} %`
     : "ещё нет ответов";
+  const achievements = getAchievements(bank, records);
+  const earned = achievements.filter((s) => s.earnedAt).length;
 
   async function handleFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -72,6 +85,13 @@ export function CabinetScreen({ bank, theme, onBack, onOpenStats, onOpenNotes, o
           <Icon name="chart" />
           <span className={styles.tileTitle}>Статистика</span>
           <span className={styles.tileSub}>{statsLine}</span>
+        </button>
+        <button type="button" className={clsx(styles.tile, styles.wide, glass.glass)} onClick={onOpenAchievements}>
+          <Icon name="trophy" />
+          <span className={styles.tileTitle}>Достижения</span>
+          <span className={styles.tileSub}>
+            получено {earned} из {achievements.length}
+          </span>
         </button>
         <button type="button" className={clsx(styles.tile, glass.glass)} onClick={onOpenNotes}>
           <Icon name="pencil" />

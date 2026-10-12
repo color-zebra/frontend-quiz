@@ -3,7 +3,7 @@ import { formatTopicLine } from "../../data/titles";
 import type { QuestionBank } from "../../data/types";
 import { useProgress } from "../../features/progress/ProgressProvider";
 import { getBankStats, RECENT_ANSWERS, type TopicStats } from "../../features/progress/stats";
-import { ANSWER_FORMS, plural } from "../../shared/lib/plural";
+import { ANSWER_FORMS, OF_QUESTIONS_FORMS, plural } from "../../shared/lib/plural";
 import { IconButton } from "../../shared/ui/Button";
 import { Card } from "../../shared/ui/Card";
 import glass from "../../shared/ui/glass.module.css";
@@ -31,7 +31,7 @@ export function StatsScreen({ bank, onBack, onStart }: StatsScreenProps) {
       <TopBar>
         <IconButton icon="arrowLeft" label="Назад" onClick={onBack} />
       </TopBar>
-      <ScreenTitle title="Статистика" subtitle="Основная база · ответы хранятся только на этом устройстве" />
+      <ScreenTitle title="Статистика" subtitle="Основная база" />
 
       {stats.seen === 0 && !stats.speech ? (
         <p className={styles.empty}>Пока нет ни одного ответа — статистика появится после первой сессии.</p>
@@ -39,7 +39,7 @@ export function StatsScreen({ bank, onBack, onStart }: StatsScreenProps) {
         <>
           <Card label="Основная база">
             <p className={styles.seen}>
-              Видел <b>{stats.seen}</b> из {stats.total} вопросов
+              Видел <b>{stats.seen}</b> из {stats.total} {plural(stats.total, OF_QUESTIONS_FORMS)}
             </p>
             <p className={styles.accuracy}>
               Верных ответов: <b>{percent(stats.answers.accuracy)}</b> — из {stats.answers.count}{" "}
@@ -59,8 +59,10 @@ export function StatsScreen({ bank, onBack, onStart }: StatsScreenProps) {
               ))}
             </ul>
             <p className={styles.legend}>
-              <span className={styles.dotMastered} /> освоено <span className={styles.dotMistakes} /> в ошибках{" "}
-              <span className={styles.dotUnseen} /> не видел
+              <LegendItem dot={styles.dotMastered} label="освоено" />
+              <LegendItem dot={styles.dotAlmost} label="закрепить" />
+              <LegendItem dot={styles.dotMistakes} label="ошибки" />
+              <LegendItem dot={styles.dotUnseen} label="не видел" />
             </p>
           </Card>
 
@@ -72,16 +74,22 @@ export function StatsScreen({ bank, onBack, onStart }: StatsScreenProps) {
                     key={weak.key}
                     type="button"
                     className={clsx(styles.weak, glass.glass)}
+                    aria-label={`Прорешать: ${formatTopicLine(weak.topicTitle, weak.subtopicTitle)}`}
                     onClick={() => onStart(weak.questionIds, weak.questionIds.length)}
                   >
                     <span className={styles.weakText}>
-                      <span>{formatTopicLine(weak.topicTitle, weak.subtopicTitle)}</span>
-                      <span className={styles.weakCount}>ошибок: {weak.questionIds.length}</span>
+                      <span className={styles.weakTopic}>{weak.topicTitle}</span>
+                      <span className={styles.weakTitle}>{weak.subtopicTitle}</span>
+                      <span className={styles.weakCount}>
+                        ошибки: {weak.questionIds.length}
+                        {weak.almost > 0 && (
+                          <span className={styles.almostText}>
+                            {` · закрепить: ${weak.almost}`}
+                          </span>
+                        )}
+                      </span>
                     </span>
-                    <span className={styles.weakAction}>
-                      <Icon name="refresh" />
-                      Прорешать
-                    </span>
+                    <Icon name="refresh" className={styles.weakIcon} />
                   </button>
                 ))}
               </div>
@@ -103,10 +111,21 @@ export function StatsScreen({ bank, onBack, onStart }: StatsScreenProps) {
   );
 }
 
-/** Тема: полоска из трёх частей — освоено, в ошибках, не видел. */
+/** Пункт подписи под полосками: точка и слово переносятся только вместе. */
+function LegendItem({ dot, label }: { dot: string; label: string }) {
+  return (
+    <span className={styles.legendItem}>
+      <span className={dot} />
+      {label}
+    </span>
+  );
+}
+
+/** Тема: полоска из четырёх частей — освоено, почти исправлено, в ошибках, не видел. */
 function TopicRow({ topic }: { topic: TopicStats }) {
   const width = (n: number) => `${(n / topic.total) * 100}%`;
-  const summary = `освоено ${topic.mastered}, в ошибках ${topic.mistakes}, не видел ${topic.unseen} из ${topic.total}`;
+  const almost = topic.almost ? `, закрепить ${topic.almost}` : "";
+  const summary = `освоено ${topic.mastered}, в ошибках ${topic.mistakes}, не видел ${topic.unseen} из ${topic.total}${almost}`;
   return (
     <li className={styles.topic}>
       <div className={styles.topicHead}>
@@ -115,7 +134,8 @@ function TopicRow({ topic }: { topic: TopicStats }) {
       </div>
       <div className={styles.bar} role="img" aria-label={`${topic.title}: ${summary}`}>
         <span className={styles.mastered} style={{ width: width(topic.mastered) }} />
-        <span className={styles.mistakes} style={{ width: width(topic.mistakes) }} />
+        <span className={styles.almost} style={{ width: width(topic.almost) }} />
+        <span className={styles.mistakes} style={{ width: width(topic.mistakes - topic.almost) }} />
       </div>
     </li>
   );

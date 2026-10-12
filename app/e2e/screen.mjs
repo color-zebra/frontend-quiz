@@ -21,13 +21,16 @@ export default async function screen(t) {
   check("жест «потянуть — обновить» выключен", overscroll.every((v) => v === "contain"), overscroll.join(", "));
   t.info("сам жест на телефоне проверяется руками после деплоя");
 
-  // Сжиматель стилей однажды выбросил обычное свойство размытия, оставив -webkit-, — и в Chrome стекло стало прозрачным.
-  const blur = await page.getByRole("button", { name: /Мои наборы/ }).evaluate((el) => getComputedStyle(el).backdropFilter);
-  check("стекло в собранном приложении размывает фон", blur.includes("blur"), blur);
+  // Карточки и плитки не размывают фон — иначе прокрутка на телефоне ступенчатая.
+  const tileBlur = await page.getByRole("button", { name: /Мои наборы/ }).evaluate((el) => getComputedStyle(el).backdropFilter);
+  check("плитки без размытия — прокрутка лёгкая", tileBlur === "none", tileBlur);
 
   // 2. Шторка подтем: страница под ней стоит.
   await page.getByRole("button", { name: /Подтемы/ }).click();
   await page.getByRole("dialog").waitFor();
+  // Сжиматель стилей однажды выбросил обычное свойство размытия, оставив -webkit-, — и в Chrome стекло стало прозрачным.
+  const sheetBlur = await page.getByRole("dialog").locator('[class*="_panel_"]').evaluate((el) => getComputedStyle(el).backdropFilter);
+  check("шторка в собранном приложении размывает фон", sheetBlur.includes("blur"), sheetBlur);
   await page.mouse.move(195, 80);
   await page.mouse.wheel(0, 600);
   await page.waitForTimeout(400);

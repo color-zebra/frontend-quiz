@@ -9,7 +9,10 @@ export interface TopicStats {
   total: number;
   /** Отвечал, и вопрос не в ошибках. */
   mastered: number;
+  /** В ошибках всего — вместе с почти исправленными. */
   mistakes: number;
+  /** Из ошибок — «закрепить»: уже отвечены верно один раз. */
+  almost: number;
   unseen: number;
 }
 
@@ -19,6 +22,8 @@ export interface WeakSubtopic {
   topicTitle: string;
   subtopicTitle: string;
   questionIds: string[];
+  /** «Закрепить»: уже отвечены верно один раз — ещё один верный ответ подряд, и уйдут из ошибок. */
+  almost: number;
 }
 
 export interface BankStats {
@@ -56,9 +61,10 @@ export function getBankStats(
     .map((topic): TopicStats => {
       const questions = bank.questions.filter((q) => q.topic === topic.id);
       const mistakes = questions.filter((q) => getProgress(q.id)?.mistake).length;
+      const almost = questions.filter((q) => getProgress(q.id)?.mistake && getProgress(q.id)!.streak > 0).length;
       const unseen = questions.filter((q) => !isSeen(q.id)).length;
       const mastered = questions.length - mistakes - unseen;
-      return { id: topic.id, title: topic.title, total: questions.length, mastered, mistakes, unseen };
+      return { id: topic.id, title: topic.title, total: questions.length, mastered, mistakes, almost, unseen };
     })
     .filter((t) => t.total > 0)
     // Отстающие сверху: меньше освоено, при равенстве — больше ошибок.
@@ -66,7 +72,8 @@ export function getBankStats(
 
   const bySubtopic = new Map<string, WeakSubtopic>();
   for (const question of bank.questions) {
-    if (!getProgress(question.id)?.mistake) continue;
+    const progress = getProgress(question.id);
+    if (!progress?.mistake) continue;
     const key = `${question.topic}/${question.subtopic}`;
     const topic = bank.topicById.get(question.topic);
     const weak = bySubtopic.get(key) ?? {
@@ -74,8 +81,10 @@ export function getBankStats(
       topicTitle: topic?.title ?? question.topic,
       subtopicTitle: topic?.subtopics.find((s) => s.id === question.subtopic)?.title ?? question.subtopic,
       questionIds: [],
+      almost: 0,
     };
     weak.questionIds.push(question.id);
+    if (progress.streak > 0) weak.almost++;
     bySubtopic.set(key, weak);
   }
   const weak = [...bySubtopic.values()]

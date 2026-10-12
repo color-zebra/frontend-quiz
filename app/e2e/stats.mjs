@@ -52,7 +52,21 @@ export default async function stats(t) {
     check("сброса на экране статистики нет — он в кабинете", !(await page.getByRole("button", { name: "Сбросить статистику" }).isVisible()));
     await t.shot(page, "screen", true);
 
-    await page.getByRole("button", { name: /React.*Прорешать/ }).click();
+
+    // R1 теперь отвечен верно один раз: ещё в ошибках, но «закрепить».
+    await seedAnswers(page, [answerRecord("r1", 4, true)]);
+    await openStats();
+    check(
+      "одна верная попытка видна: «ошибки: 1 · закрепить: 1»",
+      await visible(page.getByRole("button", { name: /React/ }).getByText("ошибки: 1 · закрепить: 1")),
+    );
+    check(
+      "на полоске React — «закрепить 1»",
+      (await page.getByRole("img").first().getAttribute("aria-label")).endsWith("закрепить 1"),
+    );
+    check("у JavaScript верных попыток не было — только «ошибки: 1»", await visible(page.getByRole("button", { name: /^Прорешать: JavaScript/ }).getByText("ошибки: 1", { exact: true })));
+
+    await page.getByRole("button", { name: /^Прорешать: React/ }).click();
     check(
       "«Прорешать» запускает ошибку этой подтемы",
       (await visible(page.getByText("1 / 1"))) && (await visible(page.getByText("ВОПРОС-R1"))),

@@ -11,6 +11,8 @@ export interface SessionAnswer {
   correct: boolean;
   /** Самооценка, только у устных вопросов. */
   grade?: SpeechGrade;
+  /** Нажато «Не знаю». */
+  gaveUp?: true;
 }
 
 export interface Session {
@@ -84,7 +86,7 @@ export function giveUp(session: Session, question: Question): Session {
     selected: [],
     answered: true,
     gaveUp: true,
-    answers: [...session.answers, { questionId: question.id, correct: false }],
+    answers: [...session.answers, { questionId: question.id, correct: false, gaveUp: true }],
   };
 }
 

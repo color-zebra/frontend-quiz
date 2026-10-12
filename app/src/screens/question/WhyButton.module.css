@@ -11,6 +11,8 @@
   font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
+  /* Под кнопкой едет текст вопроса — размываем его. -webkit- допишет сборка. */
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
 }
 
 /* Лампочка «горит»: жёлтый контур, полупрозрачная заливка и свечение. */

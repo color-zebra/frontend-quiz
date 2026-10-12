@@ -22,7 +22,7 @@ const ProgressContext = createContext<ProgressContextValue | null>(null);
 
 /** Одна и та же запись из разных копий совпадает по всем полям — так повторная загрузка не задваивает ленту. */
 function getSignature(r: AnswerRecord) {
-  return [r.setId, r.questionId, r.at, r.correct, r.grade, r.reset].join("|");
+  return [r.setId, r.questionId, r.at, r.correct, r.grade, r.reset, r.gaveUp].join("|");
 }
 
 function buildProgress(records: readonly AnswerRecord[]) {
@@ -75,7 +75,8 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   }
 
   function recordAnswer(setId: string, answer: SessionAnswer) {
-    add([{ setId, questionId: answer.questionId, at: Date.now(), correct: answer.correct, grade: answer.grade }]);
+    const { questionId, correct, grade, gaveUp } = answer;
+    add([{ setId, questionId, at: Date.now(), correct, grade, gaveUp }]);
   }
 
   function resetQuestions(setId: string, questionIds: readonly string[]) {

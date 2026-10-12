@@ -7,6 +7,7 @@ export type AppScreen =
   | { name: "notes" }
   | { name: "stats" }
   | { name: "cabinet" }
+  | { name: "achievements" }
   | { name: "sets" }
   | { name: "speechHome" }
   | { name: "setHome"; setId: string }

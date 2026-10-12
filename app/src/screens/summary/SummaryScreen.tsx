@@ -2,6 +2,8 @@ import clsx from "clsx";
 import type { CSSProperties } from "react";
 import { formatTopicLine, getTopicTitles } from "../../data/titles";
 import type { QuestionBank } from "../../data/types";
+import { AchievementBadge } from "../../features/achievements/AchievementBadge";
+import type { Achievement } from "../../features/achievements/achievements";
 import { getMistakeIds, type SessionAnswer } from "../../features/session/session";
 import { countQuestions } from "../../shared/lib/plural";
 import { Brand } from "../../shared/ui/Brand";
@@ -18,6 +20,8 @@ import styles from "./SummaryScreen.module.css";
 interface SummaryScreenProps {
   bank: QuestionBank;
   answers: readonly SessionAnswer[];
+  /** Ачивки, полученные в этой сессии. */
+  achievements: readonly Achievement[];
   onRetryMistakes: (ids: string[]) => void;
   onOpenQuestion: (id: string) => void;
   /** Подпись кнопки возврата: «На главную» или «К набору». */
@@ -47,7 +51,15 @@ function getSubtitle(answers: readonly SessionAnswer[]) {
   return `${total} · устно: знал ${count("knew")}, частично ${count("partly")}, не знал ${count("didnt")}`;
 }
 
-export function SummaryScreen({ bank, answers, onRetryMistakes, onOpenQuestion, backLabel, onBack }: SummaryScreenProps) {
+export function SummaryScreen({
+  bank,
+  answers,
+  achievements,
+  onRetryMistakes,
+  onOpenQuestion,
+  backLabel,
+  onBack,
+}: SummaryScreenProps) {
   const correct = answers.filter((a) => a.correct).length;
   // Сессия только из устных вопросов — подписи про «знал», а не про «верно».
   const speechOnly = answers.length > 0 && answers.every((a) => a.grade);
@@ -76,6 +88,22 @@ export function SummaryScreen({ bank, answers, onRetryMistakes, onOpenQuestion, 
           </div>
         </div>
       </section>
+
+      {achievements.length > 0 && (
+        <Card label="Новые достижения">
+          <ul className={styles.achievements}>
+            {achievements.map((achievement) => (
+              <li key={achievement.id} className={styles.achievement}>
+                <AchievementBadge achievement={achievement} earned size={44} />
+                <span className={styles.achievementText}>
+                  <b>{achievement.title}</b>
+                  <span>{achievement.description}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {topicStats.length > 1 && (
         <Card label="По темам">
