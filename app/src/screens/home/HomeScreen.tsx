@@ -88,7 +88,7 @@ export function HomeScreen({
         <div className={styles.topActions}>
           <IconButton icon="refresh" label="Обновить базу" busy={updateState.kind === "loading"} onClick={refreshBank} />
           <IconButton icon="palette" label="Оформление" onClick={onOpenTheme} />
-          <IconButton icon="help" label="Как пользоваться" onClick={openHelp} />
+          <IconButton icon="help" label="Помощь" onClick={openHelp} />
         </div>
       </TopBar>
 
@@ -144,7 +144,7 @@ export function HomeScreen({
           <Icon name="folder" />
           <span className={styles.tileTitle}>Мои наборы</span>
           <span className={styles.tileSub}>
-            {sets.length ? `${sets.length} ${plural(sets.length, SET_FORMS)}` : "Свои вопросы из YAML-файла на GitHub"}
+            {sets.length ? `${sets.length} ${plural(sets.length, SET_FORMS)}` : "Свои вопросы — из файла или по ссылке"}
           </span>
         </button>
         <button type="button" className={clsx(styles.tile, glass.glass)} onClick={onOpenNotes}>

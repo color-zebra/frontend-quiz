@@ -111,3 +111,31 @@
   font: inherit;
   text-decoration: underline;
 }
+
+/* Плитки экрана «Помощь» — как на главной, только крупнее: здесь это главное действие. */
+.hubTile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px;
+  color: var(--text);
+  text-align: left;
+}
+
+.hubTile svg {
+  width: 22px;
+  height: 22px;
+  margin-bottom: 8px;
+  color: var(--accent);
+}
+
+.hubTitle {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.hubSub {
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.4;
+}

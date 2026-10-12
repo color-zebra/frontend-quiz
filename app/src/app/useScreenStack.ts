@@ -9,6 +9,7 @@ export type AppScreen =
   | { name: "speechHome" }
   | { name: "setHome"; setId: string }
   | { name: "help" }
+  | { name: "helpBasics" }
   | { name: "helpSets" }
   | { name: "review"; setId: string; questionId: string };
 

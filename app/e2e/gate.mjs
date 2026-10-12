@@ -56,12 +56,16 @@ export default async function gate(t) {
   check("метка #help-sets убрана из адреса", !p.url().includes("#"), p.url());
 
   await p.getByRole("button", { name: "Что это за приложение?" }).click();
-  check("ссылка с экрана пароля открывает инструкцию", await visible(p.getByRole("heading", { name: "Как пользоваться" })));
+  check("ссылка с экрана пароля открывает «Помощь»", await visible(p.getByRole("heading", { name: "Помощь" })));
+  await p.getByRole("button", { name: /^Как пользоваться/ }).click();
+  check("и без пароля открывается общая инструкция", await visible(p.getByRole("heading", { name: "Как пользоваться" })));
   await p.getByText("Свои наборы вопросов", { exact: true }).click();
-  await p.getByRole("button", { name: "отдельная инструкция про свои наборы" }).click();
+  await p.getByRole("button", { name: "Инструкция про свои наборы" }).click();
   check("переход к инструкции про наборы и без пароля", await visible(p.getByRole("heading", { name: "Свои наборы вопросов" })));
   await p.goBack();
   check("системный «назад» — снова общая инструкция", await visible(p.getByRole("heading", { name: "Как пользоваться" })));
+  await p.goBack();
+  check("ещё «назад» — снова «Помощь»", await visible(p.getByRole("heading", { name: "Помощь" })));
   await p.goBack();
   check("ещё раз «назад» — экран пароля, а не уход с сайта", await visible(p.getByLabel("Пароль")));
   check("пока читали инструкцию, база не скачивалась", helpRequests === 0, `запросов: ${helpRequests}`);

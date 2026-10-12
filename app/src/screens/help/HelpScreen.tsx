@@ -1,5 +1,5 @@
 import { ISSUES_URL } from "../../config";
-import { IconButton } from "../../shared/ui/Button";
+import { Button, IconButton } from "../../shared/ui/Button";
 import { Screen, TopBar } from "../../shared/ui/Screen";
 import { ScreenTitle } from "../../shared/ui/ScreenTitle";
 import styles from "./Help.module.css";
@@ -10,7 +10,7 @@ interface HelpScreenProps {
   onOpenSetsHelp: () => void;
 }
 
-/** Инструкция для тех, кто открыл приложение впервые. Прямая ссылка — …/#help. */
+/** Инструкция для тех, кто открыл приложение впервые. Прямая ссылка — …/#help-basics. */
 export function HelpScreen({ onBack, onOpenSetsHelp }: HelpScreenProps) {
   return (
     <Screen>
@@ -261,13 +261,10 @@ export function HelpScreen({ onBack, onOpenSetsHelp }: HelpScreenProps) {
           Набор тренируется отдельно от основной базы: у него свои темы и фильтры, а заметки к его вопросам
           подписаны его названием.
         </p>
-        <p>
-          Как добавить готовый набор, написать свой и поделиться им —{" "}
-          <button type="button" className={styles.inlineButton} onClick={onOpenSetsHelp}>
-            отдельная инструкция про свои наборы
-          </button>
-          .
-        </p>
+        <p>Как добавить готовый набор, написать свой и поделиться им — в отдельной инструкции.</p>
+        <Button variant="secondary" icon="folder" onClick={onOpenSetsHelp}>
+          Инструкция про свои наборы
+        </Button>
       </HelpSection>
 
       <HelpSection title="Оформление">
@@ -281,8 +278,8 @@ export function HelpScreen({ onBack, onOpenSetsHelp }: HelpScreenProps) {
       <HelpSection title="Где хранятся мои данные">
         <p>
           Заметки, настройки, скачанные вопросы и свои наборы хранятся только в браузере на твоём устройстве. Никуда
-          не отправляются, у приложения нет своего сервера. В сеть оно ходит только к GitHub — за вопросами и
-          наборами.
+          не отправляются, у приложения нет своего сервера. В сеть оно ходит только за вопросами: за основной базой —
+          на GitHub, за своими наборами — по ссылкам, которые ты сам добавил.
         </p>
         <p>Данные пропадут, если:</p>
         <ul>
@@ -329,7 +326,7 @@ export function HelpScreen({ onBack, onOpenSetsHelp }: HelpScreenProps) {
         </p>
       </HelpSection>
 
-      <ShareLinkButton hash="#help" title="Zubrilka — как пользоваться" />
+      <ShareLinkButton hash="#help-basics" title="Zubrilka — как пользоваться" />
     </Screen>
   );
 }

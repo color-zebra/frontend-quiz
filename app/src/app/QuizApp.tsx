@@ -14,6 +14,7 @@ import {
   type SessionAnswer,
   type SpeechGrade,
 } from "../features/session/session";
+import { HelpHubScreen } from "../screens/help/HelpHubScreen";
 import { HelpScreen } from "../screens/help/HelpScreen";
 import { SetsHelpScreen } from "../screens/help/SetsHelpScreen";
 import { HomeScreen } from "../screens/home/HomeScreen";
@@ -28,9 +29,10 @@ import { ThemeSheet } from "../theme/ThemeSheet";
 import { applyTheme, readSavedTheme, type ThemeId } from "../theme/themes";
 import { useScreenStack, type AppScreen } from "./useScreenStack";
 
-/** Прямые ссылки на инструкцию: …/#help и …/#help-sets открывают её поверх главной. */
+/** Прямые ссылки на помощь: …/#help, …/#help-basics и …/#help-sets открывают её поверх главной. */
 function getInitialStack(): AppScreen[] {
   if (location.hash === "#help") return [{ name: "home" }, { name: "help" }];
+  if (location.hash === "#help-basics") return [{ name: "home" }, { name: "helpBasics" }];
   if (location.hash === "#help-sets") return [{ name: "home" }, { name: "helpSets" }];
   return [{ name: "home" }];
 }
@@ -190,6 +192,14 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
           />
         );
       case "help":
+        return (
+          <HelpHubScreen
+            onBack={nav.back}
+            onOpenBasics={() => nav.push({ name: "helpBasics" })}
+            onOpenSetsHelp={() => nav.push({ name: "helpSets" })}
+          />
+        );
+      case "helpBasics":
         return <HelpScreen onBack={nav.back} onOpenSetsHelp={() => nav.push({ name: "helpSets" })} />;
       case "helpSets":
         return <SetsHelpScreen onBack={nav.back} onOpenSets={() => nav.push({ name: "sets" })} />;
