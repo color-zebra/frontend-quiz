@@ -15,9 +15,7 @@ import { ScreenTitle } from "../../shared/ui/ScreenTitle";
 import { Sheet } from "../../shared/ui/Sheet";
 import styles from "./SetsScreen.module.css";
 
-/** Пример набора и описание формата лежат в репозитории приложения. */
-const SAMPLE_SET_URL = "https://github.com/color-zebra/frontend-quiz/blob/main/examples/sample-set.yaml";
-const FORMAT_DOC_URL = "https://github.com/color-zebra/frontend-quiz/blob/main/examples/README.md";
+import { SAMPLE_SET_URL } from "../../config";
 
 type Message = { kind: "ok" | "error"; text: string };
 
@@ -39,9 +37,10 @@ function formatSource(url: string) {
 interface SetsScreenProps {
   onBack: () => void;
   onOpenSet: (setId: string) => void;
+  onOpenHelp: () => void;
 }
 
-export function SetsScreen({ onBack, onOpenSet }: SetsScreenProps) {
+export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
   const { sets, persistent, addSet, updateSet, removeSet } = useSets();
   const [link, setLink] = useState("");
   const [adding, setAdding] = useState(false);
@@ -124,10 +123,11 @@ export function SetsScreen({ onBack, onOpenSet }: SetsScreenProps) {
           </Button>
         </form>
         <p className={styles.help}>
-          Подойдёт ссылка на YAML-файл в публичном репозитории или gist. Как написать свой набор —{" "}
-          <a href={FORMAT_DOC_URL} target="_blank" rel="noreferrer">
-            описание формата
-          </a>
+          Подойдёт ссылка на YAML-файл в публичном репозитории или gist. Как добавить, написать свой набор и
+          поделиться им —{" "}
+          <button type="button" className={styles.helpLink} onClick={onOpenHelp}>
+            инструкция
+          </button>
           .
         </p>
         <button type="button" className={styles.sample} onClick={() => setLink(SAMPLE_SET_URL)}>

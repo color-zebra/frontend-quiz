@@ -11,6 +11,8 @@ import {
   type Session,
   type SessionAnswer,
 } from "../features/session/session";
+import { HelpScreen } from "../screens/help/HelpScreen";
+import { SetsHelpScreen } from "../screens/help/SetsHelpScreen";
 import { HomeScreen } from "../screens/home/HomeScreen";
 import { NotesScreen } from "../screens/notes/NotesScreen";
 import { ReviewScreen } from "../screens/review/ReviewScreen";
@@ -21,6 +23,13 @@ import { SummaryScreen } from "../screens/summary/SummaryScreen";
 import { ThemeSheet } from "../theme/ThemeSheet";
 import { applyTheme, readSavedTheme, type ThemeId } from "../theme/themes";
 import { useScreenStack, type AppScreen } from "./useScreenStack";
+
+/** Прямые ссылки на инструкцию: …/#help и …/#help-sets открывают её поверх главной. */
+function getInitialStack(): AppScreen[] {
+  if (location.hash === "#help") return [{ name: "home" }, { name: "help" }];
+  if (location.hash === "#help-sets") return [{ name: "home" }, { name: "helpSets" }];
+  return [{ name: "home" }];
+}
 
 interface QuizAppProps {
   bank: QuestionBank;
@@ -46,7 +55,7 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
   const [theme, setTheme] = useState<ThemeId>(readSavedTheme);
   const [themeOpen, setThemeOpen] = useState(false);
 
-  const nav = useScreenStack({ name: "home" }, handlePop);
+  const nav = useScreenStack(getInitialStack(), handlePop);
 
   // Новый экран всегда открывается с начала.
   useEffect(() => {
@@ -135,13 +144,20 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
             onStart={(ids, length) => begin(bank, ids, length, "push")}
             onOpenNotes={() => nav.push({ name: "notes" })}
             onOpenSets={() => nav.push({ name: "sets" })}
+            onOpenHelp={() => nav.push({ name: "help" })}
             onUpdate={onUpdate}
             theme={theme}
             onOpenTheme={() => setThemeOpen(true)}
           />
         );
       case "sets":
-        return <SetsScreen onBack={nav.back} onOpenSet={(setId) => nav.push({ name: "setHome", setId })} />;
+        return (
+          <SetsScreen
+            onBack={nav.back}
+            onOpenSet={(setId) => nav.push({ name: "setHome", setId })}
+            onOpenHelp={() => nav.push({ name: "helpSets" })}
+          />
+        );
       case "setHome":
         return (
           <SetHomeScreen
@@ -150,6 +166,10 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
             onStart={(setBank, ids, length) => begin(setBank, ids, length, "push")}
           />
         );
+      case "help":
+        return <HelpScreen onBack={nav.back} onOpenSetsHelp={() => nav.push({ name: "helpSets" })} />;
+      case "helpSets":
+        return <SetsHelpScreen onBack={nav.back} onOpenSets={() => nav.push({ name: "sets" })} />;
       case "session":
         return active ? (
           <SessionScreen

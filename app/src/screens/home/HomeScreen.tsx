@@ -8,6 +8,7 @@ import { promptInstall, useCanInstall } from "../../features/pwa/install";
 import type { SessionLength } from "../../features/session/filters";
 import { useSets } from "../../features/sets/SetsProvider";
 import { formatShortDate } from "../../shared/lib/formatDate";
+import { readStorage, writeStorage } from "../../shared/lib/storage";
 import { NOTE_FORMS, countQuestions, plural } from "../../shared/lib/plural";
 import { Brand } from "../../shared/ui/Brand";
 import { Button, IconButton } from "../../shared/ui/Button";
@@ -25,6 +26,7 @@ interface HomeScreenProps {
   onStart: (questionIds: string[], length: SessionLength) => void;
   onOpenNotes: () => void;
   onOpenSets: () => void;
+  onOpenHelp: () => void;
   onUpdate: () => Promise<BankDiff>;
   theme: ThemeId;
   onOpenTheme: () => void;
@@ -38,12 +40,35 @@ type UpdateState =
 
 const SET_FORMS = ["набор", "набора", "наборов"] as const;
 
-export function HomeScreen({ bank, onStart, onOpenNotes, onOpenSets, onUpdate, theme, onOpenTheme }: HomeScreenProps) {
+/** Плашку для новичков показываем, пока её не закрыли и не открыли инструкцию. */
+const HELP_HINT_KEY = "fq.helpHintSeen";
+
+export function HomeScreen({
+  bank,
+  onStart,
+  onOpenNotes,
+  onOpenSets,
+  onOpenHelp,
+  onUpdate,
+  theme,
+  onOpenTheme,
+}: HomeScreenProps) {
   const { notes } = useNotes();
   const { sets } = useSets();
   const canInstall = useCanInstall();
   const [updateState, setUpdateState] = useState<UpdateState>({ kind: "idle" });
   const bankDate = formatShortDate(bank.generatedAt);
+  const [showHelpHint, setShowHelpHint] = useState(() => readStorage(HELP_HINT_KEY) === null);
+
+  function hideHelpHint() {
+    setShowHelpHint(false);
+    writeStorage(HELP_HINT_KEY, "1");
+  }
+
+  function openHelp() {
+    hideHelpHint();
+    onOpenHelp();
+  }
 
   function refreshBank() {
     setUpdateState({ kind: "loading" });
@@ -61,6 +86,7 @@ export function HomeScreen({ bank, onStart, onOpenNotes, onOpenSets, onUpdate, t
         <div className={styles.topActions}>
           <IconButton icon="refresh" label="Обновить базу" busy={updateState.kind === "loading"} onClick={refreshBank} />
           <IconButton icon="palette" label="Оформление" onClick={onOpenTheme} />
+          <IconButton icon="help" label="Как пользоваться" onClick={openHelp} />
         </div>
       </TopBar>
 
@@ -82,6 +108,21 @@ export function HomeScreen({ bank, onStart, onOpenNotes, onOpenSets, onUpdate, t
           text={`Не удалось обновить: ${updateState.message}`}
           onClose={() => setUpdateState({ kind: "idle" })}
         />
+      )}
+
+      {showHelpHint && (
+        <div className={clsx(styles.helpHint, glass.glass)}>
+          <p>
+            <b>Впервые здесь?</b> В инструкции — как тренироваться, установить приложение на телефон и добавить свои
+            вопросы.
+          </p>
+          <div className={styles.helpHintButtons}>
+            <Button icon="help" onClick={openHelp}>
+              Открыть инструкцию
+            </Button>
+            <IconButton icon="close" label="Скрыть подсказку" onClick={hideHelpHint} />
+          </div>
+        </div>
       )}
 
       {/* key: после обновления базы фильтры перечитываются — новые темы не должны потеряться */}

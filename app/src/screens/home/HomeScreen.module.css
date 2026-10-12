@@ -3,6 +3,36 @@
   gap: 8px;
 }
 
+.helpHint {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-color: var(--accent);
+}
+
+.helpHint p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.helpHint b {
+  color: var(--text);
+}
+
+.helpHintButtons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.helpHintButtons > :first-child {
+  flex: 1;
+  min-height: 44px;
+}
+
 .tiles {
   display: grid;
   grid-template-columns: 1fr 1fr;

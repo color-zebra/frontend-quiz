@@ -10,12 +10,13 @@ const NO_THEME: PrismTheme = { plain: {}, styles: [] };
 
 interface CodeBlockProps {
   code: string;
-  lang?: CodeLang;
+  /** yaml — для примеров в инструкции: в вопросах такого языка нет. */
+  lang?: CodeLang | "yaml";
 }
 
 export function CodeBlock({ code, lang }: CodeBlockProps) {
   const source = code.replace(/\n+$/, "");
-  const language = lang ? PRISM_LANGUAGE[lang] : null;
+  const language = lang === "yaml" ? "yaml" : lang ? PRISM_LANGUAGE[lang] : null;
   const className = clsx(styles.code, glass.glass);
 
   if (!language || !Prism.languages[language]) {

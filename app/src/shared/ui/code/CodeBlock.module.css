@@ -33,6 +33,7 @@
   color: var(--tok-kw);
 }
 
+.code :global(.key),
 .code :global(.function),
 .code :global(.method),
 .code :global(.property),

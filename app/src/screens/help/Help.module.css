@@ -1,0 +1,113 @@
+.section {
+  overflow: hidden;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.marker {
+  flex: none;
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+
+.section[open] .marker {
+  transform: rotate(90deg);
+}
+
+.body {
+  padding: 0 16px 16px;
+  color: var(--text-2);
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.body > :first-child {
+  margin-top: 0;
+}
+
+.body > :last-child {
+  margin-bottom: 0;
+}
+
+.body p,
+.body ul,
+.body ol {
+  margin: 0 0 12px;
+}
+
+.body ul,
+.body ol {
+  padding-left: 20px;
+}
+
+.body li + li {
+  margin-top: 6px;
+}
+
+.body h3 {
+  margin: 18px 0 8px;
+  color: var(--text);
+  font-family: var(--font-heading);
+  font-size: 14.5px;
+}
+
+.body b {
+  color: var(--text);
+}
+
+.body a {
+  color: var(--link);
+}
+
+.body code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--inline-code-bg);
+  color: var(--inline-code-text);
+  font-size: 0.88em;
+  overflow-wrap: anywhere;
+}
+
+.body pre {
+  margin: 0 0 12px;
+}
+
+.body pre code {
+  padding: 0;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+}
+
+.tip {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--text);
+}
+
+.inlineButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--link);
+  font: inherit;
+  text-decoration: underline;
+}

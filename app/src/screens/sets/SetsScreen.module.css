@@ -39,8 +39,13 @@
   line-height: 1.5;
 }
 
-.help a {
+.helpLink {
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--link);
+  font: inherit;
+  text-decoration: underline;
 }
 
 .sample {

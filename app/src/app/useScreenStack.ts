@@ -7,6 +7,8 @@ export type AppScreen =
   | { name: "notes" }
   | { name: "sets" }
   | { name: "setHome"; setId: string }
+  | { name: "help" }
+  | { name: "helpSets" }
   | { name: "review"; setId: string; questionId: string };
 
 interface HistoryState {
@@ -18,11 +20,13 @@ interface HistoryState {
  * поэтому системная кнопка «Назад» на Android возвращает на предыдущий экран, а не закрывает приложение.
  * Адрес страницы при этом не меняется — экраны не открываются по прямой ссылке, и это не нужно.
  */
-export function useScreenStack(initial: AppScreen, onPop: (popped: AppScreen[]) => void) {
-  const [stack, setStack] = useState<AppScreen[]>([initial]);
+export function useScreenStack(initialStack: AppScreen[], onPop: (popped: AppScreen[]) => void) {
+  const [stack, setStack] = useState<AppScreen[]>(initialStack);
   // Ссылка — источник правды для обработчика popstate, состояние — для отрисовки.
   const stackRef = useRef(stack);
   const onPopRef = useRef(onPop);
+  // В режиме разработки StrictMode запускает эффект дважды — записи истории создаём один раз.
+  const historyReady = useRef(false);
 
   useEffect(() => {
     onPopRef.current = onPop;
@@ -34,7 +38,16 @@ export function useScreenStack(initial: AppScreen, onPop: (popped: AppScreen[]) 
   }
 
   useEffect(() => {
-    history.replaceState({ depth: stackRef.current.length } satisfies HistoryState, "");
+    if (!historyReady.current) {
+      historyReady.current = true;
+      // По записи истории на каждый экран начального стека; метку #help из адреса убираем,
+      // чтобы перезагрузка страницы не открывала инструкцию снова.
+      const url = location.pathname + location.search;
+      history.replaceState({ depth: 1 } satisfies HistoryState, "", url);
+      for (let depth = 2; depth <= stackRef.current.length; depth++) {
+        history.pushState({ depth } satisfies HistoryState, "", url);
+      }
+    }
 
     function onPopState(e: PopStateEvent) {
       const depth = Math.max(1, (e.state as HistoryState | null)?.depth ?? 1);
