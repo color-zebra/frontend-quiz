@@ -4,6 +4,9 @@ export const REPO_URL = "https://github.com/color-zebra/frontend-quiz";
 /** Пример своего набора: подставляется кнопкой на экране наборов. */
 export const SAMPLE_SET_URL = `${REPO_URL}/blob/main/examples/sample-set.yaml`;
 
+/** Страницы файлов базы на GitHub: туда кнопка «Не согласен» ведёт к вопросу. */
+export const REPO_FILES_URL = `${REPO_URL}/blob/main`;
+
 /** Куда сообщать о неверном вопросе или ошибке в приложении. */
 export const ISSUES_URL = `${REPO_URL}/issues`;
 

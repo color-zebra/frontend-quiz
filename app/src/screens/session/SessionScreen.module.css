@@ -34,3 +34,18 @@
   padding-inline: 10px;
   white-space: nowrap;
 }
+
+/* Инструменты к вопросу — жалоба и заметка — одной капсулой, отдельно от выхода из сессии. */
+.tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+.toolsDivider {
+  width: 1px;
+  height: 22px;
+  background: var(--glass-border);
+}

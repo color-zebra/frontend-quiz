@@ -31,20 +31,32 @@ const listYamlFiles = (dir) =>
     return name.endsWith(".yaml") ? [path] : [];
   });
 
+/** Номер строки с id каждого вопроса: по нему кнопка «Не согласен» открывает GitHub сразу на вопросе. */
+function getIdLines(text) {
+  const lines = new Map();
+  text.split("\n").forEach((line, index) => {
+    const match = line.match(/^\s*(?:-\s+)?id:\s*["']?([\w-]+)["']?\s*$/);
+    if (match) lines.set(match[1], index + 1);
+  });
+  return lines;
+}
+
 const seenIds = new Map();
 const allQuestions = [];
 
 for (const path of listYamlFiles(QUESTIONS_DIR)) {
   const file = relative(ROOT, path);
+  const text = readFileSync(path, "utf8");
   let doc;
   try {
-    doc = yaml.load(readFileSync(path, "utf8"));
+    doc = yaml.load(text);
   } catch (error) {
     fail(file, `YAML не разобрался: ${error.message}`);
     continue;
   }
 
   const { topic, subtopic, questions } = doc ?? {};
+  const idLines = getIdLines(text);
   if (!subtopicsByTopic.has(topic)) fail(file, `тема "${topic}" не описана в topics.yaml`);
   else if (!subtopicsByTopic.get(topic).has(subtopic)) fail(file, `подтема "${subtopic}" не описана в topics.yaml`);
   if (!Array.isArray(questions) || questions.length === 0) {
@@ -134,7 +146,7 @@ for (const path of listYamlFiles(QUESTIONS_DIR)) {
     (q.links ?? []).forEach((link) => {
       if (!/^https:\/\//.test(link)) fail(where, `ссылка не https: ${link}`);
     });
-    allQuestions.push({ topic, subtopic, ...q });
+    allQuestions.push({ topic, subtopic, ...q, line: idLines.get(q.id) });
   });
 }
 
@@ -147,14 +159,16 @@ const speechFiles = statSync(SPEECH_DIR, { throwIfNoEntry: false })?.isDirectory
 
 for (const path of speechFiles) {
   const file = relative(ROOT, path);
+  const text = readFileSync(path, "utf8");
   let doc;
   try {
-    doc = yaml.load(readFileSync(path, "utf8"));
+    doc = yaml.load(text);
   } catch (error) {
     fail(file, `YAML не разобрался: ${error.message}`);
     continue;
   }
   const { topic, subtopic, questions } = doc ?? {};
+  const idLines = getIdLines(text);
   if (!subtopicsByTopic.has(topic)) fail(file, `тема "${topic}" не описана в topics.yaml`);
   else if (!subtopicsByTopic.get(topic).has(subtopic)) fail(file, `подтема "${subtopic}" не описана в topics.yaml`);
   if (!Array.isArray(questions) || questions.length === 0) {
@@ -185,7 +199,7 @@ for (const path of speechFiles) {
     const prose = [q.question, q.answer, q.explanation, ...(q.points ?? [])].join(" ").replace(/`[^`]*`/g, " ");
     const mixed = prose.match(/[а-яё][a-z]|[a-z][а-яё]/gi);
     if (mixed) warnings.push(`${where}: в слове смешаны кириллица и латиница: ${mixed.join(", ")}`);
-    allSpeech.push({ topic, subtopic, type: "speech", options: [], explanation: "", ...q });
+    allSpeech.push({ topic, subtopic, type: "speech", options: [], explanation: "", ...q, line: idLines.get(q.id) });
   });
 }
 

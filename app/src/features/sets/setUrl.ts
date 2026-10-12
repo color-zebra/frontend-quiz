@@ -35,6 +35,24 @@ export function toRawUrl(input: string): string {
   return url.href;
 }
 
+/**
+ * Обратное к toRawUrl: сырой файл GitHub или gist → страница файла, которую удобно читать и править.
+ * Ссылку на любой другой сайт возвращаем как есть.
+ */
+export function toPageUrl(rawUrl: string): string {
+  const url = new URL(rawUrl);
+  const parts = url.pathname.split("/").filter(Boolean);
+  if (url.hostname === "raw.githubusercontent.com" && parts.length >= 4) {
+    const [owner, repo, ...rest] = parts;
+    return `https://github.com/${owner}/${repo}/blob/${rest.join("/")}`;
+  }
+  if (url.hostname === "gist.githubusercontent.com" && parts.length >= 2) {
+    const [user, id] = parts;
+    return `https://gist.github.com/${user}/${id}`;
+  }
+  return url.href;
+}
+
 /** Название набора по умолчанию — имя файла без расширения. */
 export function getTitleFromUrl(rawUrl: string) {
   const last = new URL(rawUrl).pathname.split("/").filter(Boolean).pop() ?? "";

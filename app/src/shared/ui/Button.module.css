@@ -79,3 +79,21 @@
   background: var(--accent);
   box-shadow: 0 0 8px var(--accent);
 }
+
+.danger {
+  color: var(--bad);
+}
+
+/* Кнопка внутри капсулы: круга нет, зона касания 44px — палец не промахнётся на соседнюю. */
+.bare {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+}
+
+/* Точка-метка ближе к иконке, иначе вылезает за скругление капсулы. */
+.bare.marked::after {
+  top: 8px;
+  right: 8px;
+}

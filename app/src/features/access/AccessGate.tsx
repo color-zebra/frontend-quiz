@@ -1,7 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { ACCESS_PASSWORD_HASH } from "../../config";
 import { readStorage, writeStorage } from "../../shared/lib/storage";
-import { Background } from "../../shared/ui/Background";
 import { Brand } from "../../shared/ui/Brand";
 import { Button } from "../../shared/ui/Button";
 import glass from "../../shared/ui/glass.module.css";
@@ -20,12 +19,28 @@ function getIsUnlocked() {
   return import.meta.env.DEV || !ACCESS_PASSWORD_HASH || readStorage(STORAGE_KEY) === ACCESS_PASSWORD_HASH;
 }
 
+interface AccessGateProps {
+  children: ReactNode;
+  /** Что показать до входа; unlock пускает в приложение. */
+  locked: (unlock: () => void) => ReactNode;
+}
+
 /**
- * Экран пароля перед приложением — от случайных посетителей по ссылке. Проверка в браузере,
+ * Пароль перед приложением — от случайных посетителей по ссылке. Проверка в браузере,
  * поэтому от того, кто полезет в код, это не защищает; данные и так открыты.
  */
-export function AccessGate({ children }: { children: ReactNode }) {
+export function AccessGate({ children, locked }: AccessGateProps) {
   const [unlocked, setUnlocked] = useState(getIsUnlocked);
+  return unlocked ? children : locked(() => setUnlocked(true));
+}
+
+interface PasswordScreenProps {
+  onUnlock: () => void;
+  /** Инструкция открыта и без пароля — пусть зашедший по ссылке поймёт, что это за приложение. */
+  onOpenHelp: () => void;
+}
+
+export function PasswordScreen({ onUnlock, onOpenHelp }: PasswordScreenProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -42,45 +57,43 @@ export function AccessGate({ children }: { children: ReactNode }) {
       return;
     }
     writeStorage(STORAGE_KEY, hash);
-    setUnlocked(true);
+    onUnlock();
   }
 
-  if (unlocked) return children;
-
   return (
-    <>
-      <Background />
-      <main className={styles.screen}>
-        <form className={`${styles.card} ${glass.glass}`} onSubmit={submit}>
-          <Brand />
-          <p className={styles.text}>
-            Тренажёр вопросов с вариантами ответов. Вход по паролю — спроси его у того, кто дал ссылку.
+    <main className={styles.screen}>
+      <form className={`${styles.card} ${glass.glass}`} onSubmit={submit}>
+        <Brand />
+        <p className={styles.text}>
+          Тренажёр вопросов с вариантами ответов. Вход по паролю — спроси его у того, кто дал ссылку.
+        </p>
+        <input
+          className={styles.input}
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setError(false);
+          }}
+          placeholder="Пароль"
+          aria-label="Пароль"
+          aria-invalid={error}
+          autoFocus
+        />
+        {error && (
+          <p className={styles.error} role="alert">
+            Неверный пароль
           </p>
-          <input
-            className={styles.input}
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              setError(false);
-            }}
-            placeholder="Пароль"
-            aria-label="Пароль"
-            aria-invalid={error}
-            autoFocus
-          />
-          {error && (
-            <p className={styles.error} role="alert">
-              Неверный пароль
-            </p>
-          )}
-          <Button type="submit" disabled={!password.trim() || checking}>
-            Войти
-          </Button>
-          <p className={styles.note}>Пароль спрашивается один раз на этом устройстве.</p>
-        </form>
-      </main>
-    </>
+        )}
+        <Button type="submit" disabled={!password.trim() || checking}>
+          Войти
+        </Button>
+        <p className={styles.note}>Пароль спрашивается один раз на этом устройстве.</p>
+        <button type="button" className={styles.helpLink} onClick={onOpenHelp}>
+          Что это за приложение?
+        </button>
+      </form>
+    </main>
   );
 }

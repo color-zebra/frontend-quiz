@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { QuestionBank } from "../../data/types";
+import { ComplaintButton, ComplaintSheet } from "../../features/complaint/ComplaintSheet";
 import { NoteSheet } from "../../features/notes/NoteSheet";
 import { useNotes } from "../../features/notes/NotesProvider";
 import { Button, IconButton } from "../../shared/ui/Button";
@@ -17,6 +18,7 @@ interface ReviewScreenProps {
 /** Разбор одного вопроса: сразу с ответом и пояснениями. Открывается из итога сессии и из заметок. */
 export function ReviewScreen({ bank, questionId, onBack }: ReviewScreenProps) {
   const [noteOpen, setNoteOpen] = useState(false);
+  const [complaintOpen, setComplaintOpen] = useState(false);
   const question = bank?.byId.get(questionId);
   const { getNote } = useNotes();
   const hasNote = !!bank && !!question && !!getNote(bank.setId, question.id);
@@ -26,7 +28,7 @@ export function ReviewScreen({ bank, questionId, onBack }: ReviewScreenProps) {
       <TopBar>
         <IconButton icon="arrowLeft" label="Назад" onClick={onBack} />
         <span className={styles.title}>Разбор вопроса</span>
-        <span className={styles.spacer} />
+        {bank && question ? <ComplaintButton onClick={() => setComplaintOpen(true)} /> : <span className={styles.spacer} />}
       </TopBar>
 
       {bank && question ? (
@@ -48,6 +50,7 @@ export function ReviewScreen({ bank, questionId, onBack }: ReviewScreenProps) {
             </Button>
           </ActionBar>
           <NoteSheet bank={bank} question={noteOpen ? question : null} onClose={() => setNoteOpen(false)} />
+          <ComplaintSheet bank={bank} question={complaintOpen ? question : null} onClose={() => setComplaintOpen(false)} />
         </>
       ) : (
         <p className={styles.missing}>{bank ? "Этого вопроса больше нет в базе." : "Набор с этим вопросом удалён."}</p>

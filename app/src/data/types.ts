@@ -40,6 +40,8 @@ export interface Question {
   explanation: string;
   links?: string[];
   source?: string;
+  /** Строка в файле основной базы, где записан вопрос: кнопка «Не согласен» открывает GitHub прямо на ней. */
+  line?: number;
 }
 
 export interface Subtopic {

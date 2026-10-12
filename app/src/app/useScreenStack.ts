@@ -21,8 +21,8 @@ interface HistoryState {
  * поэтому системная кнопка «Назад» на Android возвращает на предыдущий экран, а не закрывает приложение.
  * Адрес страницы при этом не меняется — экраны не открываются по прямой ссылке, и это не нужно.
  */
-export function useScreenStack(initialStack: AppScreen[], onPop: (popped: AppScreen[]) => void) {
-  const [stack, setStack] = useState<AppScreen[]>(initialStack);
+export function useScreenStack<S>(initialStack: S[], onPop: (popped: S[]) => void) {
+  const [stack, setStack] = useState<S[]>(initialStack);
   // Ссылка — источник правды для обработчика popstate, состояние — для отрисовки.
   const stackRef = useRef(stack);
   const onPopRef = useRef(onPop);
@@ -33,7 +33,7 @@ export function useScreenStack(initialStack: AppScreen[], onPop: (popped: AppScr
     onPopRef.current = onPop;
   });
 
-  function commit(next: AppScreen[]) {
+  function commit(next: S[]) {
     stackRef.current = next;
     setStack(next);
   }
@@ -63,14 +63,14 @@ export function useScreenStack(initialStack: AppScreen[], onPop: (popped: AppScr
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  function push(screen: AppScreen) {
+  function push(screen: S) {
     const next = [...stackRef.current, screen];
     history.pushState({ depth: next.length } satisfies HistoryState, "");
     commit(next);
   }
 
   /** Подменить текущий экран, не добавляя записи в историю. */
-  function replace(screen: AppScreen) {
+  function replace(screen: S) {
     commit([...stackRef.current.slice(0, -1), screen]);
   }
 

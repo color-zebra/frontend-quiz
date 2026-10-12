@@ -33,13 +33,34 @@ interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   busy?: boolean;
   /** Подсветка с точкой-меткой. */
   marked?: boolean;
+  /** Красная иконка — например, «Не согласен с вопросом». */
+  danger?: boolean;
+  /** Без своего стеклянного круга: кнопка стоит внутри общей капсулы. */
+  bare?: boolean;
 }
 
-export function IconButton({ icon, label, busy = false, marked = false, className, disabled, ...rest }: IconButtonProps) {
+export function IconButton({
+  icon,
+  label,
+  busy = false,
+  marked = false,
+  danger = false,
+  bare = false,
+  className,
+  disabled,
+  ...rest
+}: IconButtonProps) {
   return (
     <button
       type="button"
-      className={clsx(styles.iconButton, glass.glass, busy && styles.busy, marked && styles.marked, className)}
+      className={clsx(
+        styles.iconButton,
+        bare ? styles.bare : glass.glass,
+        busy && styles.busy,
+        marked && styles.marked,
+        danger && styles.danger,
+        className,
+      )}
       aria-label={label}
       title={label}
       disabled={busy || disabled}

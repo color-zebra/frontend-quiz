@@ -1,5 +1,5 @@
 import { readSavedQuestions, saveQuestions } from "./questionsStore";
-import { BUILTIN_SET_ID, type QuestionBank, type QuestionsFile } from "./types";
+import { BUILTIN_SET_ID, type Question, type QuestionBank, type QuestionsFile } from "./types";
 
 // questions.json лежит рядом с приложением: на GitHub Pages его кладёт сборка,
 // в режиме разработки отдаёт плагин из vite.config.ts.
@@ -69,15 +69,20 @@ function getAllQuestions(file: QuestionsFile) {
   return [...file.questions, ...(file.speech ?? [])];
 }
 
+/** Содержимое вопроса для сравнения версий. Номер строки в файле — не содержимое: он сдвигается от правок соседей. */
+function getContent({ line: _line, ...content }: Question) {
+  return JSON.stringify(content);
+}
+
 export function getBankDiff(previous: QuestionsFile, next: QuestionsFile): BankDiff {
-  const before = new Map(getAllQuestions(previous).map((q) => [q.id, JSON.stringify(q)]));
+  const before = new Map(getAllQuestions(previous).map((q) => [q.id, getContent(q)]));
   const diff: BankDiff = { added: 0, changed: 0, removed: 0 };
   const nextIds = new Set<string>();
   for (const question of getAllQuestions(next)) {
     nextIds.add(question.id);
     const old = before.get(question.id);
     if (old === undefined) diff.added++;
-    else if (old !== JSON.stringify(question)) diff.changed++;
+    else if (old !== getContent(question)) diff.changed++;
   }
   for (const id of before.keys()) if (!nextIds.has(id)) diff.removed++;
   return diff;

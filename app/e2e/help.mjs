@@ -30,6 +30,9 @@ export default async function help(t) {
   await page.getByText("Формат файла: все возможности").click();
   await page.getByText("Подводные камни YAML").click();
   check("пример YAML подсвечен", (await page.locator("pre .token").count()) > 10);
+  await page.getByText("Попробовать на готовом примере").click();
+  const example = page.locator("details", { hasText: "Попробовать на готовом примере" });
+  check("после входа «Мои наборы» в инструкции — кнопка", await visible(example.getByRole("button", { name: "«Мои наборы»" })));
   await t.shot(page, "sets", true);
 
   await page.getByRole("button", { name: "Назад" }).click();

@@ -8,7 +8,8 @@ import { HelpSection, ShareLinkButton } from "./HelpParts";
 
 interface SetsHelpScreenProps {
   onBack: () => void;
-  onOpenSets: () => void;
+  /** Нет до ввода пароля: экрана наборов ещё не открыть. */
+  onOpenSets?: () => void;
 }
 
 const MINIMAL_EXAMPLE = `title: Мой первый набор
@@ -110,9 +111,13 @@ export function SetsHelpScreen({ onBack, onOpenSets }: SetsHelpScreenProps) {
         <ol>
           <li>
             Открой{" "}
-            <button type="button" className={styles.inlineButton} onClick={onOpenSets}>
-              «Мои наборы»
-            </button>
+            {onOpenSets ? (
+              <button type="button" className={styles.inlineButton} onClick={onOpenSets}>
+                «Мои наборы»
+              </button>
+            ) : (
+              <b>«Мои наборы»</b>
+            )}
             .
           </li>
           <li>

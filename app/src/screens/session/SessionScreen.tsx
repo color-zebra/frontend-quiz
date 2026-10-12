@@ -1,10 +1,13 @@
+import clsx from "clsx";
 import { useEffect, useState } from "react";
 import { getIsMultiple, getIsSpeech } from "../../data/answers";
 import type { Question, QuestionBank } from "../../data/types";
+import { ComplaintButton, ComplaintSheet } from "../../features/complaint/ComplaintSheet";
 import { NoteSheet } from "../../features/notes/NoteSheet";
 import { useNotes } from "../../features/notes/NotesProvider";
 import { getCurrentQuestion, getIsLastQuestion, type Session, type SpeechGrade } from "../../features/session/session";
 import { Button, IconButton } from "../../shared/ui/Button";
+import glass from "../../shared/ui/glass.module.css";
 import { ActionBar, Screen, TopBar } from "../../shared/ui/Screen";
 import { QuestionView } from "../question/QuestionView";
 import styles from "./SessionScreen.module.css";
@@ -31,6 +34,7 @@ const GRADES: { grade: SpeechGrade; label: string; key: string }[] = [
 export function SessionScreen({ bank, session, onSelect, onSubmit, onGiveUp, onGrade, onNext, onExit }: SessionScreenProps) {
   const { getNote } = useNotes();
   const [noteOpen, setNoteOpen] = useState(false);
+  const [complaintOpen, setComplaintOpen] = useState(false);
   // У устного вопроса эталон открывают кнопкой; запоминаем, у какого по счёту вопроса он открыт.
   const [revealedIndex, setRevealedIndex] = useState(-1);
   const question = getCurrentQuestion(bank, session);
@@ -100,12 +104,17 @@ export function SessionScreen({ bank, session, onSelect, onSubmit, onGiveUp, onG
             </div>
           )}
         </div>
-        <IconButton
-          icon="pencil"
-          label={hasNote ? "Изменить заметку" : "Заметка"}
-          marked={hasNote}
-          onClick={() => setNoteOpen(true)}
-        />
+        <div className={clsx(styles.tools, glass.glass)}>
+          <ComplaintButton bare onClick={() => setComplaintOpen(true)} />
+          <span className={styles.toolsDivider} />
+          <IconButton
+            icon="pencil"
+            label={hasNote ? "Изменить заметку" : "Заметка"}
+            marked={hasNote}
+            bare
+            onClick={() => setNoteOpen(true)}
+          />
+        </div>
       </TopBar>
 
       <QuestionView
@@ -123,6 +132,7 @@ export function SessionScreen({ bank, session, onSelect, onSubmit, onGiveUp, onG
       <ActionBar>{speech ? renderSpeechActions() : renderTestActions()}</ActionBar>
 
       <NoteSheet bank={bank} question={noteOpen ? question : null} onClose={() => setNoteOpen(false)} />
+      <ComplaintSheet bank={bank} question={complaintOpen ? question : null} onClose={() => setComplaintOpen(false)} />
     </Screen>
   );
 

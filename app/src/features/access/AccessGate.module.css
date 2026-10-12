@@ -56,3 +56,14 @@
   font-size: 12.5px;
   text-align: center;
 }
+
+/* Ссылка на инструкцию: поля вокруг — чтобы по ней было легко попасть пальцем. */
+.helpLink {
+  align-self: center;
+  padding: 10px;
+  border: 0;
+  background: none;
+  color: var(--link);
+  font-size: 14px;
+  text-decoration: underline;
+}

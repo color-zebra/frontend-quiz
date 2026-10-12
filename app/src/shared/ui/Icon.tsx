@@ -83,6 +83,14 @@ const PATHS = {
       <path d="M4 18h5" />
     </>
   ),
+  angry: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M7.5 8.5 10.5 10M16.5 8.5 13.5 10" />
+      <path d="M9 13h.01M15 13h.01" />
+      <path d="M8.5 17.5q3.5-3 7 0" />
+    </>
+  ),
   help: (
     <>
       <circle cx="12" cy="12" r="9" />
