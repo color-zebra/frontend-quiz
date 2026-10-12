@@ -7,7 +7,7 @@
     "check": "node scripts/check.mjs",
     "build": "node scripts/check.mjs --build",
     "dev": "pnpm -F frontend-quiz-app dev",
-    "app:build": "pnpm -F frontend-quiz-app build"
+    "app:build": "pnpm build && pnpm -F frontend-quiz-app build"
   },
   "devDependencies": {
     "@types/react": "19.3.0",

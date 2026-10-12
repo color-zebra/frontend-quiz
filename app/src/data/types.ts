@@ -38,13 +38,13 @@ export interface Topic {
 
 /** Формат dist/questions.json. */
 export interface QuestionsFile {
+  /** Время сборки базы, ISO-строка. */
+  generatedAt?: string;
   topics: Topic[];
   questions: Question[];
 }
 
 export interface QuestionBank extends QuestionsFile {
-  /** Подпись на главной: откуда база, например «тестовые данные». */
-  description: string;
   byId: Map<string, Question>;
   topicById: Map<string, Topic>;
 }

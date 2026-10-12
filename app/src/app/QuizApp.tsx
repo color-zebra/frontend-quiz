@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { BankDiff } from "../data/loadQuestions";
 import type { Question, QuestionBank } from "../data/types";
 import { getPool, loadFilters, saveFilters, type Filters } from "../features/session/filters";
 import {
@@ -18,7 +19,12 @@ import { ThemeSheet } from "../theme/ThemeSheet";
 import { applyTheme, readSavedTheme, type ThemeId } from "../theme/themes";
 import { useScreenStack, type AppScreen } from "./useScreenStack";
 
-export function QuizApp({ bank }: { bank: QuestionBank }) {
+interface QuizAppProps {
+  bank: QuestionBank;
+  onUpdate: () => Promise<BankDiff>;
+}
+
+export function QuizApp({ bank, onUpdate }: QuizAppProps) {
   const [filters, setFilters] = useState(() => loadFilters(bank));
   const [session, setSession] = useState<Session | null>(null);
   const sessionRef = useRef<Session | null>(null);
@@ -119,6 +125,7 @@ export function QuizApp({ bank }: { bank: QuestionBank }) {
               )
             }
             onOpenNotes={() => nav.push({ name: "notes" })}
+            onUpdate={onUpdate}
             theme={theme}
             onOpenTheme={() => setThemeOpen(true)}
           />

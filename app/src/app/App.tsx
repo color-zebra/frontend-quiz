@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { loadQuestions } from "../data/loadQuestions";
+import { loadInitialBank, updateBank } from "../data/loadQuestions";
 import type { QuestionBank } from "../data/types";
 import { NotesProvider } from "../features/notes/NotesProvider";
 import { Background } from "../shared/ui/Background";
@@ -15,7 +15,7 @@ export function App() {
 
   function load() {
     setState({ status: "loading" });
-    loadQuestions().then(
+    loadInitialBank().then(
       (bank) => setState({ status: "ready", bank }),
       (error: unknown) =>
         setState({ status: "error", message: error instanceof Error ? error.message : "Неизвестная ошибка" }),
@@ -24,12 +24,19 @@ export function App() {
 
   useEffect(load, []);
 
+  /** Кнопка «Обновить»: свежая база заменяет текущую, наружу уходит сводка изменений. */
+  async function update(current: QuestionBank) {
+    const { bank, diff } = await updateBank(current);
+    setState({ status: "ready", bank });
+    return diff;
+  }
+
   return (
     <>
       <Background />
       {state.status === "ready" && (
         <NotesProvider bank={state.bank}>
-          <QuizApp bank={state.bank} />
+          <QuizApp bank={state.bank} onUpdate={() => update(state.bank)} />
         </NotesProvider>
       )}
       {state.status === "loading" && (

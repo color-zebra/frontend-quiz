@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { useState } from "react";
+import type { BankDiff } from "../../data/loadQuestions";
 import { LEVELS, type QuestionBank } from "../../data/types";
 import { useNotes } from "../../features/notes/NotesProvider";
 import {
@@ -30,6 +31,7 @@ interface HomeScreenProps {
   onFiltersChange: (filters: Filters) => void;
   onStart: () => void;
   onOpenNotes: () => void;
+  onUpdate: () => Promise<BankDiff>;
   theme: ThemeId;
   onOpenTheme: () => void;
 }
@@ -43,9 +45,52 @@ function getStartLabel(length: SessionLength, poolSize: number) {
   return `Начать · ${n} ${plural(n, QUESTION_FORMS)}`;
 }
 
-export function HomeScreen({ bank, filters, onFiltersChange, onStart, onOpenNotes, theme, onOpenTheme }: HomeScreenProps) {
+type UpdateState =
+  | { kind: "idle" }
+  | { kind: "loading" }
+  | { kind: "done"; diff: BankDiff }
+  | { kind: "error"; message: string };
+
+function formatDiff({ added, changed, removed }: BankDiff) {
+  const parts = [
+    added && `новых ${added}`,
+    changed && `исправлено ${changed}`,
+    removed && `удалено ${removed}`,
+  ].filter(Boolean);
+  return parts.length ? `База обновлена: ${parts.join(", ")}.` : "У тебя самая свежая база.";
+}
+
+function formatBankDate(iso: string | undefined) {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  const sameYear = date.getFullYear() === new Date().getFullYear();
+  return new Intl.DateTimeFormat("ru", { day: "numeric", month: "long", year: sameYear ? undefined : "numeric" }).format(date);
+}
+
+export function HomeScreen({
+  bank,
+  filters,
+  onFiltersChange,
+  onStart,
+  onOpenNotes,
+  onUpdate,
+  theme,
+  onOpenTheme,
+}: HomeScreenProps) {
   const { notes } = useNotes();
   const [subtopicsOpen, setSubtopicsOpen] = useState(false);
+  const [updateState, setUpdateState] = useState<UpdateState>({ kind: "idle" });
+  const bankDate = formatBankDate(bank.generatedAt);
+
+  function refreshBank() {
+    setUpdateState({ kind: "loading" });
+    onUpdate().then(
+      (diff) => setUpdateState({ kind: "done", diff }),
+      (error: unknown) =>
+        setUpdateState({ kind: "error", message: error instanceof Error ? error.message : "Неизвестная ошибка" }),
+    );
+  }
   const pool = getPool(bank, filters);
 
   const selectedTopics = bank.topics.filter((t) => filters.topics.includes(t.id));
@@ -60,10 +105,33 @@ export function HomeScreen({ bank, filters, onFiltersChange, onStart, onOpenNote
     <Screen>
       <TopBar>
         <Brand />
-        <IconButton icon="palette" label="Оформление" onClick={onOpenTheme} />
+        <div className={styles.topActions}>
+          <IconButton
+            icon="refresh"
+            label="Обновить базу"
+            className={clsx(updateState.kind === "loading" && styles.spinning)}
+            disabled={updateState.kind === "loading"}
+            onClick={refreshBank}
+          />
+          <IconButton icon="palette" label="Оформление" onClick={onOpenTheme} />
+        </div>
       </TopBar>
 
-      <ScreenTitle title="Что тренируем?" subtitle={`${countQuestions(bank.questions.length)} · ${bank.description}`} />
+      <ScreenTitle
+        title="Что тренируем?"
+        subtitle={[countQuestions(bank.questions.length), bankDate && `база от ${bankDate}`].filter(Boolean).join(" · ")}
+      />
+
+      {(updateState.kind === "done" || updateState.kind === "error") && (
+        <div className={clsx(styles.updateMessage, glass.glass, updateState.kind === "error" && styles.updateError)} role="status">
+          <span>
+            {updateState.kind === "done" ? formatDiff(updateState.diff) : `Не удалось обновить: ${updateState.message}`}
+          </span>
+          <button type="button" className={styles.dismiss} aria-label="Скрыть" onClick={() => setUpdateState({ kind: "idle" })}>
+            <Icon name="close" />
+          </button>
+        </div>
+      )}
 
       <Card label="Темы">
         <ChipGroup>

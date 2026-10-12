@@ -148,7 +148,8 @@ if (errors.length > 0) {
 
 if (process.argv.includes("--build")) {
   mkdirSync(join(ROOT, "dist"), { recursive: true });
-  const output = { topics: topicsDoc.topics, questions: allQuestions };
+  // generatedAt приложение показывает как «база от …».
+  const output = { generatedAt: new Date().toISOString(), topics: topicsDoc.topics, questions: allQuestions };
   writeFileSync(join(ROOT, "dist", "questions.json"), JSON.stringify(output, null, 2));
   console.log("Собрано: dist/questions.json");
 }
