@@ -1,0 +1,21 @@
+/* Таблетка справа над нижней панелью. Высота 44px — по ней легко попасть пальцем. */
+.why {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--chip-radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Лампочка «горит»: жёлтый контур, полупрозрачная заливка и свечение. */
+.why svg {
+  color: var(--bulb);
+  fill: color-mix(in srgb, var(--bulb) 30%, transparent);
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--bulb) 70%, transparent));
+}

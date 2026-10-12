@@ -1,6 +1,6 @@
 import clsx from "clsx";
-import { useLayoutEffect, useRef, type RefObject } from "react";
-import { getIsAnswerCorrect, getIsMultiple, getIsSpeech } from "../../data/answers";
+import { useLayoutEffect, useRef, type Ref, type RefObject } from "react";
+import { getHasExplanation, getIsAnswerCorrect, getIsMultiple, getIsSpeech } from "../../data/answers";
 import { formatTopicLine, getTopicTitles } from "../../data/titles";
 import type { Question, QuestionBank } from "../../data/types";
 import { formatLink } from "../../shared/lib/formatLink";
@@ -24,6 +24,8 @@ interface QuestionViewProps {
   reveal?: boolean;
   /** Ответ открыт кнопкой «Не знаю». */
   gaveUp?: boolean;
+  /** Блок «Как это устроено» — по нему экран понимает, видно ли пояснение и нужна ли кнопка «Почему?». */
+  explanationRef?: Ref<HTMLElement>;
   onSelect?: (optionIndex: number) => void;
 }
 
@@ -35,13 +37,13 @@ export function QuestionView({
   answered,
   reveal = false,
   gaveUp = false,
+  explanationRef,
   onSelect,
 }: QuestionViewProps) {
   const multiple = getIsMultiple(question);
   const speech = getIsSpeech(question);
   const showResult = reveal || answered;
-  // В своих наборах объяснения может не быть — тогда блок не показываем.
-  const hasExplanation = question.explanation.trim() !== "" || (question.links?.length ?? 0) > 0;
+  const hasExplanation = getHasExplanation(question);
   const { topicTitle, subtopicTitle } = getTopicTitles(bank, question);
   const optionsRef = useRef<HTMLOListElement>(null);
   useKeepAnswerInPlace(optionsRef, showResult, selected[0]);
@@ -88,22 +90,12 @@ export function QuestionView({
       </ol>
 
       {showResult && hasExplanation && (
-        <section className={clsx(styles.explain, glass.glass)}>
+        <section ref={explanationRef} className={clsx(styles.explain, glass.glass)}>
           <h2 className={styles.explainTitle}>
             <Icon name="bulb" />
             Как это устроено
           </h2>
-          <Markdown text={question.explanation} className={styles.explainText} />
-          {question.links && question.links.length > 0 && (
-            <div className={styles.links}>
-              {question.links.map((url) => (
-                <a key={url} href={url} target="_blank" rel="noreferrer">
-                  {formatLink(url)} ↗
-                </a>
-              ))}
-              <span className={styles.linksHint}>Ссылки открываются только с интернетом</span>
-            </div>
-          )}
+          <ExplanationBody question={question} />
         </section>
       )}
 
@@ -142,6 +134,25 @@ function useKeepAnswerInPlace(
     if (shift > room && article) article.style.paddingBottom = `${shift - room}px`;
     window.scrollBy(0, shift);
   });
+}
+
+/** Текст разбора «Как это устроено» и ссылки — под вопросом и в шторке «Почему?». */
+export function ExplanationBody({ question }: { question: Question }) {
+  return (
+    <>
+      <Markdown text={question.explanation} className={styles.explainText} />
+      {question.links && question.links.length > 0 && (
+        <div className={styles.links}>
+          {question.links.map((url) => (
+            <a key={url} href={url} target="_blank" rel="noreferrer">
+              {formatLink(url)} ↗
+            </a>
+          ))}
+          <span className={styles.linksHint}>Ссылки открываются только с интернетом</span>
+        </div>
+      )}
+    </>
+  );
 }
 
 /** Эталонный ответ устного вопроса и тезисы, с которыми стоит сверить свой ответ. */

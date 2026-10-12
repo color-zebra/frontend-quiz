@@ -15,3 +15,8 @@ export function getIsAnswerCorrect(question: Question, selected: readonly number
   const correct = question.options.flatMap((option, index) => (option.correct === true ? [index] : []));
   return selected.length === correct.length && correct.every((index) => selected.includes(index));
 }
+
+/** Есть ли разбор «Как это устроено»: в своих наборах его может не быть. */
+export function getHasExplanation(question: Question) {
+  return question.explanation.trim() !== "" || (question.links?.length ?? 0) > 0;
+}

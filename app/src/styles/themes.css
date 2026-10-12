@@ -61,6 +61,7 @@
   --lvl-junior: #34d399;
   --lvl-middle: #fbbf24;
   --lvl-senior: #f472b6;
+  --bulb: #fbbf24;
 
   --track: rgba(255, 255, 255, 0.1);
   --ring-color: #a78bfa;
@@ -135,6 +136,7 @@
   --lvl-junior: #30d158;
   --lvl-middle: #ffd60a;
   --lvl-senior: #bf5af2;
+  --bulb: #ffd60a;
 
   --track: rgba(255, 255, 255, 0.12);
   --ring-color: #f5f5f7;
@@ -209,6 +211,7 @@
   --lvl-junior: #4ade80;
   --lvl-middle: #facc15;
   --lvl-senior: #38bdf8;
+  --bulb: #facc15;
 
   --track: rgba(52, 211, 153, 0.12);
   --ring-color: #34d399;
@@ -283,6 +286,7 @@
   --lvl-junior: #86efac;
   --lvl-middle: #fdba74;
   --lvl-senior: #f0abfc;
+  --bulb: #fde047;
 
   --track: rgba(255, 255, 255, 0.1);
   --ring-color: #fb923c;

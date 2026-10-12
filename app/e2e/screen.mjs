@@ -69,6 +69,24 @@ export default async function screen(t) {
     };
     /** Кнопка справа до ответа и «Дальше» после — одного размера и на одном месте. */
     const sameBox = (a, b) => Math.abs(a.x - b.x) < 1 && Math.abs(a.width - b.width) < 1 && Math.abs(a.y - b.y) < 1;
+    const why = p.getByRole("button", { name: "Почему?" });
+    const apart = (a, b) => a.x + a.width <= b.x || b.x + b.width <= a.x || a.y + a.height <= b.y || b.y + b.height <= a.y;
+    /** «Почему?» над панелью: не налезает ни на панель, ни на пометку выбранного варианта; открывает пояснение. */
+    const checkWhy = async (selectedStatus, barButton = next) => {
+      check("после ответа над панелью кнопка «Почему?»", await visible(why));
+      const whyBox = await why.boundingBox();
+      const barTop = (await barButton.boundingBox()).y - 8;
+      check("«Почему?» в 10px над панелью, не налезает на неё", whyBox.y + whyBox.height <= barTop - 9, `${whyBox.y + whyBox.height} / ${barTop}`);
+      if (selectedStatus) check("«Почему?» не закрывает пометку выбранного варианта", apart(whyBox, await selectedStatus.boundingBox()));
+      await why.click();
+      const sheet = p.getByRole("dialog");
+      check(
+        "«Почему?» открывает шторку с пояснением",
+        (await visible(sheet.getByRole("heading", { name: "Как это устроено" }))) &&
+          (await visible(sheet.getByText("Как это устроено: тестовое объяснение."))),
+      );
+      await p.keyboard.press("Escape");
+    };
 
     for (let i = 1; i <= 4; i++) {
       await p.getByText(`${i} / 4`).waitFor();
@@ -86,15 +104,24 @@ export default async function screen(t) {
         const sub = ok ? undefined : `верный: ${await positionOf("A1")}`;
         check(`итог слева от «Дальше» виден на экране: «${ok ? "Верно" : `Неверно, ${sub}`}»`, await verdictInView(ok ? "Верно" : "Неверно", sub));
         await t.shot(p, "anchor");
+        // Нажат нижний вариант — пояснение сразу под ним уже на экране, кнопка не нужна.
+        check("пояснение уже на экране — кнопки «Почему?» нет", !(await why.isVisible()));
       } else if (text.includes("WRONG")) {
-        check("до ответа слева — заглушка «Выбери вариант»", await visible(p.getByText("Выбери вариант", { exact: true })));
+        const placeholder = p.locator('[class*="_placeholder_"]');
+        check("до ответа слева — пустая серая заглушка", (await visible(placeholder)) && (await placeholder.innerText()) === "");
         const giveUpBox = await p.getByRole("button", { name: "Не знаю" }).boundingBox();
+        check("до ответа кнопки «Почему?» нет", !(await why.isVisible()));
         await t.shot(p, "before-answer");
         const wrong = (await texts()).findIndex((x) => !x.startsWith("W1"));
         await options.nth(wrong).click();
         check("ошибка — «Неверно» с номером правильного", await verdictInView("Неверно", `верный: ${await positionOf("W1")}`));
         check("«Дальше» на месте «Не знаю» и того же размера", sameBox(giveUpBox, await next.boundingBox()));
         await t.shot(p, "wrong");
+        // Нажат верхний вариант — пояснение далеко внизу, за пределами экрана.
+        await checkWhy(options.nth(wrong).locator('[class*="_status_"]'));
+        await p.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+        await p.waitForTimeout(400);
+        check("докрутил до пояснения сам — кнопка «Почему?» пропала", !(await why.isVisible()));
       } else if (text.includes("GIVEUP")) {
         await p.getByRole("button", { name: "Не знаю" }).click();
         check("«Не знаю» — с номером правильного", await verdictInView("Не знаю", `верный: ${await positionOf("G1")}`));
@@ -110,6 +137,13 @@ export default async function screen(t) {
       }
       await next.click();
     }
+
+    // Разбор ошибки из итога: та же кнопка «Почему?».
+    await p.locator('[class*="_mistake_"]').first().click();
+    await p.getByRole("heading", { name: /Разбор вопроса/ }).or(p.getByText("Разбор вопроса")).first().waitFor();
+    // В панели разбора — «Назад»; одноимённая кнопка есть и в шапке, нужна нижняя.
+    await checkWhy(undefined, p.getByRole("button", { name: "Назад" }).last());
+    await t.shot(p, "review");
     await ctx.close();
   });
 

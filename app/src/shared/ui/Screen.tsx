@@ -12,7 +12,20 @@ export function TopBar({ children }: { children: ReactNode }) {
   return <header className={styles.topBar}>{children}</header>;
 }
 
+interface ActionBarProps {
+  /** Колонки поровну. Без этого последняя кнопка вдвое шире остальных. */
+  even?: boolean;
+  /** Кнопка над панелью справа — например, «Почему?» после ответа. */
+  aside?: ReactNode;
+  children: ReactNode;
+}
+
 /** Панель кнопок, прилипающая к низу экрана. Плотнее обычного стекла, чтобы текст под ней не просвечивал. */
-export function ActionBar({ even = false, children }: { even?: boolean; children: ReactNode }) {
-  return <div className={clsx(styles.actionBar, even && styles.even)}>{children}</div>;
+export function ActionBar({ even = false, aside, children }: ActionBarProps) {
+  return (
+    <div className={styles.dock}>
+      {aside && <div className={styles.aside}>{aside}</div>}
+      <div className={clsx(styles.actionBar, even && styles.even)}>{children}</div>
+    </div>
+  );
 }

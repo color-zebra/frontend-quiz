@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { useEffect, useState } from "react";
-import { getIsAnswerCorrect, getIsMultiple, getIsSpeech } from "../../data/answers";
+import { getHasExplanation, getIsAnswerCorrect, getIsMultiple, getIsSpeech } from "../../data/answers";
 import type { Question, QuestionBank } from "../../data/types";
 import { ComplaintButton, ComplaintSheet } from "../../features/complaint/ComplaintSheet";
 import { NoteSheet } from "../../features/notes/NoteSheet";
@@ -11,6 +11,7 @@ import { Icon } from "../../shared/ui/Icon";
 import glass from "../../shared/ui/glass.module.css";
 import { ActionBar, Screen, TopBar } from "../../shared/ui/Screen";
 import { QuestionView } from "../question/QuestionView";
+import { useIsOnScreen, WhyButton } from "../question/WhyButton";
 import styles from "./SessionScreen.module.css";
 
 interface SessionScreenProps {
@@ -43,6 +44,7 @@ export function SessionScreen({ bank, session, onSelect, onSubmit, onGiveUp, onG
   const revealed = speech && revealedIndex === session.index;
   const multiple = !!question && !speech && getIsMultiple(question);
   const isLast = getIsLastQuestion(session);
+  const [explanationRef, explanationOnScreen] = useIsOnScreen();
 
   // Клавиатура на ноутбуке.
   // Тестовый вопрос: цифры — выбрать (отметить) вариант, 0 — «Не знаю», Enter или → — ответить или дальше.
@@ -90,6 +92,8 @@ export function SessionScreen({ bank, session, onSelect, onSubmit, onGiveUp, onG
   const correctCount = session.answers.filter((a) => a.correct).length;
   const number = session.index + 1;
   const hasNote = !!getNote(bank.setId, question.id);
+  // Пояснение внизу легко не заметить — после ответа над панелью кнопка «Почему?», пока само пояснение не на экране.
+  const showWhy = !speech && session.answered && getHasExplanation(question) && !explanationOnScreen;
 
   return (
     <Screen>
@@ -127,10 +131,13 @@ export function SessionScreen({ bank, session, onSelect, onSubmit, onGiveUp, onG
         answered={session.answered}
         reveal={session.gaveUp || revealed}
         gaveUp={session.gaveUp}
+        explanationRef={explanationRef}
         onSelect={(optionIndex) => onSelect(question, optionIndex)}
       />
 
-      <ActionBar even={!speech}>{speech ? renderSpeechActions() : renderTestActions()}</ActionBar>
+      <ActionBar even={!speech} aside={showWhy && <WhyButton question={question} />}>
+        {speech ? renderSpeechActions() : renderTestActions()}
+      </ActionBar>
 
       <NoteSheet bank={bank} question={noteOpen ? question : null} onClose={() => setNoteOpen(false)} />
       <ComplaintSheet bank={bank} question={complaintOpen ? question : null} onClose={() => setComplaintOpen(false)} />
@@ -177,9 +184,7 @@ export function SessionScreen({ bank, session, onSelect, onSubmit, onGiveUp, onG
     if (!multiple) {
       return (
         <>
-          <span className={styles.placeholder} aria-hidden="true">
-            Выбери вариант
-          </span>
+          <span className={styles.placeholder} aria-hidden="true" />
           {giveUp}
         </>
       );
