@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=../../speech-schema.json
+topic: nextjs
+subtopic: caching
+questions:
+  - id: speech-nextjs-caching-001
+    level: senior
+    tags: [use-cache, revalidation, cache-components]
+    question: |
+      Как в Next.js работает кэширование и ревалидация данных?
+    answer: |
+      Кэширование в Next.js менялось от версии к версии, поэтому отвечу про текущую модель Next.js 16 с Cache
+      Components и скажу про прежнюю. С `cacheComponents` по умолчанию ничего не кэшируется: данные читаются
+      на каждый запрос. Кэшировать нужно явно директивой `'use cache'` — на функции, компоненте или целой
+      странице. Аргументы функции автоматически входят в ключ кэша, срок жизни задаётся `cacheLife`, а метки
+      для инвалидации — `cacheTag`. Внутри кэшируемой функции нельзя читать данные запроса вроде `cookies()`:
+      их передают аргументами снаружи.
+
+      Сбросить кэш можно несколькими способами. `revalidateTag(tag, 'max')` помечает данные с меткой
+      устаревшими: следующий посетитель ещё получит старую версию, а новая построится в фоне. `updateTag` в
+      Server Action сбрасывает кэш сразу, чтобы пользователь увидел свои изменения в том же ответе.
+      `revalidatePath` сбрасывает всё для пути, а `refresh()` просит обновить клиентский роутер.
+
+      Отдельно есть кэш на время одного запроса — `cache` из React: если `layout` и `page` вызывают одну
+      функцию, запрос в базу выполнится один раз. И клиентский кэш роутера, который хранит уже открытые
+      сегменты при навигации.
+
+      В прежней модели, без `cacheComponents`, кэшированием управляли параметры `fetch`: с Next.js 15 он не
+      кэшируется по умолчанию, `cache: 'force-cache'` кладёт ответ в общий серверный кэш данных, а `next: {
+      revalidate: 60 }` задаёт срок.
+    points:
+      - С cacheComponents по умолчанию без кэша, явное 'use cache'
+      - Ключ — аргументы; срок — cacheLife; метки — cacheTag
+      - revalidateTag — обновить в фоне; updateTag — сразу после действия
+      - cache из React — дедупликация в пределах запроса; клиентский кэш роутера
+      - Прежняя модель — параметры fetch, force-cache, revalidate
+    links:
+      - https://nextjs.org/docs/app/getting-started/caching
+      - https://nextjs.org/docs/app/getting-started/revalidating
+      - https://nextjs.org/docs/app/api-reference/directives/use-cache
+    source: own

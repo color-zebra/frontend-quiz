@@ -238,3 +238,35 @@ questions:
     links:
       - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/inert
     source: own
+
+  - id: html-attributes-009
+    level: middle
+    tags: [attributes, properties, dataset, theory]
+    question: |
+      Какие из утверждений об атрибутах HTML и свойствах DOM верны?
+    options:
+      - text: 'Атрибут — то, что записано в разметке, а свойство — поле объекта DOM-элемента'
+        correct: true
+        why: 'Браузер разбирает HTML и создаёт объекты. Атрибуты читаются через `getAttribute`, свойства — через точку: `input.value`.'
+      - text: '`a.href` возвращает полный адрес, а `getAttribute("href")` — как в разметке'
+        correct: true
+        why: 'Для `<a href="/docs">` свойство даст `https://site.ru/docs`, а атрибут — `/docs`. Свойство нормализует значение, атрибут хранит исходный текст.'
+      - text: 'Изменение `className` сразу меняет атрибут `class`, и наоборот'
+        correct: true
+        why: 'Это отражённая пара: запись в одно сразу видна в другом. С `value` у поля так не работает.'
+      - text: 'Атрибуты и свойства всегда синхронизированы в обе стороны'
+        why: 'Многие пары синхронизированы (`id`, `href`), но не все: `value` у поля и `checked` у флажка после взаимодействия живут отдельно от атрибутов.'
+      - text: '`getAttribute` возвращает значение с учётом типа: число или boolean'
+        why: '`getAttribute` всегда возвращает строку или `null`, если атрибута нет. Типизированные значения дают свойства, например `input.checked`.'
+      - text: 'Значения в `dataset` сохраняют тип: число остаётся числом'
+        why: 'Атрибуты — всегда строки. `data-count="5"` даст `"5"`, и число нужно получать через `Number()`.'
+    explanation: |
+      При разборе HTML браузер создаёт DOM-объекты и заполняет их свойства из атрибутов. Дальше они живут каждый
+      своей жизнью: для одних пар браузер отражает изменения в обе стороны, для других атрибут — лишь начальное
+      значение. Атрибуты всегда строки, свойства бывают любого типа (`input.checked` — boolean,
+      `el.style` — объект). Для собственных данных на элементах есть `data-*` и удобный доступ через `dataset`,
+      а булевы атрибуты вроде `disabled` работают по наличию, независимо от значения.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes#content_versus_idl_attributes
+      - https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/dataset
+    source: own

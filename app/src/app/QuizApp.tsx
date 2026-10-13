@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { BankDiff } from "../data/loadQuestions";
 import { BUILTIN_SET_ID, type Question, type QuestionBank } from "../data/types";
 import { useProgress } from "../features/progress/ProgressProvider";
+import { dismissBankVersion, fetchBankVersion, getIsNewerBank } from "../features/bank/bankVersion";
+import { clearSavedSession, readSavedSession, restoreSession, saveSession } from "../features/session/savedSession";
 import { useSets } from "../features/sets/SetsProvider";
 import {
   getIsLastQuestion,
@@ -69,6 +71,14 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
   const [finished, setFinished] = useState<FinishedSession | null>(null);
   const [theme, setTheme] = useState<ThemeId>(readSavedTheme);
   const [themeOpen, setThemeOpen] = useState(false);
+  // Незаконченная сессия с прошлого запуска: на главной предлагаем продолжить.
+  const [saved, setSaved] = useState(readSavedSession);
+  // Дата сборки базы на сервере: если свежее нашей — на главной плашка «Вышла новая база».
+  const [remoteVersion, setRemoteVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchBankVersion().then(setRemoteVersion);
+  }, []);
 
   const nav = useScreenStack(getInitialStack(), handlePop);
 
@@ -91,6 +101,30 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
     if (next) recordNewAnswers(next);
     activeRef.current = next;
     setActive(next);
+    // Каждое изменение сессии — на устройство: Android может выгрузить приложение посреди неё.
+    if (next) saveSession({ setId: next.bank.setId, session: next.session, earnedBefore: [...next.earnedBefore] });
+    else clearSavedSession();
+  }
+
+  /** Сессия с прошлого запуска, которую можно продолжить; null — нечего продолжать или набор ещё грузится. */
+  function getResumable() {
+    if (!saved || active) return null;
+    const savedBank = getBank(saved.setId);
+    const session = savedBank && restoreSession(savedBank, saved);
+    return session ? { bank: savedBank, session, earnedBefore: new Set(saved.earnedBefore) } : null;
+  }
+
+  function resume(resumable: ActiveSession) {
+    // Ответы прошлой сессии уже в ленте: отмечаем их как записанные, чтобы не записать второй раз.
+    activeRef.current = resumable;
+    updateActive(resumable);
+    setSaved(null);
+    nav.push({ name: "session" });
+  }
+
+  function discardSaved() {
+    clearSavedSession();
+    setSaved(null);
   }
 
   /** Системная кнопка «Назад» посреди сессии с ответами — показываем итог, а не теряем его. */
@@ -113,6 +147,7 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
   }
 
   function begin(sessionBank: QuestionBank, ids: string[], length: number | "infinite", mode: "push" | "replace") {
+    setSaved(null);
     updateActive({ bank: sessionBank, session: startSession(sessionBank, ids, length), earnedBefore: getEarnedIds() });
     if (mode === "push") nav.push({ name: "session" });
     else nav.replace({ name: "session" });
@@ -184,6 +219,7 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
   // Обычная функция, а не компонент: компонент, объявленный внутри, пересоздавался бы на каждой отрисовке.
   function renderScreen() {
     const screen = nav.screen;
+    const resumable = screen.name === "home" ? getResumable() : null;
     switch (screen.name) {
       case "home":
         return (
@@ -195,6 +231,19 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
             onOpenSpeech={() => nav.push({ name: "speechHome" })}
             onOpenHelp={() => nav.push({ name: "help" })}
             onUpdate={onUpdate}
+            newBank={
+              remoteVersion && getIsNewerBank(remoteVersion, bank.generatedAt)
+                ? {
+                    onDismiss: () => {
+                      dismissBankVersion(remoteVersion);
+                      setRemoteVersion(null);
+                    },
+                  }
+                : null
+            }
+            resumable={
+              resumable && { ...describeResumable(resumable), onResume: () => resume(resumable), onDiscard: discardSaved }
+            }
           />
         );
       case "cabinet":
@@ -207,6 +256,7 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
             onOpenAchievements={() => nav.push({ name: "achievements" })}
             onOpenNotes={() => nav.push({ name: "notes" })}
             onOpenTheme={() => setThemeOpen(true)}
+            onUpdate={onUpdate}
           />
         );
       case "achievements":
@@ -217,6 +267,7 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
             bank={bank}
             onBack={nav.back}
             onStart={(from, ids, length) => begin(from, ids, length, "push")}
+            onOpenQuestion={(setId, questionId) => nav.push({ name: "review", setId, questionId })}
           />
         );
       case "speechHome":
@@ -288,4 +339,14 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
         return <ReviewScreen bank={getBank(screen.setId)} questionId={screen.questionId} onBack={nav.back} />;
     }
   }
+}
+
+/** Подпись плашки «Незаконченная сессия»: где остановился и откуда вопросы. */
+function describeResumable({ bank, session }: { bank: QuestionBank; session: Session }) {
+  const position = session.infinite
+    ? `вопрос ${session.index + 1}`
+    : `вопрос ${session.index + 1} из ${session.queue.length}`;
+  const speech = bank.byId.get(session.queue[session.index])?.type === "speech";
+  const source = bank.setId === BUILTIN_SET_ID ? (speech ? "устные вопросы" : "") : `набор «${bank.title ?? ""}»`;
+  return { text: [position, source].filter(Boolean).join(" · ") };
 }

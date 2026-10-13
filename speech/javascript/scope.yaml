@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=../../speech-schema.json
+topic: javascript
+subtopic: scope
+questions:
+  - id: speech-javascript-scope-001
+    level: middle
+    tags: [hoisting, tdz]
+    question: |
+      Что такое hoisting и временная мёртвая зона (TDZ)?
+    answer: |
+      Перед тем как выполнить функцию или скрипт, движок проходит по всем объявлениям в этой области и заранее
+      создаёт для них переменные. Это и называют поднятием, hoisting. Код при этом никуда не переносится,
+      просто имена известны с первой строки.
+
+      Разница в том, что лежит в переменной до строки объявления. Function declaration сразу готова, её можно
+      вызвать выше по коду. `var` равна `undefined`, поэтому `console.log(x); var x = 5` выведет `undefined`,
+      а не ошибку. Function expression живёт по правилам своей переменной: `var f = function () {}` до своей
+      строки равна `undefined`, и вызов даёт `TypeError`. А `let`, `const` и `class` зарегистрированы, но не
+      инициализированы, и любое обращение к ним бросает `ReferenceError`. Этот промежуток времени — от входа в
+      блок до выполнения строки объявления — и есть временная мёртвая зона.
+
+      «Временная» — потому что важен момент выполнения, а не место в тексте: функция, написанная выше `let`,
+      спокойно прочитает переменную, если её вызвали после объявления. TDZ придумали, чтобы раннее обращение к
+      переменной было явной ошибкой, а не тихим `undefined`, как у `var`. Отсюда же подвох: `let` внутри блока
+      затеняет внешнюю переменную с первой строки блока, и чтение до объявления падает.
+    points:
+      - Объявления регистрируются до выполнения кода, код не переносится
+      - Function declaration доступна целиком, var равна undefined
+      - let, const и class до объявления в TDZ — ReferenceError, даже у typeof
+      - TDZ определяется временем выполнения, а не местом в коде
+      - Function expression подчиняется правилам своей переменной
+    links:
+      - https://developer.mozilla.org/en-US/docs/Glossary/Hoisting
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/let#temporal_dead_zone_tdz
+    source: own
+
+  - id: speech-javascript-scope-002
+    level: junior
+    tags: [var, let, const]
+    question: |
+      Сравни `var`, `let` и `const`.
+    answer: |
+      `var` — старый способ объявления. У него область видимости функции: блоки `if` и `for` для него
+      прозрачны, и переменная из цикла видна после цикла. До строки объявления `var` равна `undefined`, её
+      можно объявить повторно, а на верхнем уровне обычного скрипта она становится свойством `window` и может
+      перезаписать что-нибудь вроде `window.name`.
+
+      `let` и `const` появились в ES2015. Их область — ближайший блок, до объявления они в TDZ, повторное
+      объявление в той же области — синтаксическая ошибка, и в `window` они не попадают. Ещё важное отличие в
+      циклах: `for (let i ...)` создаёт новую переменную на каждую итерацию, поэтому колбэки внутри цикла
+      видят свои значения, а с `var` — одно общее.
+
+      Между `let` и `const` разница одна: `const` нельзя переприсвоить, и значение задаётся сразу. Но `const`
+      защищает переменную, а не объект: `const user = {}` не мешает менять `user.name`. В своём коде я пишу
+      `const` по умолчанию, `let` — когда переменную действительно переприсваивают, а `var` не использую.
+    points:
+      - var — область функции, let/const — область блока
+      - var до объявления равна undefined, let/const в TDZ
+      - Повторное объявление разрешено только у var
+      - Глобальная var становится свойством window
+      - let в for даёт новую переменную на каждую итерацию
+      - const запрещает переприсваивание, но не изменение объекта
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/var
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/let
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/const
+    source: own

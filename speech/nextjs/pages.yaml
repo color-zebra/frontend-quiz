@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=../../speech-schema.json
+topic: nextjs
+subtopic: pages
+questions:
+  - id: speech-nextjs-pages-001
+    level: middle
+    tags: [app-router, pages-router]
+    question: |
+      Чем App Router отличается от Pages Router?
+    answer: |
+      Pages Router — исходная модель Next.js: каждый файл в папке `pages` — страница, а данные загружаются
+      специальными функциями. `getStaticProps` — при сборке, `getServerSideProps` — на каждый запрос, плюс
+      `getStaticPaths` для динамических маршрутов. Все компоненты — клиентские: их код целиком уходит в бандл
+      и гидрируется. Общая обёртка — `_app.tsx`, разметка документа — `_document.tsx`, API — файлы в
+      `pages/api`.
+
+      App Router появился в Next.js 13 и построен на серверных компонентах React. Маршруты — папки в `app` с
+      файлами `page`, `layout`, `loading`, `error`. Компоненты по умолчанию серверные: данные загружают прямо
+      в компоненте через `async`/`await`, без специальных функций, а в бандл попадают только клиентские
+      компоненты. Появились вложенные layout, которые сохраняют состояние при навигации, стриминг через
+      Suspense, Server Actions для мутаций, Route Handlers вместо API routes и гибкое кэширование.
+
+      Сейчас App Router — рекомендуемый вариант для новых проектов, все новые возможности появляются в нём.
+      Pages Router поддерживается, и оба могут жить в одном проекте, что позволяет мигрировать постепенно,
+      страница за страницей.
+    points:
+      - Pages Router — файлы в pages, getStaticProps / getServerSideProps
+      - В Pages Router все компоненты клиентские и гидрируются
+      - App Router — серверные компоненты, данные через async в компоненте
+      - Вложенные layout, стриминг, Server Actions, Route Handlers
+      - App Router рекомендуется; оба роутера могут жить в одном проекте
+    links:
+      - https://nextjs.org/docs/app
+      - https://nextjs.org/docs/pages
+    source: own

@@ -331,3 +331,218 @@ questions:
     links:
       - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/new#description
     source: own
+
+  - id: javascript-prototypes-011
+    level: junior
+    tags: [prototype, definition, theory]
+    question: |
+      Что такое прототип объекта в JavaScript?
+    options:
+      - text: 'Другой объект, где ищутся свойства, которых нет у самого объекта'
+        correct: true
+        why: 'Каждый объект хранит скрытую ссылку `[[Prototype]]` на другой объект или `null`. Если свойства нет у объекта, движок ищет его в прототипе, потом в прототипе прототипа.'
+      - text: 'Копия всех свойств родителя, которую движок делает при создании объекта'
+        why: 'Свойства не копируются: прототип — живой объект, общий для многих наследников, и его изменения они видят сразу.'
+      - text: 'Класс, по которому движок создал этот объект'
+        why: 'Прототип — обычный объект, а не класс. Класс в JS — функция, и экземпляры наследуют не от неё, а от её свойства `prototype`.'
+      - text: 'Список свойств, которые объект обязан содержать'
+        why: 'Это похоже на интерфейс в TypeScript. Прототип ничего не требует от объекта, он только даёт ему унаследованные свойства.'
+    explanation: |
+      Наследование в JavaScript построено на объектах, а не на классах. У каждого объекта есть внутренний слот
+      `[[Prototype]]` со ссылкой на другой объект. Свойства прототипа не копируются, а находятся при чтении,
+      поэтому изменение прототипа сразу видно всем наследникам. Получить прототип можно через
+      `Object.getPrototypeOf(obj)`, задать при создании — через `Object.create(proto)` или `new`. Классы
+      ES2015 — синтаксис поверх этого же механизма.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Inheritance_and_the_prototype_chain
+    source: own
+
+  - id: javascript-prototypes-012
+    level: middle
+    tags: [prototype-vs-proto, __proto__, theory]
+    question: |
+      Какие из утверждений о `prototype`, `[[Prototype]]` и `__proto__` верны?
+    options:
+      - text: '`F.prototype` — объект, который станет прототипом экземпляров `new F()`'
+        correct: true
+        why: 'Это обычное свойство функции-конструктора. `new F()` записывает его в `[[Prototype]]` создаваемого объекта.'
+      - text: '`Object.getPrototypeOf(obj)` возвращает внутренний `[[Prototype]]` объекта'
+        correct: true
+        why: 'Это стандартный способ прочитать прототип. Для записи есть `Object.setPrototypeOf`, но менять прототип готового объекта медленно.'
+      - text: '`__proto__` — устаревший аксессор из `Object.prototype`, а не своё свойство'
+        correct: true
+        why: 'Геттер и сеттер `__proto__` лежат в `Object.prototype` и читают тот же `[[Prototype]]`. Поэтому `Object.hasOwn({}, "__proto__")` — `false`.'
+      - text: 'У любого объекта есть свойство `prototype`, где хранится его прототип'
+        why: 'Свойство `prototype` есть у обычных функций, классов и генераторов, но не у обычных объектов. У обычного объекта `obj.prototype` — `undefined`, а его прототип читают через `Object.getPrototypeOf`.'
+      - text: '`__proto__` работает и у объекта, созданного через `Object.create(null)`'
+        why: 'У такого объекта нет `Object.prototype` в цепочке, а значит, нет и аксессора `__proto__`. Чтение даст `undefined`, а запись создаст обычное свойство с именем `__proto__`.'
+    explanation: |
+      Три похожих имени означают разное. `[[Prototype]]` — внутренний слот каждого объекта, настоящая ссылка
+      на прототип. `__proto__` — старый аксессор к этому слоту, оставленный ради совместимости; в новом коде
+      используют `Object.getPrototypeOf` и `Object.setPrototypeOf`. `prototype` — свойство
+      функции-конструктора: заготовка прототипа для будущих экземпляров. Цепочка экземпляра `user` выглядит
+      так: `user` → `User.prototype` → `Object.prototype` → `null`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/proto
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/getPrototypeOf
+    source: own
+
+  - id: javascript-prototypes-013
+    level: junior
+    tags: [prototype-chain, lookup, theory]
+    question: |
+      Где заканчивается цепочка прототипов обычного объекта и что даст чтение свойства, которого нет нигде в
+      цепочке?
+    options:
+      - text: 'На `null` после `Object.prototype`, чтение даст `undefined`'
+        correct: true
+        why: 'Прототип `Object.prototype` — `null`. Дойдя до него, поиск останавливается, и отсутствующее свойство читается как `undefined` без ошибки.'
+      - text: 'На `Object.prototype`, чтение бросит `ReferenceError`'
+        why: '`ReferenceError` бывает для необъявленных переменных, а не для свойств. Отсутствующее свойство — просто `undefined`.'
+      - text: 'На самом объекте, цепочка замкнута в кольцо, чтение даст `undefined`'
+        why: 'Цепочка не может быть кольцом: попытка создать цикл через `Object.setPrototypeOf` бросает `TypeError`.'
+      - text: 'На глобальном объекте `window`, чтение даст `null`'
+        why: '`window` не входит в цепочку обычных объектов. И отсутствующее свойство даёт `undefined`, а не `null`.'
+    explanation: |
+      При чтении `obj.key` движок проверяет собственные свойства объекта, затем его прототипа, затем прототипа
+      прототипа — пока не найдёт свойство или не дойдёт до `null`. У обычных объектов последнее звено —
+      `Object.prototype`, отсюда у всех объектов методы `toString` и `hasOwnProperty`. Если свойство не
+      нашлось, результат — `undefined`. Ошибка возникает позже, если обратиться к свойству этого `undefined`:
+      `obj.missing.name`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Inheritance_and_the_prototype_chain#inheritance_with_the_prototype_chain
+    source: own
+
+  - id: javascript-prototypes-014
+    level: middle
+    tags: [prototype-chain, array, theory]
+    question: |
+      Как выглядит цепочка прототипов у массива `[1, 2]`?
+    options:
+      - text: '`[1, 2]` → `Array.prototype` → `Object.prototype` → `null`'
+        correct: true
+        why: 'Методы массивов (`map`, `filter`, `push`) лежат в `Array.prototype`, а он, как любой обычный объект, наследует от `Object.prototype` — отсюда у массива `hasOwnProperty`.'
+      - text: '`[1, 2]` → `Array` → `Function.prototype` → `null`'
+        why: '`Array` — функция-конструктор, а не прототип экземпляров. Массив наследует от `Array.prototype`, а `Function.prototype` — прототип самой функции `Array`.'
+      - text: '`[1, 2]` → `Object.prototype` → `Array.prototype` → `null`'
+        why: 'Порядок обратный: `Array.prototype` наследует от `Object.prototype`, иначе методы массивов были бы у всех объектов.'
+      - text: '`[1, 2]` → `Array.prototype` → `null`'
+        why: 'Цепочка не обрывается на `Array.prototype`: это тоже объект, и его прототип — `Object.prototype`.'
+    explanation: |
+      Цепочки встроенных типов однотипны: `{}` → `Object.prototype` → `null`; `[]` → `Array.prototype` →
+      `Object.prototype` → `null`; функция → `Function.prototype` → `Object.prototype` → `null`. Отсюда у
+      массивов методы `map` и `filter`, у функций — `call` и `bind`, а у всех вместе — `toString` и
+      `hasOwnProperty`. Причём `Array.prototype.toString` затеняет `Object.prototype.toString`, поэтому
+      `String([1, 2])` даёт `"1,2"`, а не `"[object Array]"`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Inheritance_and_the_prototype_chain#different_ways_of_creating_and_mutating_prototype_chains
+    source: own
+
+  - id: javascript-prototypes-015
+    level: middle
+    tags: [instanceof, prototype-chain, theory]
+    question: |
+      Как на самом деле работает проверка `obj instanceof F`?
+    options:
+      - text: 'Ищет объект `F.prototype` в цепочке прототипов `obj`'
+        correct: true
+        why: 'Оператор идёт по цепочке `obj` и сравнивает каждое звено с текущим `F.prototype`. Нашёлся — `true`, дошёл до `null` — `false`.'
+      - text: 'Проверяет, что `obj` был создан вызовом `new F()`'
+        why: 'Как создан объект, `instanceof` не знает. Объект из `Object.create(F.prototype)` тоже пройдёт проверку, а после замены `F.prototype` старые экземпляры — нет.'
+      - text: 'Сравнивает свойство `obj.constructor` с функцией `F`'
+        why: '`constructor` — обычное свойство, его можно перезаписать, и `instanceof` на него не смотрит.'
+      - text: 'Проверяет, что у `obj` есть все методы из `F.prototype`'
+        why: 'Наличие методов не проверяется: это была бы утиная типизация. Объект со всеми нужными методами, но другим прототипом, не пройдёт проверку.'
+    explanation: |
+      `instanceof` — проверка цепочки прототипов, а не «происхождения» объекта. Поэтому результат меняется,
+      если заменить `F.prototype` или прототип объекта, и поэтому массив из iframe не `instanceof Array`: у
+      него другой `Array.prototype`. Класс может переопределить проверку статическим методом
+      `Symbol.hasInstance`. Для проверки без конструктора есть `Object.prototype.isPrototypeOf`:
+      `F.prototype.isPrototypeOf(obj)`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/instanceof
+    source: own
+
+  - id: javascript-prototypes-016
+    level: senior
+    tags: [assignment, setter, writable, theory]
+    question: |
+      В каких случаях присваивание `obj.x = 1` НЕ создаст у `obj` собственное свойство `x`? Режим строгий,
+      своего `x` у `obj` нет.
+    options:
+      - text: 'В цепочке прототипов есть сеттер `x`'
+        correct: true
+        why: 'Присваивание уходит в сеттер, вызванный с `this === obj`. Создаст ли он что-то, решает код сеттера, но свойство `x` автоматически не появится.'
+      - text: 'В прототипе `x` помечено как `writable: false`'
+        correct: true
+        why: 'Унаследованное свойство только для чтения запрещает и затенение: в строгом режиме будет `TypeError`. Это иногда называют override mistake.'
+      - text: 'Объект `obj` сделан нерасширяемым через `Object.preventExtensions`'
+        correct: true
+        why: 'В нерасширяемый объект нельзя добавить новое свойство, в строгом режиме присваивание бросит `TypeError`.'
+      - text: 'В прототипе уже есть обычное записываемое свойство `x`'
+        why: 'Это обычный случай затенения: у `obj` появится своё `x`, а прототип не изменится.'
+      - text: 'Свойство `x` в прототипе записываемое, но неперечисляемое'
+        why: '`enumerable` влияет только на перебор. Если свойство записываемое, присваивание создаст собственное `x`.'
+      - text: 'Объект создан через `Object.create(null)`'
+        why: 'Отсутствие прототипа присваиванию не мешает: свойство просто создаётся у самого объекта.'
+    explanation: |
+      Чтение идёт по цепочке прототипов, а присваивание сначала тоже ищет свойство по цепочке, но только чтобы
+      решить, что делать. Нашёлся сеттер — вызывается он. Нашлось свойство только для чтения — запись
+      запрещена. Иначе, если объект расширяемый, создаётся собственное свойство, затеняющее унаследованное.
+      Так прототип защищён от случайной мутации через экземпляр, а аксессоры классов, которые живут в
+      прототипе, работают для всех экземпляров. `Object.defineProperty` обходит сеттеры и read-only свойства
+      прототипа и пишет в сам объект, но в нерасширяемый объект новое свойство не добавит и он.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Inheritance_and_the_prototype_chain#inheritance_with_the_prototype_chain
+      - https://tc39.es/ecma262/#sec-ordinarysetwithowndescriptor
+    source: own
+
+  - id: javascript-prototypes-017
+    level: middle
+    tags: [methods, prototype, memory, theory]
+    question: |
+      Почему методы обычно кладут в `prototype` конструктора, а данные — в сам экземпляр?
+    options:
+      - text: 'Методы одинаковы для всех экземпляров, а данные у каждого свои'
+        correct: true
+        why: 'Одна функция в прототипе обслуживает тысячи объектов и не дублируется в памяти. А изменяемые данные в прототипе были бы общими: мутация через один экземпляр видна во всех.'
+      - text: 'Свойства прототипа нельзя изменить после создания экземпляров'
+        why: 'Прототип можно менять в любой момент, и изменения сразу видят все наследники.'
+      - text: 'Метод, записанный в экземпляр, не получает правильный `this`'
+        why: 'Получает: `this` зависит от вызова `obj.method()`, а не от того, где лежит функция. Метод в экземпляре работает, просто тратит память на каждую копию.'
+      - text: 'Данные, записанные в прототип, не видны через экземпляр'
+        why: 'Видны: чтение идёт по цепочке. Проблема данных в прототипе в том, что они общие для всех экземпляров.'
+    explanation: |
+      Прототип — общая часть всех экземпляров. Поэтому туда идёт то, что не меняется и одинаково у всех, —
+      методы. Состояние создают в конструкторе (`this.items = []`) или полями класса, чтобы у каждого
+      экземпляра были свои значения. Именно так раскладывает члены синтаксис `class`: методы — в `prototype`,
+      поля — в экземпляр. Исключение — поля-стрелки: они создаются на каждый экземпляр ради привязанного
+      `this`, и это сознательная плата памятью.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Advanced_JavaScript_objects/Object_prototypes#setting_a_prototype
+    source: own
+
+  - id: javascript-prototypes-018
+    level: middle
+    tags: [object-create-null, dictionary, theory]
+    question: |
+      Зачем словарь с произвольными ключами иногда создают через `Object.create(null)`, а не через `{}`?
+    options:
+      - text: 'Чтобы ключи `toString` или `__proto__` не путались с унаследованными'
+        correct: true
+        why: 'У `{}` есть прототип, и проверка `"toString" in dict` истинна ещё до записи. А запись ключа `__proto__` в `{}` не создаёт свойство: объект в значении становится прототипом, а строка молча игнорируется.'
+      - text: 'Чтобы после создания объект нельзя было изменить'
+        why: 'Объект без прототипа остаётся изменяемым. Запретить изменения может `Object.freeze`.'
+      - text: 'Чтобы свойства объекта не попадали в `JSON.stringify`'
+        why: '`JSON.stringify` сериализует собственные перечисляемые свойства и прототип не учитывает. Ключи такого словаря попадут в JSON.'
+      - text: 'Чтобы `for...in` перебирал ключи строго в порядке добавления'
+        why: 'Порядок ключей одинаков для любых объектов: сначала ключи-индексы (неотрицательные целые) по возрастанию, затем остальные строки по порядку добавления.'
+    explanation: |
+      Объект без прототипа — «чистый» словарь: в нём нет ни одного унаследованного ключа, и пользовательские
+      строки вроде `constructor`, `toString` или `__proto__` ведут себя как обычные ключи. Это защищает от
+      ошибок и от атак prototype pollution. Неудобство — нет методов `Object.prototype`: `dict.hasOwnProperty`
+      не существует, а `String(dict)` бросает `TypeError`. Поэтому ключи проверяют через `Object.hasOwn`. Для
+      словарей с произвольными ключами современная альтернатива — `Map`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object#null-prototype_objects
+    source: own

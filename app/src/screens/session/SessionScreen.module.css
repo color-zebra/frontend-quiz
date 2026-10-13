@@ -12,6 +12,19 @@
   font-weight: 600;
 }
 
+.countInfinite {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.countCorrect {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .track {
   width: 100%;
   height: 6px;
@@ -36,20 +49,6 @@
 }
 
 /* Инструменты к вопросу — жалоба и заметка — одной капсулой, отдельно от выхода из сессии. */
-.tools {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 6px;
-  padding: 0 2px;
-}
-
-.toolsDivider {
-  width: 1px;
-  height: 22px;
-  background: var(--glass-border);
-}
-
 /* Итог ответа и заглушка до ответа — ячейка слева от кнопки, той же высоты. */
 .verdict,
 .placeholder {

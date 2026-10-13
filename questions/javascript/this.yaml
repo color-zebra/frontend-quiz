@@ -386,3 +386,138 @@ questions:
     links:
       - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode#no_this_substitution
     source: own
+
+  - id: javascript-this-012
+    level: middle
+    tags: [rules, priority, theory]
+    question: |
+      Для обычной функции `this` определяется четырьмя правилами: вызов через `new`, явная привязка (`bind`,
+      `call`, `apply`), вызов как метода `obj.fn()` и обычный вызов `fn()`. В каком порядке приоритета они
+      применяются, если подходят сразу несколько?
+    options:
+      - text: '`new`, затем явная привязка, затем вызов как метода, затем обычный вызов'
+        correct: true
+        why: '`new` игнорирует даже `bind` и создаёт новый объект. Явная привязка сильнее метода: `obj.fn.call(other)` даёт `this === other`. Обычный вызов срабатывает, только если остальные правила не подошли.'
+      - text: 'Явная привязка, затем `new`, затем вызов как метода, затем обычный вызов'
+        why: '`new` сильнее `bind`: при вызове привязанной функции через `new` привязанный `this` игнорируется, а сохраняются только частично применённые аргументы.'
+      - text: 'Вызов как метода, затем явная привязка, затем `new`, затем обычный вызов'
+        why: 'Метод проигрывает явной привязке: `obj.fn.call(other)` вызовет функцию с `this === other`, а не `obj`.'
+      - text: '`new`, затем вызов как метода, затем явная привязка, затем обычный вызов'
+        why: 'Привязанная функция, сохранённая в свойство объекта, при вызове `obj.bound()` всё равно получит привязанный `this`, а не `obj`.'
+    explanation: |
+      `this` обычной функции — это не «где функция написана», а «как её вызвали». Правила по убыванию силы:
+      `new F()` — новый объект; `bind` — зафиксированный объект, его не перебьют ни `call`, ни вызов как метода;
+      `call` и `apply` — объект из первого аргумента; `obj.fn()` — объект перед последней точкой; `fn()` —
+      `undefined` в строгом режиме и глобальный объект в нестрогом. Стрелочные функции выпадают из этой схемы:
+      у них нет своего `this`, они берут его из окружения.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/this
+    source: own
+
+  - id: javascript-this-013
+    level: junior
+    tags: [arrow-functions, theory]
+    question: |
+      Откуда стрелочная функция берёт `this`?
+    options:
+      - text: 'Из окружения, где она создана, как обычную внешнюю переменную'
+        correct: true
+        why: 'У стрелки нет собственного `this`. Внутри неё `this` значит то же, что и снаружи, в месте объявления: в методе — объект метода, в модуле — `undefined`.'
+      - text: 'От объекта, на котором её вызвали, как у обычного метода'
+        why: 'Способ вызова на стрелку не влияет: `obj.arrow()` не делает `obj` её `this`.'
+      - text: 'Всегда из глобального объекта, где бы её ни объявили'
+        why: 'Стрелка получит глобальный объект, только если такой `this` у внешнего кода, например на верхнем уровне обычного скрипта. Внутри метода она возьмёт `this` метода.'
+      - text: 'Из первого аргумента `call` или `bind`, если его передали'
+        why: '`call`, `apply` и `bind` не меняют `this` стрелки, первый аргумент просто игнорируется.'
+    explanation: |
+      Стрелочные функции появились в ES2015 как короткая запись колбэков, и у них намеренно нет своих `this`,
+      `arguments` и `super`. Поэтому внутри метода удобно писать `items.map((item) => this.format(item))`: стрелка
+      видит `this` метода, и не нужен старый приём `const self = this`. Обратная сторона: стрелка не годится как
+      метод объекта и как обработчик, которому нужен `this` элемента, и её нельзя вызвать через `new`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions
+    source: own
+
+  - id: javascript-this-014
+    level: middle
+    tags: [lost-this, callbacks, bind, theory]
+    question: |
+      `button` — экземпляр класса, метод `handleClick` читает `this.label`. При вызове
+      `setTimeout(button.handleClick, 100)` метод теряет `this`. Какие варианты это исправят?
+    options:
+      - text: '`setTimeout(button.handleClick.bind(button), 100)`'
+        correct: true
+        why: '`bind` возвращает новую функцию, которая всегда вызывает метод с `this === button`.'
+      - text: '`setTimeout(() => button.handleClick(), 100)`'
+        correct: true
+        why: 'Стрелка вызывает метод через `button.`, то есть как метод объекта, и `this` определяется правильно.'
+      - text: '`setTimeout(button.handleClick.call(button), 100)`'
+        why: '`call` вызывает метод сразу, а в `setTimeout` уходит его результат, а не функция.'
+      - text: '`setTimeout(button.handleClick, 100, button)`'
+        why: 'Дополнительные аргументы `setTimeout` передаются в колбэк обычными аргументами, а `this` они не задают.'
+      - text: '`setTimeout(() => button.handleClick, 100)`'
+        why: 'Стрелка только возвращает ссылку на метод и не вызывает его. Через 100 мс ничего не произойдёт.'
+    explanation: |
+      `button.handleClick` без скобок — просто ссылка на функцию из прототипа, связь с объектом при этом не
+      сохраняется. Позже таймер вызывает её без объекта: в браузере `this` будет `window`, в Node — объект
+      таймера, но не `button`, поэтому `this.label` — `undefined`. Три способа сохранить объект: `bind(button)`,
+      обёртка (стрелка или обычная функция), которая вызывает метод через точку, или поле-стрелка в классе
+      `handleClick = () => { ... }`. Та же потеря случается, когда метод передают в `addEventListener` (там
+      `this` станет элементом), в `Promise.then` или пропсом в React.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Window/setTimeout#functions_are_called_with_the_global_this
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
+    source: own
+
+  - id: javascript-this-015
+    level: middle
+    tags: [strict-mode, default-binding, theory]
+    question: |
+      Чему равен `this` внутри обычной функции, вызванной как `fn()`, в строгом и в нестрогом режиме?
+    options:
+      - text: 'В строгом — `undefined`, в нестрогом — глобальный объект'
+        correct: true
+        why: 'Нестрогий режим подставляет вместо отсутствующего `this` глобальный объект (`window` в браузере). Строгий оставляет `undefined`, и обращение `this.x` сразу падает.'
+      - text: 'В строгом — глобальный объект, в нестрогом — `undefined`'
+        why: 'Ровно наоборот. Подмена на глобальный объект — поведение старого, нестрогого режима.'
+      - text: 'В обоих режимах — глобальный объект, режим влияет на другое'
+        why: 'Строгий режим как раз отменяет подстановку глобального объекта, это одно из его главных изменений.'
+      - text: 'В обоих режимах — `undefined`, глобальный объект подставляет только `call`'
+        why: 'Нестрогий режим подставляет глобальный объект и при обычном вызове `fn()`. `call` здесь ни при чём: в нестрогом режиме он тоже заменяет `null` и `undefined` глобальным объектом.'
+    explanation: |
+      В нестрогом режиме обычный вызов функции подставляет глобальный объект, и опечатка вроде
+      `this.count = 0` в неправильно вызванной функции молча создаёт глобальную переменную. Строгий режим это
+      запретил: `this` остаётся `undefined`, и ошибка видна сразу. Модули, классы и код после большинства
+      сборщиков всегда строгие, поэтому в современном коде «потерянный» `this` — это `undefined` и
+      `TypeError` при чтении свойства.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode#no_this_substitution
+    source: own
+
+  - id: javascript-this-016
+    level: senior
+    tags: [thisArg, array-methods, arrow-functions, theory]
+    question: |
+      У `forEach`, `map`, `filter` и других методов массивов есть второй аргумент `thisArg`. В каком из вызовов
+      колбэк получит `this === ctx`?
+    multiple: true
+    options:
+      - text: '`items.forEach(function () { /* this */ }, ctx)`'
+        correct: true
+        why: 'Метод массива вызывает колбэк с `this`, равным `thisArg`. Для обычной функции это работает как `call(ctx, ...)`.'
+      - text: '`items.forEach(() => { /* this */ }, ctx)` на верхнем уровне модуля'
+        why: 'У стрелки нет своего `this`, поэтому `thisArg` игнорируется: внутри будет `this` окружающего кода, а на верхнем уровне модуля это `undefined`.'
+      - text: '`items.forEach(function () { /* this */ }.bind(other), ctx)`'
+        why: 'Привязанную функцию `thisArg` не перебивает, как и `call`: внутри будет `other`.'
+      - text: '`items.forEach(function () { /* this */ })` внутри метода `ctx.run()`'
+        why: 'Колбэк вызывается методом массива, а не как метод `ctx`. Без `thisArg` в строгом режиме `this` будет `undefined`, в нестрогом — глобальный объект.'
+    explanation: |
+      Второй аргумент методов массивов — старый способ передать `this` в колбэк, придуманный до стрелочных
+      функций. Сегодня обычно пишут стрелку, которая берёт `this` из метода: `items.forEach((item) =>
+      this.draw(item))`. Но `thisArg` полезно знать: он работает только с обычными функциями, проигрывает `bind`
+      и не влияет на стрелки. Последний вариант — классическая ошибка в старом коде: обычная функция внутри
+      метода не наследует `this` метода, поэтому раньше писали `const self = this` или передавали `thisArg`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/forEach#parameters
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array#iterative_methods
+    source: own

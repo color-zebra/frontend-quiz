@@ -133,6 +133,10 @@ topics:
         title: Формы и Actions
       - id: concurrent
         title: Переходы, Suspense и границы ошибок
+      - id: internals
+        title: Под капотом — Fiber, reconciliation, конкурентный рендер
+      - id: versions
+        title: Версии React
       - id: typescript
         title: React и TypeScript
 

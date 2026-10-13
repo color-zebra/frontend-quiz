@@ -67,8 +67,10 @@ export default async function complaint(t) {
   await page.getByText("Что тренируем?").waitFor();
   const shift = (q) => ({ ...q, line: q.line + 3 });
   await withBank({ questions: base.questions.map(shift), speech: (base.speech ?? []).map(shift) }, async () => {
+    await page.getByRole("button", { name: "Кабинет" }).click();
     await page.getByRole("button", { name: "Обновить базу" }).click();
     check("сдвиг строк в файлах не считается исправлением", await visible(page.getByText("У тебя самая свежая база.")));
+    await page.getByRole("button", { name: "Назад" }).click();
   });
 
   // Набор с устройства — шутка без ссылки; та же кнопка на разборе ошибки.

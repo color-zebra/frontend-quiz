@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { useState, type ReactNode } from "react";
 import { UNGROUPED, type QuestionBank } from "../../data/types";
+import { useBookmarks } from "../../features/bookmarks/BookmarksProvider";
 import { useProgress } from "../../features/progress/ProgressProvider";
 import {
   getBankStats,
@@ -18,13 +19,16 @@ import glass from "../../shared/ui/glass.module.css";
 import { Icon } from "../../shared/ui/Icon";
 import { Screen, TopBar } from "../../shared/ui/Screen";
 import { ScreenTitle } from "../../shared/ui/ScreenTitle";
+import { BookmarksBlock } from "./BookmarksBlock";
 import styles from "./StatsScreen.module.css";
 
 interface StatsScreenProps {
   bank: QuestionBank;
   onBack: () => void;
-  /** Прорешать ошибки подтемы — сразу сессия из них, в базе или наборе, откуда подтема. */
+  /** Прорешать ошибки подтемы или отмеченные — сразу сессия из них, в базе или наборе, откуда вопросы. */
   onStart: (bank: QuestionBank, questionIds: string[], length: number) => void;
+  /** Разбор отмеченного вопроса. */
+  onOpenQuestion: (setId: string, questionId: string) => void;
 }
 
 /** Свой набор со своей статистикой. */
@@ -32,6 +36,7 @@ interface SetSection {
   bank: QuestionBank;
   stats: BankStats;
   title: string;
+  bookmarks: number;
 }
 
 /** Какие наборы раскрыты: по умолчанию все свёрнуты, раскрытые запоминаются на устройстве. */
@@ -49,19 +54,24 @@ function readOpenSets() {
  * Статистика: сначала основная база и её слабые места, ниже — свои наборы сворачиваемыми карточками, у каждого внутри
  * свои полоски и слабые места. Набор появляется, когда на его вопросы уже отвечали. Сброс — в кабинете.
  */
-export function StatsScreen({ bank, onBack, onStart }: StatsScreenProps) {
+export function StatsScreen({ bank, onBack, onStart, onOpenQuestion }: StatsScreenProps) {
   const { records, getProgress } = useProgress();
+  const { getBookmarks } = useBookmarks();
+  // Закладки на вопросы, которых больше нет в базе, не считаем.
+  const countBookmarks = (b: QuestionBank) => getBookmarks(b.setId).filter((m) => b.byId.has(m.questionId)).length;
   const { sets, getSetBank } = useSets();
   const [openSets, setOpenSets] = useState(readOpenSets);
   const getStats = (b: QuestionBank) => getBankStats(b, records, (id) => getProgress(b.setId, id));
 
   const base = getStats(bank);
   const baseShown = hasAnswers(base);
+  const baseBookmarks = countBookmarks(bank);
   const setSections = sets.flatMap((record): SetSection[] => {
     const setBank = getSetBank(record.id);
     if (!setBank) return [];
     const stats = getStats(setBank);
-    return hasAnswers(stats) ? [{ bank: setBank, stats, title: record.title }] : [];
+    const bookmarks = countBookmarks(setBank);
+    return hasAnswers(stats) || bookmarks > 0 ? [{ bank: setBank, stats, title: record.title, bookmarks }] : [];
   });
   // Подпись цветов — одна, под полосками базы; если у базы полосок нет, — в каждом наборе.
   const legendInBase = base.topics.length > 0;
@@ -81,7 +91,7 @@ export function StatsScreen({ bank, onBack, onStart }: StatsScreenProps) {
       </TopBar>
       <ScreenTitle title="Статистика" subtitle={setSections.length ? "Основная база и свои наборы" : "Основная база"} />
 
-      {!baseShown && setSections.length === 0 && (
+      {!baseShown && baseBookmarks === 0 && setSections.length === 0 && (
         <p className={styles.empty}>Пока нет ни одного ответа — статистика появится после первой сессии.</p>
       )}
 
@@ -98,6 +108,16 @@ export function StatsScreen({ bank, onBack, onStart }: StatsScreenProps) {
         </>
       )}
 
+      {baseBookmarks > 0 && (
+        <Card label={`Вернуться позже · ${baseBookmarks}`}>
+          <BookmarksBlock
+            bank={bank}
+            onStart={(ids) => onStart(bank, ids, ids.length)}
+            onOpenQuestion={(id) => onOpenQuestion(bank.setId, id)}
+          />
+        </Card>
+      )}
+
       {setSections.map((section) => (
         <SetCard
           key={section.bank.setId}
@@ -105,13 +125,23 @@ export function StatsScreen({ bank, onBack, onStart }: StatsScreenProps) {
           open={openSets.has(section.bank.setId)}
           onToggle={(open) => toggleSet(section.bank.setId, open)}
         >
-          <StatsBody stats={section.stats} withLegend={!legendInBase} />
+          {hasAnswers(section.stats) && <StatsBody stats={section.stats} withLegend={!legendInBase} />}
           {section.stats.weak.length > 0 && (
             <>
               <div className={styles.setWeakLabel}>Слабые места</div>
               <WeakList
                 weak={section.stats.weak}
                 onStart={(w) => onStart(section.bank, w.questionIds, w.questionIds.length)}
+              />
+            </>
+          )}
+          {section.bookmarks > 0 && (
+            <>
+              <div className={styles.setWeakLabel}>Вернуться позже · {section.bookmarks}</div>
+              <BookmarksBlock
+                bank={section.bank}
+                onStart={(ids) => onStart(section.bank, ids, ids.length)}
+                onOpenQuestion={(id) => onOpenQuestion(section.bank.setId, id)}
               />
             </>
           )}
@@ -131,10 +161,11 @@ interface SetCardProps {
 /** Сворачиваемая карточка набора: в свёрнутом виде — название и одна строка итогов. */
 function SetCard({ section, open, onToggle, children }: SetCardProps) {
   const { stats, title } = section;
-  const summary =
-    stats.total > 0
-      ? `видел ${stats.seen} из ${stats.total} · верных ${percent(stats.answers.accuracy)}`
-      : "устные вопросы";
+  const answers =
+    stats.total > 0 ? `видел ${stats.seen} из ${stats.total} · верных ${percent(stats.answers.accuracy)}` : "устные вопросы";
+  const summary = [hasAnswers(stats) && answers, section.bookmarks > 0 && `закладок: ${section.bookmarks}`]
+    .filter(Boolean)
+    .join(" · ");
   return (
     <details
       className={clsx(styles.setCard, glass.glass)}

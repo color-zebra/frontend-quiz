@@ -8,8 +8,8 @@ import { useNotes } from "../../features/notes/NotesProvider";
 import { getCurrentQuestion, getIsLastQuestion, type Session, type SpeechGrade } from "../../features/session/session";
 import { Button, IconButton } from "../../shared/ui/Button";
 import { Icon } from "../../shared/ui/Icon";
-import glass from "../../shared/ui/glass.module.css";
 import { ActionBar, Screen, TopBar } from "../../shared/ui/Screen";
+import { BookmarkButton, ToolsCapsule } from "../question/QuestionTools";
 import { QuestionView } from "../question/QuestionView";
 import { useIsOnScreen, WhyButton } from "../question/WhyButton";
 import styles from "./SessionScreen.module.css";
@@ -100,18 +100,26 @@ export function SessionScreen({ bank, session, onSelect, onSubmit, onGiveUp, onG
       <TopBar>
         <IconButton icon="close" label="Выйти из сессии" onClick={onExit} />
         <div className={styles.progressBox}>
-          <span className={styles.count}>
-            {session.infinite ? `Вопрос ${number} · верно ${correctCount}` : `${number} / ${session.queue.length}`}
-          </span>
+          {session.infinite ? (
+            // Две строки всегда: в одну «Вопрос 1000 · верно 799» рядом с капсулой не влезает.
+            <span className={clsx(styles.count, styles.countInfinite)}>
+              <span>Вопрос {number}</span>
+              <span className={styles.countCorrect}>верно {correctCount}</span>
+            </span>
+          ) : (
+            <span className={styles.count}>
+              {number} / {session.queue.length}
+            </span>
+          )}
           {!session.infinite && (
             <div className={styles.track}>
               <span style={{ width: `${(session.answers.length / session.queue.length) * 100}%` }} />
             </div>
           )}
         </div>
-        <div className={clsx(styles.tools, glass.glass)}>
+        <ToolsCapsule>
           <ComplaintButton bare onClick={() => setComplaintOpen(true)} />
-          <span className={styles.toolsDivider} />
+          <BookmarkButton setId={bank.setId} questionId={question.id} />
           <IconButton
             icon="pencil"
             label={hasNote ? "Изменить заметку" : "Заметка"}
@@ -119,7 +127,7 @@ export function SessionScreen({ bank, session, onSelect, onSubmit, onGiveUp, onG
             bare
             onClick={() => setNoteOpen(true)}
           />
-        </div>
+        </ToolsCapsule>
       </TopBar>
 
       <QuestionView

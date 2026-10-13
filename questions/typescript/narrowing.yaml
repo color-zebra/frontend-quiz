@@ -461,3 +461,87 @@ questions:
     links:
       - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-4-9.html#unlisted-property-narrowing-with-the-in-operator
     source: own
+
+  - id: typescript-narrowing-014
+    level: junior
+    tags: [narrowing, type-guards, theory]
+    question: |
+      Какие проверки TypeScript понимает как сужение типа (narrowing)?
+    options:
+      - text: '`typeof value === "string"`'
+        correct: true
+        why: 'Внутри `if` тип сузится до `string`. `typeof` различает `string`, `number`, `boolean`, `bigint`, `symbol`, `undefined`, а также `function` и `object`.'
+      - text: '`"swim" in animal`'
+        correct: true
+        why: 'Оператор `in` сужает объединение объектных типов до тех, где есть такое свойство.'
+      - text: '`value instanceof Date`'
+        correct: true
+        why: '`instanceof` сужает до класса: внутри ветки доступны методы `Date`.'
+      - text: '`switch (shape.kind)` по общему полю-литералу'
+        correct: true
+        why: 'Это discriminated union: каждая ветка `case` сужает тип до варианта с таким значением `kind`.'
+      - text: '`isStr(value)`, где `function isStr(v: unknown): boolean`'
+        why: 'Явный тип результата `boolean` компилятор не связывает с типом аргумента. Нужен type guard `v is string`. Без аннотации TS 5.5+ сам выведет предикат из `return typeof v === "string"`, но явный `boolean` это отключает.'
+      - text: '`Object.keys(animal).includes("swim")`'
+        why: 'Компилятор не связывает результат `includes` с типом `animal`, поэтому сужения не будет. Для такой проверки есть оператор `in`.'
+    explanation: |
+      Сужение — это когда TypeScript, анализируя проверки в коде, уточняет тип переменной внутри ветки.
+      Компилятор понимает `typeof`, `instanceof`, `in`, сравнение с литералом или `null`, проверку истинности,
+      `Array.isArray` и общее поле-дискриминант в union. Собственные проверки становятся сужением, только если
+      функция объявлена как type guard (`x is T`) или assertion function (`asserts x is T`). Анализ идёт по
+      потоку управления: после `return` в ветке тип сужается и для кода ниже.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/narrowing.html
+    source: own
+
+  - id: typescript-narrowing-015
+    level: middle
+    tags: [type-guards, assertion-functions, theory]
+    question: |
+      Чем функция-утверждение `function assertString(x: unknown): asserts x is string` отличается от type guard
+      `function isString(x: unknown): x is string`?
+    options:
+      - text: 'Guard сужает тип в ветке `if`, а утверждение — во всём коде после вызова'
+        correct: true
+        why: 'Type guard возвращает `boolean`, и сужение действует внутри `if (isString(x))`. Функция-утверждение ничего не возвращает: если проверка не прошла, она бросает исключение, а если вызов завершился, `x` считается `string` до конца области.'
+      - text: 'Обе функции автоматически проверяют тип в рантайме, без своего кода внутри'
+        why: 'Обе — обычные функции, и проверку внутри пишет программист. TypeScript верит сигнатуре на слово: если проверка в теле неверна, типы будут врать.'
+      - text: 'Guard работает только с классами, а утверждение — с любыми типами'
+        why: 'Обе формы работают с любыми типами: примитивами, объектами, union, дженериками.'
+      - text: 'Разницы нет, `asserts` — устаревшая запись для `x is T`'
+        why: 'Это разные возможности: `x is T` появился в TS 1.6, `asserts x is T` — в TS 3.7, и обе используются.'
+    explanation: |
+      Обе формы учат компилятор понимать собственные проверки. Type guard (`x is T`) — функция-предикат: удобна в
+      `if`, `filter`, `find`. Assertion function (`asserts x is T`) — «проверь или упади»: удобна в начале
+      функции, чтобы дальше работать с уточнённым типом без вложенности, как с `assert` в Node. Важная оговорка
+      для обеих: компилятор не проверяет, что тело функции действительно делает то, что обещает сигнатура.
+      Ошибочный guard молча сломает типизацию.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#assertion-functions
+    source: own
+
+  - id: typescript-narrowing-016
+    level: middle
+    tags: [exhaustiveness, never, theory]
+    question: |
+      Почему строка `const unreachable: never = shape` в ветке `default` ловит забытый вариант union?
+    options:
+      - text: 'Забытый вариант остаётся в типе, а его нельзя присвоить `never`'
+        correct: true
+        why: 'Если обработаны все варианты, в `default` тип `shape` — `never`, и присваивание проходит. Если какой-то забыт, в `default` останется именно он, и компилятор сообщит: этот тип нельзя присвоить `never`.'
+      - text: 'Тип `never` проверяется в рантайме и бросает ошибку при вызове'
+        why: 'В рантайме от `never` ничего не остаётся. Ошибка — на этапе компиляции, поэтому её видно сразу после добавления варианта.'
+      - text: 'Ветка `default` в `switch` по union всегда считается ошибкой'
+        why: '`default` разрешён. Ошибка возникает, только если в нём остался необработанный вариант.'
+      - text: 'Компилятор сравнивает число веток `case` с числом вариантов union'
+        why: 'Компилятор не считает ветки: он сужает тип по каждой из них и смотрит, что осталось.'
+    explanation: |
+      Исчерпывающая проверка (exhaustiveness check) опирается на сужение. В каждой ветке `case` тип сужается до
+      одного варианта, а в `default` попадает «остаток». Когда всё обработано, остаток пустой — `never`. Добавили
+      в union новый вариант и забыли про `switch` — остаток перестаёт быть пустым, и присваивание `never` не
+      компилируется. Часто проверку оформляют функцией `assertNever(x: never): never`, которая заодно бросает
+      ошибку в рантайме, если неожиданное значение всё же пришло.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/narrowing.html#exhaustiveness-checking
+    source: own

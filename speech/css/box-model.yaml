@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=../../speech-schema.json
+topic: css
+subtopic: box-model
+questions:
+  - id: speech-css-box-model-001
+    level: junior
+    tags: [box-model, box-sizing, margin-collapse]
+    question: |
+      Расскажи о блочной модели и `box-sizing`.
+    answer: |
+      Каждый элемент на странице — прямоугольник из четырёх слоёв. В центре содержимое, вокруг него внутренний
+      отступ `padding`, затем рамка `border` и снаружи внешний отступ `margin`. Фон по умолчанию тянется до
+      внешнего края рамки, а `margin` всегда прозрачный и только отодвигает соседей.
+
+      `box-sizing` решает, к чему относится `width`. По умолчанию это `content-box`: ширина — только у
+      содержимого, а отступы и рамка прибавляются сверху. Блок с `width: 300px`, `padding: 20px` и рамкой в
+      1px займёт 342px. С `border-box` ширина включает содержимое, отступы и рамку, и блок займёт ровно 300px.
+      Это гораздо удобнее для сеток и процентов, поэтому почти в каждом проекте пишут `*, *::before, *::after
+      { box-sizing: border-box }`. В ширину не входит только `margin` — ни в одном режиме.
+
+      Ещё одна особенность — схлопывание вертикальных margin в обычном потоке: между двумя абзацами с
+      отступами 20 и 30 пикселей будет 30, а не 50. Отступ первого ребёнка может «вылезти» за родителя. Во
+      flex и grid схлопывания нет, а избавиться от него можно через `padding` у родителя, `display: flow-root`
+      или перейти на flex и grid с `gap`.
+    points:
+      - Четыре слоя — содержимое, padding, border, margin
+      - content-box — width только у содержимого, по умолчанию
+      - border-box — width включает padding и border
+      - margin не входит в ширину ни в одном режиме
+      - Вертикальные margin в потоке схлопываются, во flex и grid — нет
+    links:
+      - https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Styling_basics/Box_model
+      - https://developer.mozilla.org/en-US/docs/Web/CSS/box-sizing
+    source: own

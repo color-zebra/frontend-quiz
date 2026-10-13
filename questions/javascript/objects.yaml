@@ -339,3 +339,208 @@ questions:
     links:
       - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Optional_chaining
     source: own
+
+  - id: javascript-objects-011
+    level: middle
+    tags: [in-operator, hasOwn, theory]
+    question: |
+      Какие из утверждений о способах проверить, есть ли у объекта свойство, верны?
+    options:
+      - text: '`"key" in obj` находит и свойства, унаследованные от прототипа'
+        correct: true
+        why: '`in` проверяет всю цепочку прототипов, поэтому `"toString" in {}` — `true`.'
+      - text: '`Object.hasOwn(obj, "key")` проверяет только собственные свойства'
+        correct: true
+        why: 'Унаследованные свойства он не учитывает: `Object.hasOwn({}, "toString")` — `false`. Это современная замена `obj.hasOwnProperty(key)`.'
+      - text: '`obj.key !== undefined` ошибается, если свойство есть и равно `undefined`'
+        correct: true
+        why: 'Для `{ a: undefined }` проверка `obj.a !== undefined` даст `false`, хотя свойство есть. `in` и `Object.hasOwn` тут ответят `true`.'
+      - text: '`Object.hasOwn` учитывает и перечисляемые свойства прототипа'
+        why: 'Перечисляемость тут ни при чём: `Object.hasOwn` смотрит только на сам объект.'
+      - text: '`"key" in obj` пропускает неперечисляемые свойства'
+        why: '`in` видит любые свойства, и перечисляемые, и нет. Встроенный `toString` неперечисляем, но `"toString" in {}` — `true`.'
+      - text: '`in` работает и с примитивами, `"length" in "abc"` даст `true`'
+        why: 'Справа от `in` должен быть объект. Для строки-примитива будет `TypeError: Cannot use "in" operator`.'
+    explanation: |
+      Три проверки отвечают на разные вопросы. `key in obj` — есть ли свойство где-нибудь в цепочке прототипов.
+      `Object.hasOwn(obj, key)` — есть ли собственное свойство; в отличие от `obj.hasOwnProperty`, он работает и
+      для объектов без прототипа. `obj.key !== undefined` — есть ли у свойства значение, отличное от
+      `undefined`: это проверка значения, а не наличия. Для словарей из пользовательских данных надёжнее всего
+      `Object.hasOwn` или `Map.prototype.has`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/in
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/hasOwn
+    source: own
+
+  - id: javascript-objects-012
+    level: middle
+    tags: [descriptors, accessor, theory]
+    question: |
+      Чем дескриптор данных отличается от дескриптора доступа (accessor descriptor)?
+    options:
+      - text: 'Первый хранит `value` и `writable`, второй — функции `get` и `set`'
+        correct: true
+        why: 'Флаги `enumerable` и `configurable` есть у обоих. Смешать `value` и `get` в одном дескрипторе нельзя: `defineProperty` бросит `TypeError`.'
+      - text: 'Первый описывает собственные свойства, второй — унаследованные'
+        why: 'Оба вида бывают и у собственных свойств, и в прототипах. Вид определяется содержимым дескриптора, а не местом свойства.'
+      - text: 'Первый нельзя изменить, а второй можно перенастроить всегда'
+        why: 'Менять настройки обоих можно, пока свойство `configurable: true`. При `configurable: false` перенастроить нельзя ни тот, ни другой.'
+      - text: 'Первый создаётся присваиванием, второй только через `defineProperty`'
+        why: 'Свойство доступа создаётся и без `defineProperty`: `get`/`set` в литерале объекта или в теле класса.'
+    explanation: |
+      Каждое свойство описывается дескриптором. Дескриптор данных: `value` и `writable` (можно ли менять
+      значение). Дескриптор доступа: `get` и `set`, функции, которые вызываются при чтении и записи. Общие флаги:
+      `enumerable` (видно ли свойство при переборе) и `configurable` (можно ли удалить свойство и менять его
+      дескриптор). Посмотреть дескриптор можно через `Object.getOwnPropertyDescriptor`, задать — через
+      `Object.defineProperty`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty#description
+    source: own
+
+  - id: javascript-objects-013
+    level: middle
+    tags: [descriptors, defineProperty, defaults, theory]
+    question: |
+      Свойство `x` создано обычным присваиванием `obj.x = 1`. Что станет с его флагами после
+      `Object.defineProperty(obj, 'x', { value: 2 })`?
+    options:
+      - text: 'Флаги останутся `true`, изменится только значение'
+        correct: true
+        why: 'Для существующего свойства `defineProperty` меняет только перечисленные поля. Значения по умолчанию `false` подставляются, только когда свойство создаётся заново.'
+      - text: 'Все флаги станут `false`, как при создании через `defineProperty`'
+        why: 'Умолчания `false` применяются только к новому свойству. Существующее сохраняет флаги, которые не указаны в дескрипторе.'
+      - text: 'Будет `TypeError`, потому что свойство уже существует'
+        why: 'Перенастраивать существующее свойство можно, пока оно `configurable: true`, а после присваивания так и есть.'
+      - text: 'Свойство станет только для чтения, остальное не изменится'
+        why: '`writable` не указан в дескрипторе, поэтому остаётся прежним — `true`.'
+    explanation: |
+      Умолчания у двух способов разные. Присваивание и литерал объекта создают свойство со всеми флагами `true`.
+      `Object.defineProperty` для нового свойства ставит всё, что не указано, в `false`: свойство получится
+      только для чтения, невидимым при переборе и неудаляемым. Но если свойство уже есть, `defineProperty`
+      работает как частичное обновление и не трогает неуказанные флаги. Поэтому в коде, где важна надёжность,
+      флаги перечисляют явно.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty#modifying_a_property
+    source: own
+
+  - id: javascript-objects-014
+    level: senior
+    tags: [descriptors, enumerable, theory]
+    question: |
+      Собственное свойство объекта создано с `enumerable: false` и `writable: true`. Какие из утверждений верны?
+    options:
+      - text: 'Его не вернут `Object.keys` и не переберёт `for...in`'
+        correct: true
+        why: 'Оба работают только с перечисляемыми строковыми ключами.'
+      - text: 'Его не скопируют spread `{ ...obj }` и `Object.assign`'
+        correct: true
+        why: 'Оба копируют только собственные перечисляемые свойства, поэтому копия получится без него.'
+      - text: 'Его не включит в результат `JSON.stringify`'
+        correct: true
+        why: '`JSON.stringify` сериализует только собственные перечисляемые свойства.'
+      - text: 'Его по-прежнему находит оператор `in`'
+        correct: true
+        why: '`in` проверяет наличие свойства, а не перечисляемость: `"key" in obj` — `true`. Так же работает прямое чтение `obj.key`.'
+      - text: 'Его не вернёт `Object.getOwnPropertyNames`'
+        why: '`getOwnPropertyNames` возвращает все собственные строковые ключи, включая неперечисляемые. Ещё полнее — `Reflect.ownKeys`, он добавляет символы.'
+      - text: 'Его нельзя изменить обычным присваиванием'
+        why: 'Запись разрешает флаг `writable`, а он `true`. `enumerable` на присваивание не влияет.'
+    explanation: |
+      `enumerable` — флаг «показывать при переборе». Его соблюдают `Object.keys`, `Object.values`,
+      `Object.entries`, `for...in`, spread, `Object.assign` и `JSON.stringify`. Не соблюдают оператор `in`,
+      прямое чтение, `Object.getOwnPropertyNames` и `Reflect.ownKeys`. Так скрыты встроенные методы
+      прототипов, и поэтому методы класса не попадают в `for...in`. Неперечисляемое свойство не приватно:
+      скрыто от перебора, но не от чтения.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Enumerability_and_ownership_of_properties
+    source: own
+
+  - id: javascript-objects-015
+    level: middle
+    tags: [freeze, seal, preventExtensions, theory]
+    question: |
+      Какие из утверждений о `Object.freeze`, `Object.seal` и `Object.preventExtensions` верны?
+    options:
+      - text: '`seal` запрещает добавлять и удалять свойства, но значения менять можно'
+        correct: true
+        why: 'Запечатанный объект сохраняет набор свойств, а записываемые свойства остаются записываемыми.'
+      - text: '`preventExtensions` запрещает только добавлять новые свойства'
+        correct: true
+        why: 'Удалять и менять существующие свойства по-прежнему можно.'
+      - text: 'Все три действуют на сам объект, а вложенные объекты не трогают'
+        correct: true
+        why: 'Ограничения поверхностные: объект во вложенном свойстве остаётся обычным и изменяемым. Глубокую заморозку делают рекурсией.'
+      - text: '`Object.isFrozen` у пустого нерасширяемого объекта вернёт `true`'
+        correct: true
+        why: 'Объект заморожен, если он нерасширяем и все его свойства неизменяемы. У пустого объекта свойств нет, поэтому одного `preventExtensions` достаточно.'
+      - text: 'Замороженный объект можно разморозить через `Object.unfreeze`'
+        why: 'Такого метода нет: заморозка необратима. Чтобы «изменить» замороженный объект, создают изменённую копию.'
+      - text: 'Нарушение любого из запретов в нестрогом режиме бросает `TypeError`'
+        why: 'В нестрогом режиме запрещённые присваивание, удаление и добавление молча игнорируются, `TypeError` при них бывает только в строгом. Но `Object.defineProperty` на таком объекте бросает `TypeError` в любом режиме.'
+    explanation: |
+      Три уровня защиты, от слабого к сильному. `preventExtensions` — нельзя добавлять свойства. `seal` — плюс
+      нельзя удалять и перенастраивать (`configurable: false`). `freeze` — плюс нельзя менять значения
+      (`writable: false`). Нарушение через присваивание или `delete` в строгом режиме бросает `TypeError`, в нестрогом молча игнорируется, а `defineProperty` бросает всегда. Все
+      три необратимы и поверхностны. Проверки — `Object.isExtensible`, `Object.isSealed`, `Object.isFrozen`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/seal
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/preventExtensions
+    source: own
+
+  - id: javascript-objects-016
+    level: middle
+    tags: [shallow-copy, deep-copy, structuredClone, theory]
+    question: |
+      Какие из утверждений о способах копирования объектов верны?
+    options:
+      - text: '`structuredClone` копирует вложенные объекты, `Map`, `Set` и `Date`'
+        correct: true
+        why: 'Это глубокое копирование по алгоритму structured clone: он же используется в `postMessage` и IndexedDB, умеет и циклические ссылки.'
+      - text: '`Object.assign({}, obj)` копирует только верхний уровень объекта'
+        correct: true
+        why: 'Он копирует собственные перечисляемые свойства, а вложенные объекты остаются общими с оригиналом. Есть отличие от spread: `assign` записывает свойства присваиванием, поэтому вызывает сеттеры цели и по-особому обрабатывает ключ `__proto__`.'
+      - text: '`structuredClone` бросает ошибку, если в объекте есть функция'
+        correct: true
+        why: 'Функции клонировать нельзя: будет `DataCloneError`. Тот же объект через JSON просто потерял бы метод.'
+      - text: 'Spread `{ ...obj }` копирует и неперечисляемые свойства'
+        why: 'Spread берёт только собственные перечисляемые свойства (строковые и символьные). Неперечисляемые и унаследованные в копию не попадут.'
+      - text: '`JSON.parse(JSON.stringify(obj))` сохраняет `Date` как дату'
+        why: 'Дата превращается в строку ISO, и `JSON.parse` оставляет её строкой.'
+      - text: '`structuredClone` сохраняет прототип, и экземпляр класса остаётся экземпляром'
+        why: 'Прототип теряется: копия экземпляра класса — обычный объект с теми же полями, без методов класса.'
+    explanation: |
+      Поверхностная копия (spread, `Object.assign`, `Array.from`, `slice`) создаёт новый объект верхнего уровня,
+      а вложенные объекты делит с оригиналом. Глубокая копия через `structuredClone` повторяет всю структуру,
+      поддерживает `Date`, `Map`, `Set`, типизированные массивы и циклы, но не копирует функции, DOM-узлы и
+      прототипы. Старый способ через JSON теряет `undefined`, функции и символы, превращает даты в строки и падает
+      на циклах. В иммутабельных обновлениях обычно хватает поверхностной копии изменяемой ветки.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Window/structuredClone
+      - https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
+    source: own
+
+  - id: javascript-objects-017
+    level: senior
+    tags: [property-order, symbols, theory]
+    question: |
+      В каком порядке `Reflect.ownKeys(obj)` возвращает собственные ключи объекта?
+    options:
+      - text: 'Целочисленные по возрастанию, затем строки по добавлению, затем символы'
+        correct: true
+        why: 'Порядок задан спецификацией (OrdinaryOwnPropertyKeys). Символы всегда в конце и тоже в порядке добавления.'
+      - text: 'Все ключи строго в порядке добавления, независимо от типа'
+        why: 'Ключи-индексы (`"1"`, `"2"`) всегда идут первыми по возрастанию, даже если их добавили последними.'
+      - text: 'Строки по алфавиту, затем целочисленные по возрастанию, затем символы'
+        why: 'Алфавитной сортировки нет. Строковые ключи идут в порядке добавления, после целочисленных.'
+      - text: 'Символы по добавлению, затем целочисленные, затем строки'
+        why: 'Символы идут последними. Первыми — ключи, похожие на индексы массива.'
+    explanation: |
+      Спецификация фиксирует порядок собственных ключей: сначала ключи-индексы (целые от 0 до 2^32 − 2) по
+      возрастанию, потом остальные строки в порядке создания, потом символы в порядке создания. `Object.keys` и
+      `JSON.stringify` следуют тому же порядку, просто не показывают символы. Отсюда практический эффект: объект
+      с числовыми id в роли ключей всегда «отсортирован» по id. Когда нужен порядок вставки для любых ключей,
+      берут `Map`.
+    links:
+      - https://tc39.es/ecma262/#sec-ordinaryownpropertykeys
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Reflect/ownKeys
+    source: own

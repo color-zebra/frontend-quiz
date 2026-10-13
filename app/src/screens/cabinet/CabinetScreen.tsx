@@ -1,12 +1,16 @@
 import clsx from "clsx";
 import { useRef, useState, type ChangeEvent } from "react";
+import type { BankDiff } from "../../data/loadQuestions";
 import type { QuestionBank } from "../../data/types";
 import { getAchievements } from "../../features/achievements/compute";
+import { useBankUpdate } from "../../features/bank/useBankUpdate";
 import { exportBackup, parseBackupFile } from "../../features/backup/backupFile";
+import { useBookmarks } from "../../features/bookmarks/BookmarksProvider";
 import { useNotes, type ImportStats } from "../../features/notes/NotesProvider";
 import { useProgress } from "../../features/progress/ProgressProvider";
 import { getBankStats } from "../../features/progress/stats";
-import { NOTE_FORMS, plural } from "../../shared/lib/plural";
+import { formatShortDate } from "../../shared/lib/formatDate";
+import { countQuestions, NOTE_FORMS, plural } from "../../shared/lib/plural";
 import { Button, IconButton } from "../../shared/ui/Button";
 import { Card } from "../../shared/ui/Card";
 import glass from "../../shared/ui/glass.module.css";
@@ -25,6 +29,7 @@ interface CabinetScreenProps {
   onOpenAchievements: () => void;
   onOpenNotes: () => void;
   onOpenTheme: () => void;
+  onUpdate: () => Promise<BankDiff>;
 }
 
 type Message = { kind: "ok" | "error"; text: string };
@@ -46,9 +51,13 @@ export function CabinetScreen({
   onOpenAchievements,
   onOpenNotes,
   onOpenTheme,
+  onUpdate,
 }: CabinetScreenProps) {
+  const update = useBankUpdate(onUpdate);
+  const bankDate = formatShortDate(bank.generatedAt);
   const { notes, importNotes } = useNotes();
   const { records, getProgress, importRecords, resetAll } = useProgress();
+  const { bookmarks, importBookmarks } = useBookmarks();
   const fileInput = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState<Message | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -67,6 +76,7 @@ export function CabinetScreen({
       const backup = parseBackupFile(await file.text());
       const notesStats = importNotes(backup.notes);
       const answers = backup.answers && importRecords(backup.answers);
+      importBookmarks(backup.bookmarks);
       setMessage({ kind: "ok", text: formatImport(notesStats, answers) });
     } catch (error) {
       setMessage({ kind: "error", text: error instanceof Error ? error.message : "Не удалось прочитать файл" });
@@ -107,17 +117,35 @@ export function CabinetScreen({
         </button>
       </div>
 
+      <Card label="База вопросов">
+        <p className={styles.hint}>
+          {countQuestions(bank.questions.length)}
+          {bankDate && ` · от ${bankDate}`}. Вопросы хранятся на устройстве и сами не обновляются — свежую базу забирает
+          эта кнопка.
+        </p>
+        <div className={styles.fileButtons}>
+          <Button variant="secondary" icon="refresh" disabled={update.state.kind === "loading"} onClick={update.run}>
+            {update.state.kind === "loading" ? "Обновляем…" : "Обновить базу"}
+          </Button>
+        </div>
+        {(update.state.kind === "done" || update.state.kind === "error") && (
+          <p className={clsx(styles.message, update.state.kind === "error" && styles.error)} role="status">
+            {update.state.text}
+          </p>
+        )}
+      </Card>
+
       <Card label="Данные на этом устройстве">
         <p className={styles.hint}>
-          Заметки и ответы — в одном файле. Сохрани копию, перенеси файл на другой телефон или ноутбук (например,
-          отправь себе в Telegram) и загрузи там. Повторная загрузка ничего не задвоит.
+          Заметки, ответы и закладки — в одном файле. Сохрани копию, перенеси файл на другой телефон или ноутбук
+          (например, отправь себе в Telegram) и загрузи там. Повторная загрузка ничего не задвоит.
         </p>
         <div className={styles.fileButtons}>
           <Button
             variant="secondary"
             icon="download"
-            disabled={notes.size === 0 && records.length === 0}
-            onClick={() => exportBackup([...notes.values()], records)}
+            disabled={notes.size === 0 && records.length === 0 && bookmarks.size === 0}
+            onClick={() => exportBackup([...notes.values()], records, [...bookmarks.values()])}
           >
             Сохранить копию
           </Button>

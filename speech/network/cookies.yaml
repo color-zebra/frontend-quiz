@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=../../speech-schema.json
+topic: network
+subtopic: cookies
+questions:
+  - id: speech-network-cookies-001
+    level: middle
+    tags: [cookies, localStorage, sessionStorage, security]
+    question: |
+      Сравни cookies, `localStorage` и `sessionStorage`. Какие флаги cookie важны для безопасности?
+    answer: |
+      Главное отличие cookies — браузер сам отправляет их на сервер с каждым подходящим запросом. Поэтому они
+      созданы для сессий и авторизации. Объём маленький, около 4 КБ на cookie, а срок жизни задают `Expires`
+      или `Max-Age`, без них cookie живёт до закрытия браузера.
+
+      `localStorage` и `sessionStorage` — хранилища в браузере, на сервер они ничего не отправляют. Объём
+      больше, порядка 5 МБ на origin, API синхронный: `getItem`, `setItem`. `localStorage` живёт, пока его не
+      очистят, и общий для всех вкладок одного origin. `sessionStorage` живёт, пока открыта вкладка, и у
+      каждой вкладки свой. Их удобно использовать для настроек интерфейса и черновиков, но не для токенов:
+      любой скрипт на странице, включая внедрённый через XSS, их прочитает.
+
+      Флаги безопасности cookie. `HttpOnly` — cookie недоступна из JavaScript, её не украдёт XSS. `Secure` —
+      отправляется только по HTTPS. `SameSite` — защита от CSRF: `Strict` не отправляет cookie с чужих сайтов
+      вообще, `Lax` — с чужих сайтов только при переходе верхнего уровня методом GET, например по ссылке (в
+      Chrome и Edge это значение по умолчанию), `None` — всегда, но только вместе с `Secure`. Плюс `Domain` и
+      `Path` ограничивают, куда cookie уходит. Для сессии типичный набор — `HttpOnly; Secure; SameSite=Lax`.
+    points:
+      - Cookies отправляются на сервер автоматически, около 4 КБ
+      - localStorage — навсегда и общий для вкладок; sessionStorage — на вкладку
+      - Хранилища читаются из JS — не для токенов (XSS)
+      - HttpOnly от XSS, Secure — только HTTPS
+      - SameSite Strict, Lax, None — защита от CSRF
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Cookies
+      - https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API
+    source: own

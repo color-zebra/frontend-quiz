@@ -1,9 +1,10 @@
 import { downloadFile } from "../../shared/lib/download";
+import { isBookmark, type Bookmark } from "../bookmarks/BookmarksProvider";
 import { isNote, type Note } from "../notes/types";
 import { isAnswerRecord, type AnswerRecord } from "../progress/types";
 
 // Метка формата осталась от прежнего названия и от выгрузки одних заметок: смени её — и старые файлы перестанут
-// загружаться. Версия 1 — только заметки, версия 2 — заметки и лента ответов.
+// загружаться. Версия 1 — только заметки, версия 2 — заметки, лента ответов и закладки (их может не быть).
 const FORMAT = "frontend-quiz-notes";
 const VERSION = 2;
 
@@ -13,22 +14,29 @@ interface BackupFile {
   exportedAt: string;
   notes: Note[];
   answers?: AnswerRecord[];
+  bookmarks?: Bookmark[];
 }
 
 export interface Backup {
   notes: Note[];
   /** null — старый файл, где были только заметки. */
   answers: AnswerRecord[] | null;
+  bookmarks: Bookmark[];
 }
 
-/** Резервная копия: заметки и все ответы — одним файлом, его можно перенести на другое устройство. */
-export function exportBackup(notes: readonly Note[], answers: readonly AnswerRecord[]) {
+/** Резервная копия: заметки, все ответы и закладки — одним файлом, его можно перенести на другое устройство. */
+export function exportBackup(
+  notes: readonly Note[],
+  answers: readonly AnswerRecord[],
+  bookmarks: readonly Bookmark[],
+) {
   const file: BackupFile = {
     format: FORMAT,
     version: VERSION,
     exportedAt: new Date().toISOString(),
     notes: [...notes],
     answers: [...answers],
+    bookmarks: [...bookmarks],
   };
   downloadFile(`zubrilka-backup-${file.exportedAt.slice(0, 10)}.json`, JSON.stringify(file), "application/json");
 }
@@ -48,5 +56,6 @@ export function parseBackupFile(text: string): Backup {
   return {
     notes: file.notes.filter(isNote),
     answers: Array.isArray(file.answers) ? file.answers.filter(isAnswerRecord) : null,
+    bookmarks: Array.isArray(file.bookmarks) ? file.bookmarks.filter(isBookmark) : [],
   };
 }

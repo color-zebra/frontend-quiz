@@ -331,3 +331,62 @@ questions:
       - https://www.typescriptlang.org/tsconfig/#verbatimModuleSyntax
       - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-0.html#--verbatimmodulesyntax
     source: own
+
+  - id: typescript-runtime-011
+    level: middle
+    tags: [type-erasure, theory]
+    question: |
+      Какие из утверждений о том, что остаётся от TypeScript после компиляции, верны?
+    options:
+      - text: 'Аннотации, `interface` и `type` удаляются полностью'
+        correct: true
+        why: 'Они нужны только компилятору. Поэтому интерфейс нельзя использовать в `instanceof`, а тип — получить в рантайме.'
+      - text: 'Обычный `enum` превращается в JavaScript-объект'
+        correct: true
+        why: '`enum` — одна из немногих конструкций TS, которая порождает код. Отсюда и флаг `erasableSyntaxOnly`, запрещающий такие конструкции.'
+      - text: 'Параметры функций проверяются на соответствие типам при вызове'
+        why: 'Проверок в рантайме нет. Функция, вызванная из JS-кода или с данными от сервера, получит что угодно.'
+      - text: 'Приведение `value as number` превращает строку в число'
+        why: '`as` ничего не преобразует, это лишь указание компилятору. Строка останется строкой, а ошибка проявится позже.'
+      - text: 'Модификаторы `private` и `readonly` превращаются в `#`-поля и `Object.freeze`'
+        why: '`private` и `readonly` стираются, как и остальные типы. Приватность в рантайме дают только настоящие `#`-поля, неизменяемость — `Object.freeze`.'
+    explanation: |
+      TypeScript — это JavaScript плюс типы, которые стираются (type erasure). Компилятор проверяет код и выдаёт
+      обычный JS, почти без изменений. Остаются только конструкции, у которых есть рантайм-смысл: `enum`,
+      `namespace`, свойства-параметры конструктора, декораторы. Поэтому данные «снаружи» (ответ API,
+      `localStorage`, `JSON.parse`) типы не защищают: их проверяют в рантайме вручную или схемами, а уже потом
+      доверяют типам.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/basic-types.html#erased-types
+    source: own
+
+  - id: typescript-runtime-012
+    level: middle
+    tags: [enum, union, as-const, theory]
+    question: |
+      Почему многие команды заменяют `enum` на union строковых литералов или объект `as const`? Какие
+      утверждения верны?
+    options:
+      - text: '`enum` порождает JavaScript-код, а union полностью стирается'
+        correct: true
+        why: 'Union строк — чистый тип без следа в бандле. `enum` превращается в объект, и его не поддерживают инструменты, которые просто вырезают типы (Node с type stripping, `erasableSyntaxOnly`).'
+      - text: 'Числовому `enum` можно присвоить любую переменную типа `number`'
+        correct: true
+        why: 'Литерал вне значений `enum` TypeScript 5+ отклонит, а переменную типа `number` пропустит без проверки. Union чисел так не ослабляется.'
+      - text: 'Объект `as const` даёт и значения в рантайме, и union-тип через `typeof`'
+        correct: true
+        why: '`const Color = { Red: "RED" } as const; type Color = (typeof Color)[keyof typeof Color]` — получается то же удобство, что у `enum`, но средствами обычного JS.'
+      - text: '`const enum` всегда исчезает из JavaScript, даже с `isolatedModules`'
+        why: 'С `isolatedModules` (и в сборщиках, которые компилируют файлы по одному) значения `const enum` не подставляются, и в коде остаётся объект.'
+      - text: 'Значения `enum` нельзя использовать в `switch` и сравнениях'
+        why: 'Можно: `case Color.Red:` — обычное сравнение. Претензии к `enum` в другом: лишний код и особые правила совместимости.'
+    explanation: |
+      `enum` — исторически первая конструкция TypeScript, которая выходит за рамки «JavaScript плюс типы». Он
+      генерирует объект, у числовых `enum` есть обратное отображение и слабая проверка, строковые `enum`
+      номинальны и не принимают литералы. Альтернативы: union литералов, если значения нужны только в типах, и
+      объект `as const` с выведенным union, если нужен и рантайм-объект. С приходом type stripping в Node и флага
+      `erasableSyntaxOnly` этот выбор стал ещё популярнее.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/enums.html#objects-vs-enums
+      - https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-8.html#the---erasablesyntaxonly-option
+    source: own

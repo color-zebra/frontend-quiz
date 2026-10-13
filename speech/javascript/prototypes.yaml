@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=../../speech-schema.json
+topic: javascript
+subtopic: prototypes
+questions:
+  - id: speech-javascript-prototypes-001
+    level: middle
+    tags: [prototype-chain, inheritance]
+    question: |
+      Расскажи, как работает прототипное наследование в JavaScript.
+    answer: |
+      В JavaScript объекты наследуют от других объектов, а не от классов. У каждого объекта есть скрытая
+      ссылка `[[Prototype]]` на другой объект или на `null`. Когда я читаю свойство, движок ищет его в самом
+      объекте, потом в прототипе, потом в прототипе прототипа — пока не найдёт или не дойдёт до `null`. Это
+      цепочка прототипов. Например, у массива: сам массив → `Array.prototype` с `map` и `filter` →
+      `Object.prototype` с `toString` → `null`.
+
+      Свойства прототипа не копируются, а находятся при чтении, поэтому один прототип обслуживает все объекты,
+      и изменение прототипа сразу видно всем. А запись по цепочке не идёт: присваивание создаёт собственное
+      свойство и затеняет унаследованное. Исключения — сеттер в прототипе или свойство только для чтения.
+
+      Прототип задаётся при создании: `Object.create(proto)` или `new F()`, который берёт прототип из
+      `F.prototype`. Классы — синтаксис поверх этого: методы класса попадают в `prototype`, `extends`
+      связывает прототипы родителя и наследника, а `instanceof` просто ищет `F.prototype` в цепочке объекта.
+      Из практики: методы держат в прототипе, а изменяемые данные — в экземпляре, иначе они станут общими для
+      всех.
+    points:
+      - У объекта есть ссылка [[Prototype]] на другой объект или null
+      - Чтение идёт по цепочке до null, свойства не копируются
+      - Запись создаёт собственное свойство, кроме сеттеров и read-only
+      - Прототип задают Object.create или new через F.prototype
+      - class и extends — синтаксис поверх прототипов
+      - instanceof ищет F.prototype в цепочке
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Inheritance_and_the_prototype_chain
+    source: own
+
+  - id: speech-javascript-prototypes-002
+    level: middle
+    tags: [prototype-vs-proto, __proto__]
+    question: |
+      Чем отличаются `__proto__`, `prototype` и `Object.getPrototypeOf`?
+    answer: |
+      Настоящий прототип объекта хранится во внутреннем слоте `[[Prototype]]`, и к нему ведут два пути.
+      `Object.getPrototypeOf(obj)` — стандартный способ его прочитать, а `Object.setPrototypeOf` — изменить.
+      `__proto__` — старый аксессор к тому же слоту. Он лежит в `Object.prototype`, поэтому есть не у всех
+      объектов: у словаря из `Object.create(null)` его нет. В новом коде вместо `__proto__` используют функции
+      `Object`.
+
+      `prototype` — совсем другое. Это обычное свойство функции-конструктора или класса, заготовка, которую
+      `new` сделает прототипом новых экземпляров. Прототип самой функции при этом — `Function.prototype`. Так
+      что для `class User {}` и `const user = new User()` верно `Object.getPrototypeOf(user) ===
+      User.prototype`, но `Object.getPrototypeOf(User) === Function.prototype`.
+
+      Коротко: `prototype` есть у функций и нужен их будущим экземплярам, а `[[Prototype]]` есть у каждого
+      объекта, и `__proto__` с `Object.getPrototypeOf` — способы до него добраться.
+    points:
+      - '[[Prototype]] — внутренний слот каждого объекта'
+      - Object.getPrototypeOf / setPrototypeOf — стандартный доступ к нему
+      - __proto__ — устаревший аксессор из Object.prototype, нет у Object.create(null)
+      - prototype — свойство функции, прототип для экземпляров new
+      - Прототип самой функции — Function.prototype
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/proto
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/getPrototypeOf
+    source: own

@@ -62,6 +62,7 @@ export default async function pwa(t) {
     await t.shot(page, "offline-session");
     await page.getByRole("button", { name: "Выйти из сессии" }).click();
     await page.getByRole("button", { name: "На главную" }).click();
+    await page.getByRole("button", { name: "Кабинет" }).click();
     await page.getByRole("button", { name: "Обновить базу" }).click();
     check("«Обновить» без сети — понятная ошибка", await visible(page.getByText("Не удалось обновить: Нет связи с сервером")));
     await context.setOffline(false);

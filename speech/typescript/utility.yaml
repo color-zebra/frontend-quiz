@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=../../speech-schema.json
+topic: typescript
+subtopic: utility
+questions:
+  - id: speech-typescript-utility-001
+    level: middle
+    tags: [utility-types]
+    question: |
+      Какие утилитные типы ты используешь чаще всего и зачем?
+    answer: |
+      Чаще всего — те, что строят один тип из другого, чтобы не дублировать описания. `Partial<T>` делает все
+      поля необязательными: удобно для патча `updateUser(id, patch: Partial<User>)` и для черновика формы.
+      `Pick` и `Omit` выбирают или убирают поля: `Omit<User, 'password'>` для того, что отдаём на клиент, или
+      `Pick<User, 'id' | 'name'>` для превью. `Record<K, V>` описывает словари и объекты по набору ключей —
+      например, цвета для каждой темы `Record<Theme, string>`, и компилятор проследит, что ни одна тема не
+      забыта.
+
+      Второй набор — типы из значений и функций. `ReturnType<typeof fn>` и `Parameters<typeof fn>` берут типы
+      у функции, `Awaited` разворачивает промис — так тип результата `async`-функции не нужно описывать
+      отдельно. `NonNullable` убирает `null` и `undefined`, `Exclude` и `Extract` фильтруют union.
+
+      Пара оговорок: все встроенные утилиты поверхностные — `Partial` не делает необязательными вложенные
+      поля. И `Omit` не проверяет, что ключ существует, поэтому опечатка в имени поля пройдёт молча.
+    points:
+      - Partial, Pick, Omit, Record — производные типы без дублирования
+      - ReturnType, Parameters, Awaited — типы из функций и промисов
+      - NonNullable, Exclude, Extract — работа с union
+      - Утилиты поверхностные
+      - Omit не проверяет существование ключа
+    links:
+      - https://www.typescriptlang.org/docs/handbook/utility-types.html
+    source: own

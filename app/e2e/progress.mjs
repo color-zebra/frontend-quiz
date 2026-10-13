@@ -17,7 +17,7 @@ export default async function progress(t) {
     const page = await context.newPage();
     const modes = page.getByRole("group", { name: "Какие вопросы" });
     const segment = (name) => modes.getByRole("button", { name: new RegExp(`^${name}`) });
-    const label = async (name) => (await segment(name).innerText()).trim();
+    const label = async (name) => await segment(name).getAttribute("aria-label");
     const home = async () => {
       await page.goto(t.url);
       await page.getByText("Что тренируем?").waitFor();
@@ -96,8 +96,10 @@ export default async function progress(t) {
     const bank = JSON.parse(readFileSync(file, "utf8"));
     bank.questions.find((q) => q.id === last.toLowerCase()).question = `ВОПРОС-${last} (исправлен)`;
     writeFileSync(file, JSON.stringify(bank));
+    await page.getByRole("button", { name: "Кабинет" }).click();
     await page.getByRole("button", { name: "Обновить базу" }).click();
     await page.getByText(/исправлено 1/).waitFor();
+    await page.getByRole("button", { name: "Назад" }).click();
     check("исправленный вопрос ушёл из ошибок", (await label("Ошибки")) === "Ошибки · 0");
 
     // Устный вопрос: оценка «Не знал» на последнем вопросе сразу ведёт в итог — и всё равно записана.

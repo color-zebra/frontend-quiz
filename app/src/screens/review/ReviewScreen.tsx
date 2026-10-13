@@ -6,6 +6,7 @@ import { NoteSheet } from "../../features/notes/NoteSheet";
 import { useNotes } from "../../features/notes/NotesProvider";
 import { Button, IconButton } from "../../shared/ui/Button";
 import { ActionBar, Screen, TopBar } from "../../shared/ui/Screen";
+import { BookmarkButton, ToolsCapsule } from "../question/QuestionTools";
 import { QuestionView } from "../question/QuestionView";
 import { useIsOnScreen, WhyButton } from "../question/WhyButton";
 import styles from "./ReviewScreen.module.css";
@@ -32,7 +33,14 @@ export function ReviewScreen({ bank, questionId, onBack }: ReviewScreenProps) {
       <TopBar>
         <IconButton icon="arrowLeft" label="Назад" onClick={onBack} />
         <span className={styles.title}>Разбор вопроса</span>
-        {bank && question ? <ComplaintButton onClick={() => setComplaintOpen(true)} /> : <span className={styles.spacer} />}
+        {bank && question ? (
+          <ToolsCapsule>
+            <ComplaintButton bare onClick={() => setComplaintOpen(true)} />
+            <BookmarkButton setId={bank.setId} questionId={question.id} />
+          </ToolsCapsule>
+        ) : (
+          <span className={styles.spacer} />
+        )}
       </TopBar>
 
       {bank && question ? (

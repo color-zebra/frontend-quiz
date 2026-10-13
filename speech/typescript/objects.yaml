@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=../../speech-schema.json
+topic: typescript
+subtopic: objects
+questions:
+  - id: speech-typescript-objects-001
+    level: middle
+    tags: [type-vs-interface]
+    question: |
+      Когда ты выберешь `type`, а когда `interface`?
+    answer: |
+      Для описания формы объекта они почти взаимозаменяемы, поэтому выбор — больше вопрос договорённостей в
+      команде. Но различия есть.
+
+      `interface` открыт для расширения: если объявить интерфейс с тем же именем ещё раз, объявления сольются.
+      Так библиотеки дают дополнять свои типы — например, добавить поле в `Window` или в `Request` у Express.
+      Ещё `interface` расширяют через `extends`, и при конфликте свойств компилятор сразу сообщает понятную
+      ошибку.
+
+      `type` умеет всё, что не является формой объекта: union вроде `'light' | 'dark'`, кортежи, псевдонимы
+      примитивов, mapped и conditional типы. Комбинируют его через `&`, но при конфликте свойств пересечение
+      молча даёт `never`, а не ошибку.
+
+      Я обычно пишу `interface` для объектов и публичных контрактов — пропсов компонентов, моделей API, — а
+      `type` для union, утилит и всего вычисляемого. Если в проекте принят другой стиль, следую ему: важнее
+      единообразие.
+    points:
+      - Для формы объекта почти взаимозаменяемы
+      - interface — declaration merging и extends с понятными ошибками
+      - type — union, кортежи, примитивы, mapped и conditional
+      - Конфликт в & даёт never, в extends — ошибку
+      - Выбор — договорённость команды
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#differences-between-type-aliases-and-interfaces
+    source: own

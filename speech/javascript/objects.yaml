@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=../../speech-schema.json
+topic: javascript
+subtopic: objects
+questions:
+  - id: speech-javascript-objects-001
+    level: middle
+    tags: [descriptors, defineProperty]
+    question: |
+      Что такое дескрипторы свойств и где они встречаются на практике?
+    answer: |
+      У каждого свойства объекта, кроме значения, есть настройки — дескриптор. Дескриптор данных содержит
+      `value` и `writable` — флаг, можно ли менять значение. Дескриптор доступа вместо них содержит функции
+      `get` и `set`. Общие флаги: `enumerable` — видно ли свойство при переборе, и `configurable` — можно ли
+      его удалить и перенастроить. Прочитать дескриптор можно через `Object.getOwnPropertyDescriptor`, задать
+      — через `Object.defineProperty`.
+
+      Важная деталь про умолчания: присваивание создаёт свойство со всеми флагами `true`, а `defineProperty`
+      для нового свойства — со всеми `false`. Поэтому `Object.defineProperty(obj, 'id', { value: 1 })` даёт
+      свойство только для чтения, невидимое в `Object.keys` и `JSON.stringify`.
+
+      На практике дескрипторы встречаются чаще, чем кажется. Встроенные методы вроде `Array.prototype.map`
+      неперечисляемы — поэтому они не лезут в `for...in`. Методы классов тоже создаются неперечисляемыми.
+      Геттеры и сеттеры в классах — это дескрипторы доступа. `Object.seal` делает объект нерасширяемым и
+      ставит всем свойствам `configurable: false`, а `Object.freeze` вдобавок ставит свойствам с данными
+      `writable: false`. Через `defineProperty` библиотеки добавляют скрытые служебные поля, а Vue 2 строил на
+      геттерах и сеттерах свою реактивность.
+    points:
+      - Дескриптор данных — value и writable; дескриптор доступа — get и set
+      - enumerable — видимость при переборе, configurable — удаление и перенастройка
+      - Присваивание даёт флаги true, defineProperty для нового свойства — false
+      - Встроенные методы и методы классов неперечисляемы
+      - seal и freeze — нерасширяемость плюс флаги configurable и writable
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Enumerability_and_ownership_of_properties
+    source: own
+
+  - id: speech-javascript-objects-002
+    level: middle
+    tags: [shallow-copy, deep-copy, structuredClone]
+    question: |
+      Как правильно скопировать объект и в чём подвохи?
+    answer: |
+      Сначала нужно решить, нужна поверхностная или глубокая копия. Поверхностную дают spread `{ ...obj }` и
+      `Object.assign({}, obj)`: новый объект верхнего уровня, но вложенные объекты общие с оригиналом. Если в
+      копии поменять `copy.address.city`, изменится и оригинал. Для React и Redux этого обычно достаточно:
+      копируют только ту ветку, которую меняют, — `{ ...user, address: { ...user.address, city } }`.
+
+      Для глубокой копии сейчас есть `structuredClone(obj)`. Он копирует всю структуру, понимает `Date`,
+      `Map`, `Set`, типизированные массивы и циклические ссылки. Подвохи: функции он не копирует и бросает
+      `DataCloneError`, а экземпляры классов теряют прототип и превращаются в обычные объекты.
+
+      Старый приём `JSON.parse(JSON.stringify(obj))` ещё встречается, но теряет много: `undefined` и функции
+      пропадают, `Date` становится строкой, `Map` и `Set` — пустыми объектами, `NaN` — `null`, а на
+      циклической ссылке он падает. Ещё одна мелочь: spread и `Object.assign` копируют только собственные
+      перечисляемые свойства, поэтому геттер превращается в обычное значение, а неперечисляемые свойства
+      теряются.
+    points:
+      - Spread и Object.assign — поверхностные, вложенные объекты общие
+      - В иммутабельных обновлениях копируют только изменяемую ветку
+      - structuredClone — глубокая копия с Date, Map, Set и циклами
+      - structuredClone не копирует функции и теряет прототип
+      - JSON-копия теряет undefined, функции, даты и падает на циклах
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/Window/structuredClone
+      - https://developer.mozilla.org/en-US/docs/Glossary/Shallow_copy
+      - https://developer.mozilla.org/en-US/docs/Glossary/Deep_copy
+    source: own

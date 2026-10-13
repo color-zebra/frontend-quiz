@@ -1,9 +1,8 @@
 import clsx from "clsx";
 import { useState } from "react";
-import { formatDiff } from "../../data/formatDiff";
 import type { BankDiff } from "../../data/loadQuestions";
-import { BUILTIN_SET_ID, type QuestionBank } from "../../data/types";
-import { useProgress } from "../../features/progress/ProgressProvider";
+import type { QuestionBank } from "../../data/types";
+import { useBankUpdate } from "../../features/bank/useBankUpdate";
 import { promptInstall, useCanInstall } from "../../features/pwa/install";
 import type { SessionLength } from "../../features/session/filters";
 import { useSets } from "../../features/sets/SetsProvider";
@@ -28,13 +27,11 @@ interface HomeScreenProps {
   onOpenSets: () => void;
   onOpenHelp: () => void;
   onUpdate: () => Promise<BankDiff>;
+  /** На сервере база свежее — плашка «Вышла новая база». */
+  newBank?: { onDismiss: () => void } | null;
+  /** Незаконченная сессия с прошлого запуска. */
+  resumable?: { text: string; onResume: () => void; onDiscard: () => void } | null;
 }
-
-type UpdateState =
-  | { kind: "idle" }
-  | { kind: "loading" }
-  | { kind: "done"; diff: BankDiff }
-  | { kind: "error"; message: string };
 
 const SET_FORMS = ["набор", "набора", "наборов"] as const;
 
@@ -49,11 +46,12 @@ export function HomeScreen({
   onOpenSpeech,
   onOpenHelp,
   onUpdate,
+  newBank,
+  resumable,
 }: HomeScreenProps) {
   const { sets } = useSets();
-  const { resetQuestions } = useProgress();
   const canInstall = useCanInstall();
-  const [updateState, setUpdateState] = useState<UpdateState>({ kind: "idle" });
+  const update = useBankUpdate(onUpdate);
   const bankDate = formatShortDate(bank.generatedAt);
   const [showHelpHint, setShowHelpHint] = useState(() => readStorage(HELP_HINT_KEY) === null);
 
@@ -67,24 +65,11 @@ export function HomeScreen({
     onOpenHelp();
   }
 
-  function refreshBank() {
-    setUpdateState({ kind: "loading" });
-    onUpdate().then(
-      (diff) => {
-        resetQuestions(BUILTIN_SET_ID, diff.changedIds);
-        setUpdateState({ kind: "done", diff });
-      },
-      (error: unknown) =>
-        setUpdateState({ kind: "error", message: error instanceof Error ? error.message : "Неизвестная ошибка" }),
-    );
-  }
-
   return (
     <Screen>
       <TopBar>
         <Brand />
         <div className={styles.topActions}>
-          <IconButton icon="refresh" label="Обновить базу" busy={updateState.kind === "loading"} onClick={refreshBank} />
           <IconButton icon="user" label="Кабинет" onClick={onOpenCabinet} />
           <IconButton icon="help" label="Помощь" onClick={openHelp} />
         </div>
@@ -95,19 +80,36 @@ export function HomeScreen({
         subtitle={[countQuestions(bank.questions.length), bankDate && `база от ${bankDate}`].filter(Boolean).join(" · ")}
       />
 
-      {updateState.kind === "done" && (
-        <Notice
-          kind="ok"
-          text={formatDiff(updateState.diff, "База обновлена", "У тебя самая свежая база.")}
-          onClose={() => setUpdateState({ kind: "idle" })}
-        />
+      {(update.state.kind === "done" || update.state.kind === "error") && (
+        <Notice kind={update.state.kind === "done" ? "ok" : "error"} text={update.state.text} onClose={update.reset} />
       )}
-      {updateState.kind === "error" && (
-        <Notice
-          kind="error"
-          text={`Не удалось обновить: ${updateState.message}`}
-          onClose={() => setUpdateState({ kind: "idle" })}
-        />
+
+      {newBank && update.state.kind !== "done" && (
+        <div className={clsx(styles.helpHint, glass.glass)} role="status">
+          <p>
+            <b>Вышла новая база вопросов.</b> Обновить сейчас? Заметки, ответы и статистика сохранятся.
+          </p>
+          <div className={styles.helpHintButtons}>
+            <Button icon="refresh" disabled={update.state.kind === "loading"} onClick={update.run}>
+              {update.state.kind === "loading" ? "Обновляем…" : "Обновить"}
+            </Button>
+            <IconButton icon="close" label="Не сейчас" onClick={newBank.onDismiss} />
+          </div>
+        </div>
+      )}
+
+      {resumable && (
+        <div className={clsx(styles.helpHint, glass.glass)} role="status">
+          <p>
+            <b>Незаконченная сессия</b> · {resumable.text}
+          </p>
+          <div className={styles.helpHintButtons}>
+            <Button iconAfter="arrowRight" onClick={resumable.onResume}>
+              Продолжить
+            </Button>
+            <IconButton icon="close" label="Не продолжать сессию" onClick={resumable.onDiscard} />
+          </div>
+        </div>
       )}
 
       {showHelpHint && (

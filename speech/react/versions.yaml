@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=../../speech-schema.json
+topic: react
+subtopic: versions
+questions:
+  - id: speech-react-versions-001
+    level: middle
+    tags: [react-18]
+    question: |
+      Что изменилось в React 18?
+    answer: |
+      React 18 вышел в марте 2022 года, это релиз конкурентного рендера. Всё начинается с нового способа
+      монтировать приложение — `createRoot` из `react-dom/client` вместо `ReactDOM.render`. Именно он включает
+      новые возможности.
+
+      Первая заметная вещь — автоматический батчинг. Раньше React объединял обновления состояния только внутри
+      своих обработчиков событий, а в `setTimeout`, промисах и нативных обработчиках каждый `setState` давал
+      отдельный рендер. Теперь объединяется всё.
+
+      Вторая — переходы. `startTransition` и `useTransition` позволяют пометить обновление как несрочное, и
+      React сможет прервать его ради ввода пользователя. Рядом `useDeferredValue` — отложенная копия значения
+      для тяжёлой части интерфейса.
+
+      Третья — серверный рендеринг: потоковая отдача HTML с Suspense и выборочная гидратация, когда страница
+      оживает по частям, начиная с той, где кликнул пользователь.
+
+      Плюс новые хуки: `useId` для одинаковых id на сервере и клиенте, `useSyncExternalStore` для внешних
+      сторов и `useInsertionEffect` для CSS-in-JS. И StrictMode в разработке начал повторно монтировать
+      компоненты, чтобы проверять очистку эффектов.
+    points:
+      - createRoot включает новые возможности
+      - Автоматический батчинг в любом месте кода
+      - Переходы и useDeferredValue — несрочные прерываемые обновления
+      - Потоковый SSR с Suspense и выборочная гидратация
+      - useId, useSyncExternalStore, useInsertionEffect; двойное монтирование в StrictMode
+    links:
+      - https://react.dev/blog/2022/03/29/react-v18
+    source: own
+
+  - id: speech-react-versions-002
+    level: middle
+    tags: [react-19]
+    question: |
+      Что нового в React 19 и в последующих версиях 19.x?
+    answer: |
+      React 19 вышел в декабре 2024 года. Его центральная идея — Actions: асинхронные функции, которые
+      запускаются в переходе и получают встроенное состояние ожидания и ошибок. Под это появились хуки
+      `useActionState` для результата действия, `useOptimistic` для оптимистичных обновлений и `useFormStatus`
+      для статуса формы, а `<form action={fn}>` принимает функцию напрямую.
+
+      Ещё появился `use` — API для чтения промисов и контекста прямо в рендере, вместе с Suspense, причём его
+      можно вызывать в условиях. Серверные компоненты и серверные функции стали стабильными. Из удобств: `ref`
+      стал обычным пропом, так что `forwardRef` больше не нужен; контекст можно рендерить как `<Context
+      value>`; `<title>` и `<meta>` из компонентов сами поднимаются в `<head>`. Заодно удалили давно
+      устаревшее: `ReactDOM.render`, строковые рефы, `propTypes` и `defaultProps` у функций.
+
+      Дальше были минорные релизы. В 19.2 (октябрь 2025) — `<Activity>` для скрытых частей интерфейса с
+      сохранённым состоянием и `useEffectEvent` для событийной логики в эффектах. В том же месяце вышел
+      стабильный React Compiler, который сам мемоизирует компоненты. А в 19.3 (сентябрь 2026) стабилизировали
+      `<ViewTransition>` для анимаций и Fragment Refs.
+    points:
+      - Actions — useActionState, useOptimistic, useFormStatus, form action
+      - use для промисов и контекста; стабильные серверные компоненты
+      - ref как проп, Context как провайдер, метаданные в компонентах
+      - Удалены ReactDOM.render, строковые рефы, propTypes у функций
+      - 19.2 — Activity и useEffectEvent; React Compiler 1.0; 19.3 — ViewTransition
+    links:
+      - https://react.dev/blog/2024/12/05/react-19
+      - https://react.dev/blog/2025/10/01/react-19-2
+      - https://react.dev/blog/2026/09/09/react-19-3
+    source: own

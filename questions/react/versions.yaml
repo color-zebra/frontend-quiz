@@ -1,0 +1,416 @@
+# yaml-language-server: $schema=../../schema.json
+topic: react
+subtopic: versions
+questions:
+  - id: react-versions-001
+    level: junior
+    tags: [hooks, history]
+    question: |
+      В какой версии React появились хуки (`useState`, `useEffect` и другие)?
+    options:
+      - text: '16.8'
+        correct: true
+        why: 'React 16.8 вышел в феврале 2019 года и добавил хуки в стабильный API. С тех пор состояние и эффекты доступны функциональным компонентам.'
+      - text: '16.0'
+        why: 'React 16.0 (сентябрь 2017) принёс новую архитектуру Fiber, но хуков в нём ещё не было.'
+      - text: '17.0'
+        why: 'К React 17 (октябрь 2020) хуки существовали уже больше полутора лет. Сам 17 вышел почти без новых возможностей.'
+      - text: '18.0'
+        why: 'В React 18 появились новые хуки (`useTransition`, `useId` и другие), но сами хуки как механизм — раньше.'
+    explanation: |
+      Хуки показали на React Conf в октябре 2018 года и выпустили в React 16.8 в феврале 2019-го. Они позволили
+      функциональным компонентам иметь состояние, эффекты, контекст и рефы, а логику — выносить в кастомные
+      хуки. Классовые компоненты при этом не устарели и поддерживаются до сих пор, но новые возможности React
+      создают в расчёте на функциональные компоненты.
+    links:
+      - https://legacy.reactjs.org/blog/2019/02/06/react-v16.8.0.html
+    source: own
+
+  - id: react-versions-002
+    level: middle
+    tags: [react-16, fiber, history]
+    question: |
+      Что появилось в React 16.0 (сентябрь 2017) вместе с архитектурой Fiber?
+    options:
+      - text: 'Границы ошибок (error boundaries)'
+        correct: true
+        why: 'Классовый компонент с `componentDidCatch` стал перехватывать ошибки рендера потомков. До этого ошибка ломала внутреннее состояние React.'
+      - text: 'Порталы (`createPortal`)'
+        correct: true
+        why: 'Порталы позволили рендерить детей в DOM-узел вне родителя — для модалок и всплывающих подсказок.'
+      - text: 'Возможность возвращать из рендера массивы и строки'
+        correct: true
+        why: 'Раньше компонент обязан был вернуть один элемент. Короткий синтаксис фрагментов `<>...</>` добавили позже, в 16.2.'
+      - text: 'Хуки `useState` и `useEffect`'
+        why: 'Хуки появились в 16.8, в феврале 2019 года.'
+      - text: '`React.memo` и `React.lazy`'
+        why: 'Они вышли в 16.6, в октябре 2018 года.'
+    explanation: |
+      React 16.0 — переписанное ядро (Fiber) почти без изменений публичного API. Из заметных возможностей:
+      границы ошибок, порталы, возврат массивов и строк из `render`, улучшенный серверный рендеринг со стримингом
+      и поддержка нестандартных DOM-атрибутов. Дальше в 16.x шли постепенные добавления: фрагменты (16.2),
+      новый контекст и `forwardRef` (16.3), `memo` и `lazy` (16.6), хуки (16.8).
+    links:
+      - https://legacy.reactjs.org/blog/2017/09/26/react-v16.0.html
+    source: own
+
+  - id: react-versions-003
+    level: middle
+    tags: [react-16-3, context, refs, history]
+    question: |
+      В какой версии появился современный Context API (`createContext`), а вместе с ним `createRef` и `forwardRef`?
+    options:
+      - text: '16.3'
+        correct: true
+        why: 'React 16.3 (март 2018) заменил старый экспериментальный контекст на `createContext` с `Provider` и `Consumer`, добавил `createRef`, `forwardRef` и пометил устаревшие методы жизненного цикла префиксом `UNSAFE_`.'
+      - text: '16.0'
+        why: 'В 16.0 был только старый контекст через `contextTypes`, который официально считался нестабильным.'
+      - text: '16.8'
+        why: 'В 16.8 появился хук `useContext`, но сам `createContext` к тому времени уже был.'
+      - text: '19.0'
+        why: 'В React 19 контекст стало можно рендерить как провайдер (`<Context value>`), но сам API появился намного раньше.'
+    explanation: |
+      Старый контекст (`contextTypes`, `getChildContext`) был экспериментальным и ломался при `shouldComponentUpdate`.
+      В 16.3 его заменили на `createContext`. Тот же релиз принёс `createRef` и `forwardRef`, а `componentWillMount`
+      и подобные методы получили префикс `UNSAFE_` — готовилась асинхронная модель рендера. Старый контекст
+      окончательно удалили в React 19.
+    links:
+      - https://legacy.reactjs.org/blog/2018/03/29/react-v-16-3.html
+    source: own
+
+  - id: react-versions-004
+    level: middle
+    tags: [react-16-6, memo, lazy, suspense, history]
+    question: |
+      В какой версии появились `React.memo`, `React.lazy` и `<Suspense>` для ленивой загрузки компонентов?
+    options:
+      - text: '16.6'
+        correct: true
+        why: 'React 16.6 (октябрь 2018) добавил `memo` — аналог `PureComponent` для функций, — и `lazy` с `<Suspense>` для разделения кода.'
+      - text: '16.3'
+        why: 'В 16.3 появились новый контекст и `forwardRef`, а `memo` и `lazy` — позже.'
+      - text: '18.0'
+        why: 'React 18 расширил Suspense (стриминг SSR, переходы), но для ленивой загрузки он работал с 16.6.'
+      - text: '19.0'
+        why: 'В React 19 Suspense стал работать с `use` и данными, но `memo` и `lazy` существовали давно.'
+    explanation: |
+      В 16.6 Suspense впервые появился в стабильном API, но только для одного сценария — `lazy`-компонентов, чей
+      код ещё грузится. Загрузка данных через Suspense годами оставалась экспериментальной и стала официальной
+      только с `use` в React 19. Это хороший пример того, как React выпускает механизм частями.
+    links:
+      - https://legacy.reactjs.org/blog/2018/10/23/react-v-16-6.html
+    source: own
+
+  - id: react-versions-005
+    level: middle
+    tags: [react-17, history]
+    question: |
+      React 17 называли «релизом без новых возможностей». Что в нём всё же изменилось?
+    options:
+      - text: 'Обработчики событий React вешаются на корневой контейнер, а не на `document`'
+        correct: true
+        why: 'Делегирование событий перенесли с `document` на элемент, в который монтируется приложение.'
+      - text: 'Новый JSX-трансформ, с которым не нужен `import React` в каждом файле'
+        correct: true
+        why: 'Компилятор стал импортировать функции для JSX сам, из `react/jsx-runtime`.'
+      - text: 'Функция очистки `useEffect` стала выполняться асинхронно, после отрисовки'
+        correct: true
+        why: 'Раньше очистка выполнялась синхронно при размонтировании и могла тормозить переходы между экранами.'
+      - text: 'Появились `createRoot` и автоматический батчинг обновлений в любом месте кода'
+        why: 'Это возможности React 18.'
+      - text: 'Появились стабильные серверные компоненты и серверные функции'
+        why: 'Серверные компоненты показали в декабре 2020 года как эксперимент, стабильными они стали в React 19.'
+    explanation: |
+      React 17 (октябрь 2020) готовил почву для постепенных обновлений: чтобы приложение могло переезжать на новую
+      версию по частям, а несколько версий React могли сосуществовать. Отсюда перенос делегирования событий.
+      Попутно: новый JSX-трансформ, асинхронная очистка эффектов, удаление пула событий (`e.persist()` больше не
+      нужен), `onScroll` перестал всплывать.
+    links:
+      - https://legacy.reactjs.org/blog/2020/10/20/react-v17.html
+    source: own
+
+  - id: react-versions-006
+    level: senior
+    tags: [react-17, event-delegation, history]
+    question: |
+      Зачем в React 17 делегирование событий перенесли с `document` на корневой контейнер приложения?
+    options:
+      - text: 'Чтобы на одной странице могли работать приложения на разных версиях React'
+        correct: true
+        why: 'Когда все версии вешали обработчики на `document`, их системы событий мешали друг другу: `e.stopPropagation()` в одной не останавливал другую. С корнем у каждого приложения своя зона.'
+      - text: 'Чтобы события перестали всплывать за пределы компонента'
+        why: 'События по-прежнему всплывают внутри React-дерева. Изменилось только место, где React слушает их в DOM.'
+      - text: 'Чтобы обработчики срабатывали раньше нативных обработчиков `document`'
+        why: 'Это побочный эффект, а не цель. Главная причина — изоляция разных версий React.'
+      - text: 'Чтобы убрать синтетические события и отдавать нативные'
+        why: 'Синтетические события остались, их объект по-прежнему оборачивает нативное событие.'
+    explanation: |
+      Постепенная миграция — частый сценарий: старая часть приложения на React 16, новая на 17, или
+      микрофронтенды разных команд. Пока все версии слушали события на `document`, они конфликтовали. React 17
+      слушает на элементе, переданном в `ReactDOM.render` (а с React 18 — в `createRoot`), поэтому каждое дерево обрабатывает
+      свои события. Заодно React стало проще встраивать в приложения на других технологиях.
+    links:
+      - https://legacy.reactjs.org/blog/2020/10/20/react-v17.html#changes-to-event-delegation
+    source: own
+
+  - id: react-versions-007
+    level: junior
+    tags: [react-18, createRoot, batching, history]
+    question: |
+      В какой версии появился `createRoot` из `react-dom/client`?
+    options:
+      - text: '18.0'
+        correct: true
+        why: 'React 18 (март 2022) ввёл `createRoot` из `react-dom/client`, а вместе с ним — конкурентные возможности и батчинг обновлений в любом месте кода.'
+      - text: '16.8'
+        why: 'В 16.8 появились хуки. Приложение тогда монтировали через `ReactDOM.render`.'
+      - text: '17.0'
+        why: 'React 17 почти не добавлял возможностей, `createRoot` в нём ещё не было.'
+      - text: '19.0'
+        why: 'В React 19 устаревший `ReactDOM.render` удалили, но `createRoot` существовал уже с 18.'
+    explanation: |
+      `createRoot` — новый способ смонтировать приложение, и именно он включает возможности React 18:
+      автоматический батчинг, переходы, конкурентный рендер. Приложения, оставшиеся на `ReactDOM.render`,
+      работали в React 18 по-старому, с предупреждением. В React 19 `ReactDOM.render` удалён окончательно.
+    links:
+      - https://react.dev/blog/2022/03/29/react-v18
+    source: own
+
+  - id: react-versions-008
+    level: middle
+    tags: [react-18, history]
+    question: |
+      Что появилось в React 18?
+    options:
+      - text: '`useTransition` и `startTransition`'
+        correct: true
+        why: 'Переходы позволили помечать обновления как несрочные и прерываемые.'
+      - text: '`useDeferredValue` и `useId`'
+        correct: true
+        why: '`useDeferredValue` откладывает значение для тяжёлой части интерфейса, `useId` даёт одинаковые id на сервере и клиенте.'
+      - text: '`useSyncExternalStore`'
+        correct: true
+        why: 'Хук для безопасного чтения внешних сторов в конкурентном режиме, его используют Redux и Zustand.'
+      - text: 'Потоковый серверный рендер с Suspense'
+        correct: true
+        why: 'Сервер отдаёт HTML по частям, а клиент гидрирует каждую границу Suspense отдельно.'
+      - text: '`useActionState` и `useOptimistic`'
+        why: 'Это хуки React 19, они появились вместе с Actions.'
+      - text: '`use` и `<form action={fn}>`'
+        why: 'Это возможности React 19: `use` — новое API для чтения ресурсов в рендере, `<form action>` — часть Actions.'
+    explanation: |
+      React 18 — релиз конкурентного рендера. Основа — `createRoot`, на ней работают автоматический батчинг,
+      переходы (`useTransition`, `startTransition`), `useDeferredValue`, потоковый SSR и выборочная гидратация.
+      Для авторов библиотек появились `useSyncExternalStore` и `useInsertionEffect`, для SSR — `useId`. StrictMode
+      начал в разработке повторно монтировать компоненты, чтобы проверять эффекты.
+    links:
+      - https://react.dev/blog/2022/03/29/react-v18
+    source: own
+
+  - id: react-versions-009
+    level: middle
+    tags: [react-18, strict-mode, history]
+    question: |
+      В какой версии StrictMode начал в режиме разработки повторно монтировать компоненты, чтобы проверять
+      очистку эффектов?
+    options:
+      - text: '18.0'
+        correct: true
+        why: 'Двойное монтирование появилось в React 18 вместе с конкурентными возможностями. Двойной вызов функции компонента StrictMode делал и раньше.'
+      - text: '16.3'
+        why: 'В 16.3 появился сам компонент `<StrictMode>`: он предупреждал об устаревших методах и вызывал рендер дважды, но эффекты повторно не монтировал.'
+      - text: '16.8'
+        why: 'В 16.8 появились хуки, но повторного монтирования эффектов StrictMode ещё не делал.'
+      - text: '19.0'
+        why: 'В React 19 поведение сохранилось, но появилось оно раньше — в 18.'
+    explanation: |
+      StrictMode с самого начала ловил побочные эффекты в рендере двойным вызовом функций компонента. В React 18
+      к этому добавилась симуляция повторного монтирования: React монтирует компонент, сразу «уничтожает»
+      эффекты и запускает их снова с тем же состоянием. Позже эту возможность действительно использовали:
+      `<Activity>` из React 19.2 скрывает части интерфейса, сохраняя состояние, и при показе запускает эффекты
+      заново.
+    links:
+      - https://react.dev/blog/2022/03/29/react-v18#new-strict-mode-behaviors
+    source: own
+
+  - id: react-versions-010
+    level: middle
+    tags: [react-19, history]
+    question: |
+      Что появилось в React 19 (декабрь 2024)?
+    options:
+      - text: 'Actions и хуки `useActionState`, `useOptimistic`, `useFormStatus`'
+        correct: true
+        why: 'Асинхронные функции в переходах и в `<form action>` стали «действиями» со встроенным состоянием ожидания, ошибок и оптимистичных обновлений.'
+      - text: 'API `use` для чтения промисов и контекста в рендере'
+        correct: true
+        why: '`use` встраивается в Suspense и, в отличие от хуков, может вызываться в условиях.'
+      - text: '`ref` как обычный проп функционального компонента'
+        correct: true
+        why: '`forwardRef` для новых компонентов больше не нужен.'
+      - text: 'Хуки `useTransition` и `useDeferredValue` для несрочных обновлений'
+        why: 'Это возможности React 18. В 19 переходы лишь научились принимать асинхронные функции, а `useDeferredValue` получил `initialValue`.'
+      - text: 'Компонент `<ViewTransition>` для анимаций при переходах'
+        why: '`<ViewTransition>` стал стабильным только в React 19.3, в сентябре 2026 года.'
+    explanation: |
+      React 19 — релиз «действий» и серверных компонентов. Кроме Actions, `use` и `ref` как пропа он принёс:
+      `<Context>` как провайдер вместо `<Context.Provider>`, функции очистки у ref-колбэков, метаданные документа
+      (`<title>`, `<meta>`) прямо в компонентах, управление стилями и предзагрузкой ресурсов, стабильные
+      серверные компоненты и серверные функции. Одновременно удалили давно устаревшие API.
+    links:
+      - https://react.dev/blog/2024/12/05/react-19
+    source: own
+
+  - id: react-versions-011
+    level: senior
+    tags: [react-19, removed-apis, history]
+    question: |
+      Какие API в React 19 удалены?
+    options:
+      - text: '`propTypes` и `defaultProps` у функциональных компонентов'
+        correct: true
+        why: '`propTypes` молча игнорируются (проверку типов делает TypeScript), а вместо `defaultProps` используют значения по умолчанию в деструктуризации пропсов. У классовых компонентов `defaultProps` остались.'
+      - text: 'Строковые рефы вида `ref="input"`'
+        correct: true
+        why: 'Устаревшие с 2018 года строковые рефы удалены, вместо них — `useRef`, `createRef` и ref-колбэки.'
+      - text: '`ReactDOM.render` и `ReactDOM.hydrate`'
+        correct: true
+        why: 'Их заменили `createRoot` и `hydrateRoot` ещё в React 18, а в 19 удалили окончательно.'
+      - text: 'Функция `forwardRef` для передачи рефа в компонент'
+        why: '`forwardRef` в React 19 работает. Он просто больше не нужен, потому что `ref` можно принять как проп, а устаревшим его объявят в будущем.'
+      - text: 'Классовые компоненты вместе с методами жизненного цикла'
+        why: 'Классовые компоненты поддерживаются, удалять их не планируют.'
+      - text: 'Хук `useContext` для чтения контекста в компонентах'
+        why: '`useContext` работает как раньше. `use(Context)` — дополнительная возможность, а не замена с удалением.'
+    explanation: |
+      Примерно за семь месяцев до React 19 вышел переходный 18.3 с предупреждениями обо всём, что будет удалено. Удалили:
+      `propTypes` и `defaultProps` у функций, строковые рефы, старый контекст (`contextTypes`), фабрики модулей,
+      `ReactDOM.render`, `hydrate`, `unmountComponentAtNode`, `findDOMNode`. Не путать удалённое с «больше не
+      нужным»: `forwardRef` и `<Context.Provider>` работают, но в новом коде вместо них пишут `ref` как проп и
+      `<Context>`.
+    links:
+      - https://react.dev/blog/2024/04/25/react-19-upgrade-guide#removed-deprecated-react-apis
+      - https://react.dev/reference/react/forwardRef
+    source: own
+
+  - id: react-versions-012
+    level: senior
+    tags: [server-components, history]
+    question: |
+      С какой версии серверные компоненты (React Server Components) стали стабильной частью React?
+    options:
+      - text: '19.0'
+        correct: true
+        why: 'React 19 объявил серверные компоненты и серверные функции стабильными. До этого фреймворки вроде Next.js App Router использовали их через «канареечную» версию React.'
+      - text: '17.0'
+        why: 'В декабре 2020 года, вскоре после React 17, серверные компоненты показали как исследовательский эксперимент, без стабильного API.'
+      - text: '18.0'
+        why: 'React 18 подготовил основу (потоковый SSR, Suspense), но серверные компоненты в нём не были стабильными.'
+      - text: '19.2'
+        why: 'В 19.2 для серверных компонентов добавили `cacheSignal`, но стабильными они стали раньше, в 19.0.'
+    explanation: |
+      Путь серверных компонентов был долгим: демо в декабре 2020 года, затем использование в Next.js 13 (2022) на
+      канареечных сборках React, и наконец стабильный статус в React 19. Оговорка из документации: сами
+      серверные компоненты стабильны, а низкоуровневые API для сборщиков и фреймворков пока не следуют
+      семантическому версионированию внутри 19.x.
+    links:
+      - https://react.dev/blog/2024/12/05/react-19#react-server-components
+    source: own
+
+  - id: react-versions-013
+    level: middle
+    tags: [react-19-2, activity, useEffectEvent, history]
+    question: |
+      В какой версии появились `<Activity>` и стабильный `useEffectEvent`?
+    options:
+      - text: '19.2'
+        correct: true
+        why: 'React 19.2 вышел 1 октября 2025 года. Кроме них, в нём появились `cacheSignal`, частичный пре-рендеринг и дорожки React в панели Performance браузера.'
+      - text: '19.0'
+        why: 'В 19.0 были Actions и `use`, а `<Activity>` и `useEffectEvent` ещё оставались экспериментальными.'
+      - text: '18.0'
+        why: 'В React 18 появились переходы и новые хуки для библиотек, но не эти.'
+      - text: '19.3'
+        why: 'В 19.3 стабилизировали `<ViewTransition>` и Fragment Refs, а `<Activity>` к тому времени уже был.'
+    explanation: |
+      `<Activity mode="hidden">` скрывает часть интерфейса, сохраняя её состояние и откладывая обновления, —
+      например, для вкладок и предзагрузки следующего экрана. `useEffectEvent` отделяет «событийную» логику от
+      эффекта: функция видит свежие пропсы и состояние, но не является зависимостью эффекта. Оба API годами жили
+      в экспериментальных сборках и стали стабильными в 19.2.
+    links:
+      - https://react.dev/blog/2025/10/01/react-19-2
+    source: own
+
+  - id: react-versions-014
+    level: senior
+    tags: [react-19-3, view-transition, history]
+    question: |
+      Что принёс React 19.3 (сентябрь 2026)?
+    options:
+      - text: 'Стабильные `<ViewTransition>` и Fragment Refs'
+        correct: true
+        why: '`<ViewTransition>` анимирует появление, исчезновение и перемещение элементов в переходах через View Transition API браузера. Fragment Refs дают реф на группу соседних DOM-узлов.'
+      - text: 'Независимый рендер переходов'
+        correct: true
+        why: 'Медленный переход больше не задерживает другие, не связанные с ним переходы.'
+      - text: 'Стабильный компонент `<Activity>` для скрытых частей интерфейса'
+        why: '`<Activity>` стал стабильным раньше, в React 19.2.'
+      - text: 'Удаление `forwardRef`, который больше не нужен с React 19'
+        why: '`forwardRef` работает и в 19.3: он лишь больше не нужен, а ломающих изменений в 19.3 нет.'
+    explanation: |
+      React 19.3 — минорный релиз без ломающих изменений. Главное в нём — стабильные анимации через
+      `<ViewTransition>` (вместе с `addTransitionType`, чтобы различать, например, навигацию вперёд и назад) и
+      Fragment Refs. Плюс независимый рендер переходов, поддержка Trusted Types и `use(browser())`, чтобы
+      исключить компонент из серверного рендера.
+    links:
+      - https://react.dev/blog/2026/09/09/react-19-3
+    source: own
+
+  - id: react-versions-015
+    level: junior
+    tags: [timeline, history]
+    question: |
+      В каком порядке появлялись эти возможности React?
+    options:
+      - text: 'Хуки → `createRoot` → Actions → `<Activity>`'
+        correct: true
+        why: 'Хуки — 16.8 (2019), `createRoot` — 18 (2022), Actions — 19 (2024), `<Activity>` — 19.2 (2025).'
+      - text: '`createRoot` → хуки → `<Activity>` → Actions'
+        why: '`createRoot` появился в 18, на три года позже хуков, а Actions — раньше `<Activity>`.'
+      - text: 'Хуки → Actions → `createRoot` → `<Activity>`'
+        why: 'Actions пришли в React 19, уже после `createRoot` из React 18.'
+      - text: 'Actions → хуки → `createRoot` → `<Activity>`'
+        why: 'Actions — самое новое из первых трёх: React 19, конец 2024 года.'
+    explanation: |
+      Удобно помнить вехи по смыслу. React 16 (2017) — новая архитектура Fiber, 16.8 (2019) — хуки. React 17
+      (2020) — подготовка к постепенным обновлениям. React 18 (2022) — конкурентный рендер, `createRoot`,
+      автоматический батчинг. React 19 (2024) — Actions, `use`, серверные компоненты. 19.2 (2025) — `<Activity>`
+      и `useEffectEvent`, 19.3 (2026) — `<ViewTransition>`.
+    links:
+      - https://react.dev/versions
+    source: own
+
+  - id: react-versions-016
+    level: middle
+    tags: [react-compiler, history]
+    question: |
+      С какими версиями React работает React Compiler 1.0, вышедший в октябре 2025 года?
+    options:
+      - text: 'С React 17 и новее, для 17 и 18 нужен пакет `react-compiler-runtime`'
+        correct: true
+        why: 'По умолчанию компилятор рассчитан на React 19. Для 17 и 18 в настройках указывают целевую версию и добавляют небольшой пакет времени выполнения.'
+      - text: 'Только с React 19.2 и новее'
+        why: 'Компилятор поддерживает версии начиная с 17, а не только свежие 19.x.'
+      - text: 'С любой версией React, начиная с 16.8 и хуков, без дополнительных пакетов'
+        why: 'Минимальная версия — 17, а для 17 и 18 нужен `react-compiler-runtime`.'
+      - text: 'Только с React Native, для веба он экспериментальный'
+        why: 'Компилятор стабилен и для веба, и для React Native.'
+    explanation: |
+      React Compiler — плагин сборки, который автоматически мемоизирует компоненты и значения, избавляя от
+      ручных `memo`, `useMemo` и `useCallback`. Стабильная версия 1.0 вышла 7 октября 2025 года. Он не привязан к
+      новой версии React: проекты на 17 и 18 подключают его с пакетом `react-compiler-runtime`. Работает только с
+      кодом, который соблюдает правила React: чистые компоненты, неизменяемые пропсы и состояние.
+    links:
+      - https://react.dev/blog/2025/10/07/react-compiler-1
+      - https://react.dev/reference/react-compiler/target
+    source: own

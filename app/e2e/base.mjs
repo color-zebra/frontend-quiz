@@ -78,7 +78,8 @@ export default async function base(t) {
     await page.getByRole("dialog").getByRole("button", { name: "Выбрать все" }).first().click();
     await page.keyboard.press("Escape");
 
-    // «Обновить»: правим файл на сервере.
+    // «Обновить» — в кабинете: правим файл на сервере.
+    await page.getByRole("button", { name: "Кабинет" }).click();
     await page.getByRole("button", { name: "Обновить базу" }).click();
     check("обновление без изменений", await visible(page.getByText("У тебя самая свежая база.")));
     const edited = JSON.parse(original);
@@ -91,6 +92,7 @@ export default async function base(t) {
     await page.reload();
     await page.getByText("Что тренируем?").waitFor();
     check("обновлённая база сохранилась на устройстве", await visible(page.getByText(new RegExp(`^${total + 1} вопрос\\S* · база`))));
+    await page.getByRole("button", { name: "Кабинет" }).click();
     await page.route("**/questions.json*", (route) => route.abort());
     await page.getByRole("button", { name: "Обновить базу" }).click();
     check("обновление без связи — понятная ошибка", await visible(page.getByText("Не удалось обновить: Нет связи с сервером")));
@@ -99,8 +101,7 @@ export default async function base(t) {
     await page.getByRole("button", { name: "Обновить базу" }).click();
     check("возврат исходной базы", await visible(page.getByText("База обновлена: новых 1, исправлено 1, удалено 2.")));
 
-    // Заметки — в кабинете.
-    await page.getByRole("button", { name: "Кабинет" }).click();
+    // Заметки — в кабинете, мы уже в нём.
     await page.getByRole("button", { name: /Мои заметки/ }).click();
     check("заметка в списке заметок", await visible(page.getByText("Проверочная заметка")));
     await page.getByRole("button", { name: "Назад" }).click();
@@ -110,7 +111,7 @@ export default async function base(t) {
     await page.getByRole("button", { name: "∞", exact: true }).click();
     await page.getByRole("button", { name: "Начать · без конца" }).click();
     for (let i = 1; i <= 3; i++) {
-      await page.getByText(new RegExp(`^Вопрос ${i} ·`)).waitFor();
+      await page.getByText(`Вопрос ${i}`, { exact: true }).waitFor();
       await page.keyboard.press("2");
       if (await page.getByRole("button", { name: "Ответить" }).isVisible()) await page.keyboard.press("Enter");
       await page.keyboard.press("Enter");

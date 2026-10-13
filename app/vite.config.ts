@@ -7,6 +7,12 @@ import { VitePWA } from "vite-plugin-pwa";
 /** Собранная база из корня репозитория: её делает `pnpm build` (scripts/check.mjs --build). */
 const QUESTIONS_FILE = fileURLToPath(new URL("../dist/questions.json", import.meta.url));
 
+/** questions-version.json — только дата сборки базы: по нему приложение узнаёт, что вышла новая база. */
+function getVersionFile() {
+  const { generatedAt } = JSON.parse(readFileSync(QUESTIONS_FILE, "utf8")) as { generatedAt?: string };
+  return JSON.stringify({ generatedAt });
+}
+
 /**
  * questions.json рядом с приложением: в режиме разработки отдаём локальный файл (правку в YAML
  * видно после `pnpm build` и перезагрузки страницы), при сборке кладём сжатую копию в app/dist.
@@ -15,6 +21,16 @@ function questionsFile(): Plugin {
   return {
     name: "frontend-quiz:questions",
     configureServer(server) {
+      server.middlewares.use("/questions-version.json", (_req, res) => {
+        if (!existsSync(QUESTIONS_FILE)) {
+          res.statusCode = 404;
+          res.end();
+          return;
+        }
+        res.setHeader("Content-Type", "application/json; charset=utf-8");
+        res.setHeader("Cache-Control", "no-store");
+        res.end(getVersionFile());
+      });
       server.middlewares.use("/questions.json", (_req, res) => {
         if (!existsSync(QUESTIONS_FILE)) {
           res.statusCode = 404;
@@ -35,6 +51,7 @@ function questionsFile(): Plugin {
         fileName: "questions.json",
         source: JSON.stringify(JSON.parse(readFileSync(QUESTIONS_FILE, "utf8"))),
       });
+      this.emitFile({ type: "asset", fileName: "questions-version.json", source: getVersionFile() });
     },
   };
 }

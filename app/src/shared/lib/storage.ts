@@ -25,3 +25,11 @@ export function readStorageJson(key: string): unknown {
     return null;
   }
 }
+
+export function removeStorage(key: string) {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Нечего удалять или нельзя — не страшно.
+  }
+}

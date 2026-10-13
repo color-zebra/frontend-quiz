@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=../../speech-schema.json
+topic: typescript
+subtopic: generics
+questions:
+  - id: speech-typescript-generics-001
+    level: middle
+    tags: [generics]
+    question: |
+      Объясни дженерики на примере из практики.
+    code: |
+      async function fetchJson<T>(url: string): Promise<T> {
+        const response = await fetch(url);
+        return response.json();
+      }
+
+      const user = await fetchJson<User>('/api/user');
+    codeLang: ts
+    answer: |
+      Дженерик — это параметр типа. Функцию или тип описывают один раз, а конкретный тип подставляют при
+      использовании, как аргумент. Главное, что он даёт, — связь между типами: что вошло, то и вышло.
+
+      В примере обёртка над `fetch` одна на всё приложение, а вызывающий код говорит, какой ответ ожидает:
+      `fetchJson<User>` вернёт `Promise<User>`, и дальше `user.name` проверяется компилятором. Без дженерика
+      пришлось бы вернуть `any` или `unknown` и приводить тип в каждом месте вызова. Важная оговорка: типы
+      стираются, поэтому сервер может прислать что угодно — в серьёзном коде ответ ещё проверяют схемой.
+
+      Часто тип вообще не нужно указывать: он выводится из аргументов. `first([1, 2, 3])` сам поймёт, что `T`
+      — `number`. А через ограничения `T extends { id: number }` дженерик требует от типа нужные свойства и
+      даёт к ним доступ внутри функции. Встроенные примеры повсюду: `Array<T>`, `Promise<T>`, `Map<K, V>`,
+      `useState<T>` в React.
+    points:
+      - Дженерик — параметр типа, подставляемый при использовании
+      - Сохраняет связь между типами входа и выхода
+      - Тип часто выводится из аргументов
+      - Ограничения extends требуют нужных свойств
+      - Типы стираются — внешние данные всё равно проверяют
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/generics.html
+    source: own

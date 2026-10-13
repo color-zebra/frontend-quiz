@@ -340,3 +340,56 @@ questions:
     links:
       - https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#differences-between-type-aliases-and-interfaces
     source: own
+
+  - id: typescript-objects-011
+    level: middle
+    tags: [type-vs-interface, theory]
+    question: |
+      Какие из утверждений о различиях `type` и `interface` верны?
+    options:
+      - text: '`interface` можно дополнить повторным объявлением с тем же именем'
+        correct: true
+        why: 'Это объединение объявлений (declaration merging): так библиотеки расширяют, например, `Window` или типы Express. С `type` повторное объявление — ошибка.'
+      - text: 'Через `type` можно описать mapped-тип `{ [K in Keys]: V }`'
+        correct: true
+        why: 'Mapped и conditional типы бывают только у `type`: в теле `interface` можно описывать лишь свойства и сигнатуры.'
+      - text: '`interface` может расширить объектный `type` через `extends`'
+        correct: true
+        why: '`interface I extends T {}` работает, если `T` — объектный тип. При конфликте свойств `extends` сразу даёт ошибку, а пересечение `&` молча превращает свойство в `never`.'
+      - text: 'Через `interface` нельзя описать тип функции'
+        why: 'Можно сигнатурой вызова: `interface Formatter { (value: number): string }`. Просто `type` для функций читается короче.'
+      - text: 'Тип, объявленный через `type`, нельзя реализовать в классе через `implements`'
+        why: 'Можно, если это объектный тип: `class P implements Point {}` работает и для `type Point = { x: number }`. Нельзя реализовать только union.'
+    explanation: |
+      Для описания формы объекта `type` и `interface` почти взаимозаменяемы. Различия: `interface` открыт для
+      дополнения (declaration merging) и даёт понятные ошибки при конфликте в `extends`; `type` умеет всё, что не
+      является формой объекта: union, кортежи, mapped и conditional типы, псевдонимы примитивов. Частое правило
+      команд: `interface` для объектов и публичных API, которые могут расширять, `type` — для всего остального.
+      Главное — единообразие в проекте.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#differences-between-type-aliases-and-interfaces
+    source: own
+
+  - id: typescript-objects-012
+    level: junior
+    tags: [readonly, theory]
+    question: |
+      Что гарантирует модификатор `readonly` у свойства в TypeScript?
+    options:
+      - text: 'Компилятор не даст присвоить этому свойству новое значение'
+        correct: true
+        why: '`config.tags = []` не скомпилируется. Это проверка только на этапе компиляции и только для самого свойства.'
+      - text: 'Объект заморожен в рантайме, как после `Object.freeze`'
+        why: 'В JavaScript `readonly` исчезает. Объект остаётся обычным, и код без типов (или через `as`) может его изменить.'
+      - text: 'Содержимое вложенных объектов и массивов тоже нельзя менять'
+        why: '`readonly` поверхностный: `user.address.city = "Казань"` скомпилируется, если `city` сам не помечен `readonly`.'
+      - text: 'Свойство нельзя прочитать за пределами класса'
+        why: 'Читать `readonly`-свойство можно отовсюду, запрещена только запись. Ограничивают доступ модификаторы `private` и `protected`.'
+    explanation: |
+      `readonly` — договор о неизменяемости, который проверяет компилятор. Он поверхностный (вложенные объекты не
+      защищены) и исчезает после компиляции. Есть и способы его обойти: присвоить объект в переменную типа без
+      `readonly` — TypeScript это разрешает. Для глубокой защиты на уровне типов используют `as const` или
+      рекурсивный `DeepReadonly` (а `ReadonlyArray` защищает только сам массив, не его элементы), для защиты в рантайме — `Object.freeze`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/objects.html#readonly-properties
+    source: own

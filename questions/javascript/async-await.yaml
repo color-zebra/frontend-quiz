@@ -452,3 +452,169 @@ questions:
     links:
       - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
     source: own
+
+  - id: javascript-async-await-014
+    level: junior
+    tags: [async, return, throw, theory]
+    question: |
+      Что означают `return` и `throw` внутри `async`-функции?
+    options:
+      - text: '`return` выполняет возвращаемый промис, а `throw` его отклоняет'
+        correct: true
+        why: 'Async-функция всегда возвращает промис. `return value` выполняет его значением, `throw error` отклоняет этой ошибкой, и вызывающий код узнаёт о ней через `await` или `.catch`.'
+      - text: '`return` отдаёт значение напрямую, а `throw` бросает исключение в вызывающий код'
+        why: 'Так ведёт себя обычная функция. Async-функция и значение, и ошибку передаёт через промис.'
+      - text: 'Оба работают как в обычной функции, а промис появляется только после `await`'
+        why: 'Промис возвращается всегда, даже если внутри нет ни одного `await`.'
+      - text: '`throw` в async-функции запрещён, ошибку передают через `reject`'
+        why: '`throw` разрешён и удобен. Функции `reject` внутри async-функции вообще нет, она есть только в executor `new Promise`.'
+    explanation: |
+      `async` меняет контракт функции: вызов сразу возвращает промис, а тело выполняется синхронно до первого
+      `await`. Результат тела определяет судьбу промиса: `return` выполняет его (если вернули промис — промис
+      повторит его исход), исключение отклоняет. Даже ошибка на первой строке не вылетает из вызова, а
+      становится отклонением. Поэтому результат async-функции всегда нужно дождаться, иначе и значение, и
+      ошибка потеряются.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function#description
+    source: own
+
+  - id: javascript-async-await-015
+    level: middle
+    tags: [await, microtasks, theory]
+    question: |
+      Вызов `const result = load()` запускает `async`-функцию, и она останавливается на первом `await
+      fetchData()`. Что окажется в `result` сразу после этой строки?
+    options:
+      - text: 'Собственный промис функции `load`, пока в состоянии pending'
+        correct: true
+        why: 'Тело выполнилось синхронно до первого `await`, и на нём вызов вернул промис функции. Он завершится, когда завершится тело функции.'
+      - text: 'Тот самый промис, который вернул `fetchData()`'
+        why: 'Async-функция всегда возвращает свой новый промис. Промис из `fetchData()` она только ждёт внутри.'
+      - text: 'Промис, уже выполненный значением `undefined`'
+        why: 'Промис функции ещё не завершён: тело стоит на `await` и до конца не дошло. Значение появится, только когда тело завершится, а до тех пор промис в ожидании.'
+      - text: 'Значение, которое функция успела вычислить до `await`'
+        why: 'Промежуточные значения остаются внутри функции. Наружу уходит только промис, а результат — то, что вернёт `return`.'
+    explanation: |
+      `await` разрезает функцию на части. Всё до первого `await` выполняется синхронно при вызове, и на первом
+      `await` вызывающий код получает промис функции. На следующих `await` управление просто возвращается в
+      event loop. Когда ожидаемый промис завершится (выполнится или отклонится), продолжение встаёт в очередь
+      микрозадач, и функция возобновляется с того же места, с теми же переменными. Её промис выполнится
+      значением из `return` или отклонится исключением.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/await#description
+    source: own
+
+  - id: javascript-async-await-016
+    level: middle
+    tags: [parallel, promise-all, theory]
+    question: |
+      `f()` и `g()` — независимые запросы. В каких вариантах они выполняются одновременно?
+    options:
+      - text: '`await Promise.all([f(), g()])`'
+        correct: true
+        why: 'Оба вызова происходят сразу при построении массива, и запросы стартуют вместе. `Promise.all` лишь ждёт оба.'
+      - text: '`const pf = f(); const pg = g(); await pf; await pg;`'
+        correct: true
+        why: 'Запросы стартуют в момент вызова, до первого `await`. Ожидание по очереди уже не мешает им идти параллельно, но ошибку `pg`, случившуюся во время ожидания `pf`, среда сочтёт необработанной.'
+      - text: '`const a = await f(); const b = await g();`'
+        why: '`g()` вызовется только после того, как выполнится `f()`. Время сложится.'
+      - text: '`await Promise.all([await f(), await g()])`'
+        why: 'Внутренние `await` выполняются по очереди ещё при построении массива, и `Promise.all` получает уже готовые значения. Это та же последовательная загрузка.'
+      - text: '`for (const fn of [f, g]) await fn();`'
+        why: 'Цикл ждёт каждый вызов, прежде чем перейти к следующему: запросы идут друг за другом.'
+    explanation: |
+      Асинхронная операция начинается в момент вызова функции, а `await` только ждёт результат. Поэтому
+      параллельность определяется тем, успели ли вызвать обе функции до первого `await`. `Promise.all` — самый
+      надёжный способ: запуск одновременный, ошибки обработаны, результаты в исходном порядке. Ловушка —
+      `await` внутри массива, который передают в `Promise.all`: он снова превращает загрузку в
+      последовательную.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/all
+      - https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Async_JS/Promises#combining_multiple_promises
+    source: own
+
+  - id: javascript-async-await-017
+    level: middle
+    tags: [errors, try-catch, theory]
+    question: |
+      Какие из утверждений об обработке ошибок вокруг `async`-функций верны?
+    options:
+      - text: '`try/catch` ловит отклонение промиса, который ждут через `await` внутри `try`'
+        correct: true
+        why: '`await` превращает отклонение в исключение в точке ожидания, и обычный `catch` его перехватывает.'
+      - text: '`catch {}` без параметра тоже перехватит отклонение после `await`'
+        correct: true
+        why: 'Параметр в `catch` с ES2019 необязателен. Перехват работает так же, просто сама ошибка недоступна.'
+      - text: 'Ошибка в значении параметра по умолчанию тоже отклоняет промис функции'
+        correct: true
+        why: 'Вычисление параметров — уже часть async-функции. Исключение в `async function f(a = boom()) {}` не вылетает из вызова, а отклоняет возвращённый промис.'
+      - text: 'Если `catch` поймал ошибку после `await`, промис функции всё равно отклонится'
+        why: 'Обработанная ошибка дальше не идёт: функция продолжит работу после `catch`, и её промис выполнится тем, что она вернёт.'
+      - text: 'К промису, который вернула async-функция, нельзя добавить `.catch()`'
+        why: 'Это обычный промис, и `.catch()` с ним работает. `fn().catch(handle)` — нормальный способ обработать ошибку без `try`.'
+      - text: 'Отклонение `Promise.all` внутри `try` с `await` поймать нельзя'
+        why: '`await Promise.all([...])` превращает первое отклонение в исключение, и `catch` его поймает. Остальные ошибки потеряются, но не станут необработанными.'
+    explanation: |
+      `try/catch` работает только с исключениями, которые возникают, пока выполняется блок `try`. Отклонение
+      промиса становится исключением лишь в точке `await`. Поэтому три правила: ждать промис через `await`
+      внутри `try`; не терять вызовы async-функций без `await` или `.catch()`; внутри `try` писать `return
+      await`. Всё тело async-функции, включая значения параметров по умолчанию, работает внутри её промиса:
+      любое исключение становится отклонением. Забытый `await` ловят ESLint-правило `no-floating-promises` из
+      typescript-eslint и событие `unhandledrejection` в браузере.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function#description
+      - https://typescript-eslint.io/rules/no-floating-promises/
+    source: own
+
+  - id: javascript-async-await-018
+    level: senior
+    tags: [filter, async-callback, theory]
+    question: |
+      Почему `users.filter(async (user) => await isActive(user))` возвращает всех пользователей, даже
+      неактивных?
+    options:
+      - text: 'Колбэк возвращает промис, а любой промис в `filter` считается истинным'
+        correct: true
+        why: '`filter` синхронный и смотрит на истинность результата колбэка. Async-колбэк сразу возвращает промис, объект всегда truthy, и каждый элемент остаётся.'
+      - text: '`filter` не дождался `await` и посчитал результат равным `undefined`'
+        why: 'С `undefined` все элементы, наоборот, были бы отброшены: `undefined` ложно.'
+      - text: 'Async-колбэк в `filter` бросает `TypeError`, и возвращается исходный массив'
+        why: 'Ошибки нет: `filter` спокойно принимает async-колбэк, просто не понимает, что результат нужно ждать.'
+      - text: '`filter` кэширует результат первого элемента и применяет его ко всем'
+        why: 'Колбэк вызывается для каждого элемента, кэширования нет. Просто каждый вызов возвращает промис.'
+    explanation: |
+      Методы массивов (`forEach`, `map`, `filter`, `reduce`, `some`) ничего не знают о промисах и работают
+      синхронно. `forEach` игнорирует возвращённые промисы, `map` возвращает массив промисов, `filter` и
+      `some` проверяют промис как обычный объект — он всегда истинен. Правильный приём: сначала дождаться всех
+      проверок, потом фильтровать синхронно: `const flags = await Promise.all(users.map(isActive));
+      users.filter((_, i) => flags[i])`. Для последовательной обработки — `for...of` с `await`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter
+    source: own
+
+  - id: javascript-async-await-019
+    level: senior
+    tags: [abort-controller, cancellation, theory]
+    question: |
+      Своя `async`-функция `processItems(items, signal)` долго обрабатывает список. Как сделать, чтобы
+      `controller.abort()` действительно её останавливал?
+    options:
+      - text: 'Внутри функции проверять `signal.aborted` или вызывать `signal.throwIfAborted()`'
+        correct: true
+        why: 'Отмена кооперативная: сигнал только сообщает, что отмена запрошена, а прервать работу должен сам код. `throwIfAborted()` бросит причину отмены, и функция завершится отклонением.'
+      - text: 'Ничего делать не нужно, `abort()` сам прерывает функцию с этим сигналом'
+        why: 'Сигнал не умеет останавливать чужой код. Встроенные API вроде `fetch` прерываются, потому что сами следят за сигналом.'
+      - text: 'Вызвать у промиса этой функции метод `promise.cancel()`'
+        why: 'У промисов нет метода `cancel`: промис — только результат и не управляет операцией.'
+      - text: 'Обернуть вызов в `Promise.race([processItems(items), signal])`'
+        why: 'Сигнал — не промис, `race` воспримет его как готовое значение. И даже правильно сделанная гонка не остановит саму работу, а лишь перестанет её ждать.'
+    explanation: |
+      `AbortController` разделяет роли: контроллер отменяет, сигнал передаётся в операции. Встроенные API —
+      `fetch`, `addEventListener`, потоки — следят за сигналом сами: `fetch` отклоняется с `AbortError`, а
+      обработчик события снимается. Своя функция должна делать то же: проверять `signal.aborted` между шагами,
+      вызывать `signal.throwIfAborted()` и передавать сигнал дальше во вложенные вызовы.
+      `AbortSignal.timeout(ms)` даёт сигнал с таймаутом, `AbortSignal.any([...])` объединяет несколько.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/API/AbortController
+      - https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal/throwIfAborted
+    source: own

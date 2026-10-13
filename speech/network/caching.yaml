@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=../../speech-schema.json
+topic: network
+subtopic: caching
+questions:
+  - id: speech-network-caching-001
+    level: middle
+    tags: [cache-control, etag, conditional-requests]
+    question: |
+      Как работает HTTP-кэширование: `Cache-Control`, `ETag`, условные запросы?
+    answer: |
+      Сервер управляет кэшем заголовками ответа, главный из них — `Cache-Control`. `max-age=3600` говорит:
+      ответ свежий час, всё это время браузер берёт его из кэша и вообще не ходит в сеть. `no-cache` — хранить
+      можно, но перед использованием каждый раз спрашивать сервер. `no-store` — не хранить вовсе, для
+      чувствительных данных. `private` — только в браузере пользователя, `public` — можно и в общих кэшах
+      вроде CDN, там отдельно работает `s-maxage`.
+
+      Когда срок свежести истёк, ответ не выбрасывается, а проверяется условным запросом. Сервер заранее
+      прислал валидатор: `ETag` — идентификатор версии ресурса, часто хеш, или `Last-Modified` — дату
+      изменения. Браузер отправляет запрос с `If-None-Match` или `If-Modified-Since`. Если ресурс не
+      изменился, сервер отвечает `304 Not Modified` без тела, и браузер берёт свою копию. Это экономит трафик,
+      хотя запрос всё равно идёт.
+
+      Типичная стратегия на фронтенде: HTML отдают с `no-cache`, чтобы пользователь всегда получал свежую
+      версию, а JS, CSS и картинки с хешем в имени файла — с `max-age` на год и `immutable`. При каждом деплое
+      имя файла меняется, поэтому старый кэш просто перестаёт использоваться.
+    points:
+      - Cache-Control — max-age, no-cache, no-store, private, public
+      - Свежий ответ берётся без запроса к серверу
+      - Устаревший проверяется по ETag или Last-Modified
+      - Ответ 304 Not Modified без тела
+      - HTML с no-cache, файлы с хешем — max-age на год и immutable
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching
+    source: own

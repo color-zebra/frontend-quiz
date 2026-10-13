@@ -382,3 +382,197 @@ questions:
       - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toPrimitive
       - https://javascript.info/object-toprimitive
     source: own
+
+  - id: javascript-types-014
+    level: junior
+    tags: [primitive, reference, theory]
+    question: |
+      Какие из утверждений о примитивах и объектах в JavaScript верны?
+    options:
+      - text: 'Примитивных типов семь, в их числе `null`, `symbol` и `bigint`'
+        correct: true
+        why: 'Полный список: `string`, `number`, `bigint`, `boolean`, `undefined`, `symbol`, `null`. Всё остальное — объекты, включая массивы, функции, даты и регулярные выражения.'
+      - text: 'Примитив нельзя изменить, методы строки возвращают новую строку'
+        correct: true
+        why: '`str.toUpperCase()` не трогает `str`, а запись `str[0] = "x"` молча игнорируется (в строгом режиме — `TypeError`). Изменить можно только переменную, присвоив ей новое значение.'
+      - text: '`===` для двух объектов сравнивает ссылки, а не содержимое'
+        correct: true
+        why: '`{ a: 1 } === { a: 1 }` — `false`: это два разных объекта. Равны только две ссылки на один и тот же объект.'
+      - text: 'Массивы и функции относятся к отдельным примитивным типам'
+        why: 'Это объекты. `typeof` выделяет функции строкой `"function"`, но функция — объект со свойствами, а массив — объект с числовыми ключами и `length`.'
+      - text: 'При передаче объекта в функцию она получает его копию'
+        why: 'Копируется ссылка, а не объект. Мутация параметра (`user.name = ...`) видна снаружи, а присваивание параметру нового объекта — нет.'
+      - text: 'У примитива работают методы, потому что он хранит их в себе'
+        why: 'У примитива нет свойств. При вызове `"abc".toUpperCase()` движок временно оборачивает строку в объект `String` и берёт метод из `String.prototype` — это автоупаковка.'
+    explanation: |
+      Примитивы — простые неизменяемые значения: переменная хранит само значение, присваивание и передача в
+      функцию копируют его. Объекты — изменяемые структуры, переменная хранит ссылку на объект, и копируется
+      именно ссылка. Строго говоря, в JS всё передаётся по значению, просто значение объектной переменной —
+      ссылка (это называют call by sharing). Поэтому функция может изменить переданный объект, но не может
+      подменить его у вызывающего кода. Методы у примитивов работают через временные объекты-обёртки
+      `String`, `Number`, `Boolean`, `Symbol`, `BigInt`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Glossary/Primitive
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Data_structures
+    source: own
+
+  - id: javascript-types-015
+    level: junior
+    tags: [typeof, null, theory]
+    question: |
+      Почему `typeof null` возвращает `"object"`, хотя `null` — примитив?
+    options:
+      - text: 'Это ошибка первой реализации, её оставили ради совместимости'
+        correct: true
+        why: 'В первой версии языка тип значения хранился меткой в младших битах, у объектов метка была нулевой, а `null` был нулевым указателем и получал ту же метку. Исправление сломало бы существующие сайты.'
+      - text: 'Так задумано, `null` — это объект без свойств и прототипа'
+        why: 'По спецификации `null` — значение отдельного примитивного типа Null. Объект без прототипа создаёт `Object.create(null)`, и в нём, в отличие от `null`, можно хранить свойства.'
+      - text: '`typeof` возвращает `"object"` для всего, кроме чисел и строк'
+        why: 'У `typeof` восемь результатов: отдельные строки есть ещё для `boolean`, `undefined`, `symbol`, `bigint` и `function`.'
+      - text: 'Так только в нестрогом режиме, в строгом будет `"null"`'
+        why: 'Режим на `typeof` не влияет. Исправить результат на `"null"` предлагали для ES2015, но отказались: это ломало старый код.'
+    explanation: |
+      Это известная историческая ошибка. В первой реализации JavaScript значения хранились вместе с меткой
+      типа, и метка объекта была нулевой. `null` представлялся нулевым указателем, поэтому `typeof` видел
+      «объектную» метку. Спецификация закрепила поведение, потому что на него уже опирался код в интернете.
+      Практический вывод: проверять `null` нужно напрямую (`value === null`), а «настоящий объект» — двумя
+      условиями: `value !== null && typeof value === 'object'`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/typeof#typeof_null
+    source: own
+
+  - id: javascript-types-016
+    level: middle
+    tags: [array, instanceof, realm, theory]
+    question: |
+      Почему для проверки массива рекомендуют `Array.isArray(value)`, а не `value instanceof Array`?
+    options:
+      - text: '`instanceof` не узнает массив, созданный в другом окне или iframe'
+        correct: true
+        why: 'У каждого окна свой глобальный `Array` и свой `Array.prototype`. Массив из iframe наследует от чужого прототипа, и `instanceof Array` в основном окне даёт `false`. `Array.isArray` проверяет сам объект и от прототипа не зависит.'
+      - text: '`instanceof` возвращает `false` для пустых и разреженных массивов'
+        why: 'Любой массив, пустой или с дырами, наследует от `Array.prototype`: `[] instanceof Array` — `true`.'
+      - text: '`instanceof Array` бросает ошибку, если значение — `null`'
+        why: 'С примитивом слева, включая `null`, `instanceof` просто возвращает `false`. Ошибку он бросает из-за правого операнда, например если справа не функция и нет `Symbol.hasInstance`, а не из-за левого.'
+      - text: '`Array.isArray` быстрее, а результат у них всегда одинаковый'
+        why: 'Результаты расходятся. Кроме массивов из другого окна, есть подделка прототипа: `Object.setPrototypeOf({}, Array.prototype)` проходит `instanceof Array`, но `Array.isArray` для неё — `false`.'
+    explanation: |
+      `instanceof` проверяет цепочку прототипов: есть ли в ней `Array.prototype` текущего окна. Но таких окружений
+      (realm) может быть несколько — на странице это iframe, в Node — контексты `vm`, — и в каждом свои встроенные
+      конструкторы. Массив из другого realm — настоящий массив, но его прототип — чужой `Array.prototype`.
+      `Array.isArray` смотрит на внутреннее устройство объекта (exotic Array object) и работает везде. По той же
+      причине для ошибок из iframe ненадёжен `instanceof Error`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray#instanceof_vs._array.isarray
+    source: own
+
+  - id: javascript-types-017
+    level: middle
+    tags: [loose-equality, coercion, theory]
+    question: |
+      Какие из утверждений об алгоритме нестрогого равенства `==` верны?
+    options:
+      - text: 'Если типы операндов совпадают, `==` работает так же, как `===`'
+        correct: true
+        why: 'Это первый шаг алгоритма: при одинаковых типах вызывается строгое сравнение. Поэтому `NaN == NaN` тоже `false`, а два разных объекта не равны.'
+      - text: 'Операнд типа `boolean` перед сравнением превращается в число'
+        correct: true
+        why: '`true` становится 1, `false` — 0. Отсюда `"1" == true` — `true`, а `"true" == true` — `false`: строка `"true"` превращается в `NaN`.'
+      - text: 'Объект при сравнении со строкой или числом приводится к примитиву'
+        correct: true
+        why: 'Через `Symbol.toPrimitive`, `valueOf` или `toString`. Поэтому `[1] == 1`: массив превращается в строку `"1"`, затем в число 1. С `null` и `undefined` объект не приводится: он им просто не равен.'
+      - text: 'При сравнении строки с числом число приводится к строке'
+        why: 'Наоборот, строка приводится к числу. Поэтому `"1e3" == 1000` — `true`, а `"abc" == 0` — `false`: строка стала `NaN`.'
+      - text: '`null` и `undefined` перед сравнением приводятся к нулю'
+        why: 'Для них отдельное правило: `null` и `undefined` равны друг другу и ничему больше. Поэтому `null == 0` — `false`.'
+    explanation: |
+      Алгоритм `==` (IsLooselyEqual) по шагам: одинаковые типы — строгое сравнение; `null` и `undefined` равны
+      только друг другу; строка и число — строка превращается в число; boolean превращается в число, и
+      сравнение повторяется; объект против примитива — объект приводится к примитиву, и сравнение повторяется.
+      Каждое правило по отдельности логично, но вместе они дают сюрпризы вроде `[] == false` или `"" == 0`.
+      Поэтому в стайлгайдах `==` запрещён, кроме проверки `value == null`.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Equality#description
+      - https://tc39.es/ecma262/#sec-islooselyequal
+    source: own
+
+  - id: javascript-types-018
+    level: middle
+    tags: [object-is, strict-equality, theory]
+    question: |
+      Чем `Object.is(a, b)` отличается от `a === b`?
+    options:
+      - text: '`Object.is` иначе обрабатывает только `NaN` и знак нуля'
+        correct: true
+        why: '`Object.is(NaN, NaN)` — `true`, хотя `NaN === NaN` — `false`. `Object.is(0, -0)` — `false`, хотя `0 === -0` — `true`. Во всём остальном результаты совпадают.'
+      - text: '`Object.is` сравнивает объекты по содержимому, а не по ссылке'
+        why: 'Объекты `Object.is` тоже сравнивает по ссылке: `Object.is({}, {})` — `false`.'
+      - text: '`Object.is` не приводит типы, а `===` иногда приводит'
+        why: 'Ни тот ни другой типы не приводят. Приведение делает только `==`.'
+      - text: '`Object.is` считает `null` и `undefined` равными'
+        why: 'Это правило `==`. `Object.is(null, undefined)` — `false`, как и при `===`.'
+    explanation: |
+      `===` следует арифметике IEEE 754: там `NaN` не равен ничему, даже себе, а `+0` и `-0` равны.
+      `Object.is` реализует алгоритм SameValue — «одно и то же значение»: `NaN` совпадает с `NaN`, а нули разного
+      знака различаются. Это нужно, когда важно заметить любое изменение значения: так React решает, изменилось
+      ли состояние и зависимости хуков. Есть и третий вариант — SameValueZero (`includes`, `Map`, `Set`): `NaN`
+      равен `NaN`, а нули равны.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Equality_comparisons_and_sameness
+    source: own
+
+  - id: javascript-types-019
+    level: junior
+    tags: [falsy, truthy, to-boolean, theory]
+    question: |
+      Какие из утверждений о том, как значения ведут себя в условии `if`, верны?
+    options:
+      - text: 'В `if`, `!` и тернарном операторе значение проверяется на истинность, а не через `==`'
+        correct: true
+        why: 'Логический контекст использует своё правило (ToBoolean): ложны восемь значений, остальное истинно. Алгоритм `==` здесь не участвует.'
+      - text: 'Любой обычный объект в условии истинен, даже пустой массив или объект'
+        correct: true
+        why: 'ToBoolean для обычного объекта всегда даёт `true`, содержимое не проверяется. Поэтому пустоту массива проверяют через `items.length`.'
+      - text: '`!!value` и `Boolean(value)` всегда дают одинаковый результат'
+        correct: true
+        why: 'Оба применяют одно и то же правило ToBoolean, просто разной записью. `!` приводит к boolean и инвертирует, второй `!` возвращает исходный смысл.'
+      - text: '`if (x)` и `if (x == true)` всегда выполняют одну и ту же ветку'
+        why: 'Для `x = 2` условие `if (2)` выполнится, а `2 == true` — `false`: `true` превращается в 1.'
+      - text: '`a || b` и `a && b` всегда возвращают `true` или `false`'
+        why: 'Они проверяют истинность, но возвращают один из операндов: `"a" && "b"` даёт `"b"`, `0 || "x"` — `"x"`. Поэтому `||` и используют для значений по умолчанию.'
+    explanation: |
+      Ложных значений ровно восемь: `false`, `0`, `-0`, `0n`, `""`, `null`, `undefined`, `NaN`. Плюс
+      историческое исключение браузера — `document.all`. Всё остальное истинно, включая `"0"`, `"false"`,
+      пустые массивы и объекты. Логический контекст (`if`, `!`, `&&`, `||`, тернарный оператор) — это не
+      `==`: `[] == false` истинно, но `if ([])` тоже выполнится. Поэтому `if (x == true)` вместо `if (x)` — не
+      «более явная» запись, а другое условие.
+    links:
+      - https://developer.mozilla.org/en-US/docs/Glossary/Falsy
+    source: own
+
+  - id: javascript-types-020
+    level: senior
+    tags: [to-primitive, valueOf, toString, theory]
+    question: |
+      Обычный объект не переопределяет ни `valueOf`, ни `toString`. Почему `({}) * 2` даёт `NaN`?
+    options:
+      - text: 'Стандартный `valueOf` вернул сам объект, и вызван `toString`'
+        correct: true
+        why: 'С подсказкой «number» сначала пробуется `valueOf`, но его результат — объект, а не примитив, и он отбрасывается. Следующим вызывается `toString`, он даёт `"[object Object]"`, а эта строка в числе — `NaN`.'
+      - text: 'Объекты нельзя привести к числу, поэтому сразу будет `NaN`'
+        why: 'Объекты приводятся к числу: `[5] * 2` — 10, `new Date(0) * 2` — 0. Результат зависит от того, что вернут `valueOf` и `toString`.'
+      - text: 'Стандартный `valueOf` у объекта возвращает `NaN`'
+        why: '`Object.prototype.valueOf` возвращает сам объект. `NaN` появляется позже, при переводе строки `"[object Object]"` в число.'
+      - text: 'Умножение вызывает `toString` первым, а `valueOf` пропускает'
+        why: 'С подсказкой «number» первым идёт `valueOf`. `toString` первым вызывается при подсказке «string», например в шаблонной строке.'
+    explanation: |
+      Если у объекта нет `Symbol.toPrimitive`, работает алгоритм OrdinaryToPrimitive. При подсказке «number» или
+      «default» он вызывает `valueOf`, затем `toString`, при «string» — в обратном порядке. Результат-объект не
+      засчитывается, и пробуется следующий метод. Если оба вернули объекты — `TypeError: Cannot convert object
+      to primitive value`. У обычного объекта `valueOf` возвращает `this`, поэтому фактически всё решает
+      `toString`. У массива то же самое: `[5]` → `"5"` → 5.
+    links:
+      - https://tc39.es/ecma262/#sec-ordinarytoprimitive
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/valueOf
+    source: own

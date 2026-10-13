@@ -331,3 +331,59 @@ questions:
     links:
       - https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#inferring-within-conditional-types
     source: own
+
+  - id: typescript-utility-011
+    level: junior
+    tags: [Partial, Pick, Omit, Record, Required, theory]
+    question: |
+      Какие из описаний утилитных типов верны?
+    options:
+      - text: '`Partial<T>` делает все свойства `T` необязательными'
+        correct: true
+        why: 'Удобно для патчей и форм: `update(id, patch: Partial<User>)` принимает любой поднабор полей.'
+      - text: '`Pick<T, K>` оставляет в типе только перечисленные ключи'
+        correct: true
+        why: '`Pick<User, "id" | "name">` — тип только с этими двумя полями. Ключи должны существовать в `T`, иначе ошибка.'
+      - text: '`Record<K, V>` описывает объект с ключами `K` и значениями типа `V`'
+        correct: true
+        why: '`Record<"light" | "dark", string>` требует оба ключа. С `Record<string, V>` получается словарь с произвольными ключами.'
+      - text: '`Required<T>` делает обязательными свойства на всех уровнях вложенности'
+        why: 'Все встроенные утилиты поверхностные: `Required` убирает `?` только у свойств верхнего уровня.'
+      - text: '`Readonly<T>` убирает из типа методы, оставляя только поля'
+        why: '`Readonly` ничего не убирает, а лишь помечает все свойства, включая методы, как `readonly`.'
+      - text: '`Omit<T, K>` сообщит об ошибке, если ключа `K` нет в `T`'
+        why: 'Не сообщит: у `Omit` ключи ограничены `keyof any`, поэтому опечатка вроде `Omit<User, "emial">` молча вернёт исходный тип. `Pick`, наоборот, проверяет ключи.'
+    explanation: |
+      Утилитные типы — готовые преобразования типов, построенные на mapped и conditional types. Самые частые:
+      `Partial`, `Required`, `Readonly` меняют модификаторы свойств; `Pick` и `Omit` выбирают или убирают ключи;
+      `Record` строит объект из набора ключей; `Exclude`, `Extract`, `NonNullable` работают с union. Две вещи,
+      которые важно помнить: все они поверхностные и не влияют на рантайм. И у `Omit` нет проверки ключей,
+      поэтому в больших проектах иногда заводят свой «строгий» вариант.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/utility-types.html
+    source: own
+
+  - id: typescript-utility-012
+    level: middle
+    tags: [ReturnType, typeof, type-space, theory]
+    question: |
+      Почему пишут `ReturnType<typeof loadUser>`, а не `ReturnType<loadUser>`?
+    options:
+      - text: 'Утилите нужен тип, а `loadUser` — значение, `typeof` берёт его тип'
+        correct: true
+        why: 'Имена функций, переменных и констант живут в «мире значений». В угловые скобки можно передать только тип, и `typeof` в позиции типа переводит значение в его тип. Без него будет ошибка «refers to a value, but is being used as a type».'
+      - text: '`ReturnType` принимает только интерфейсы, а `typeof` превращает функцию в интерфейс'
+        why: '`ReturnType` принимает любой тип функции, а `typeof` в позиции типа просто берёт тип значения — никакого интерфейса не создаётся.'
+      - text: 'Без `typeof` утилита молча вернёт `any`'
+        why: 'Не вернёт `any`, а не скомпилируется: имя функции нельзя использовать как тип.'
+      - text: '`typeof` здесь — оператор JavaScript, и он выполнится в рантайме при вызове'
+        why: 'В позиции типа это оператор TypeScript, и после компиляции он исчезает. JS-оператор `typeof` — другой, он возвращает строку вроде `"function"`.'
+    explanation: |
+      В TypeScript два пространства имён: значения (то, что существует в рантайме) и типы (то, что стирается).
+      Класс и `enum` живут в обоих, функция и переменная — только среди значений, `interface` и `type` — только
+      среди типов. `typeof x` в позиции типа строит тип из значения. На этом построены `ReturnType<typeof fn>`,
+      `Parameters<typeof fn>`, `(typeof ROLES)[number]` и `keyof typeof config`.
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/typeof-types.html
+      - https://www.typescriptlang.org/docs/handbook/utility-types.html#returntypetype
+    source: own

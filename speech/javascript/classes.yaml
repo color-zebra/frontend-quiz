@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=../../speech-schema.json
+topic: javascript
+subtopic: classes
+questions:
+  - id: speech-javascript-classes-001
+    level: middle
+    tags: [class, extends, prototypes]
+    question: |
+      Как `class` и `extends` устроены под капотом?
+    answer: |
+      Класс в JavaScript — синтаксис поверх функций-конструкторов и прототипов. `class User { constructor() {}
+      greet() {} }` создаёт функцию `User`, тело `constructor` становится её кодом, а методы попадают в
+      `User.prototype` как неперечисляемые свойства. `new User()` работает так же, как с обычным
+      конструктором: создаёт объект с прототипом `User.prototype` и выполняет конструктор с ним в `this`.
+      `typeof User` — `"function"`.
+
+      `extends` связывает две цепочки. `Admin.prototype` наследует от `User.prototype`, поэтому у экземпляров
+      есть методы родителя. А сама функция `Admin` наследует от `User`, поэтому наследуются и статические
+      методы. `super.method()` ищет метод в прототипе родителя относительно класса, где метод объявлен, а не
+      относительно `this`, — так многоуровневое наследование не уходит в рекурсию.
+
+      Отличия от старых конструкторов: класс нельзя вызвать без `new`, тело в строгом режиме, до объявления
+      класс в TDZ. В производном классе `this` создаёт базовый конструктор, поэтому до `super()` к `this`
+      обращаться нельзя. И порядок инициализации: сначала отрабатывает родитель целиком, а поля наследника
+      появляются только после возврата из `super()` — поэтому вызывать переопределяемые методы из конструктора
+      родителя опасно.
+    points:
+      - Класс — функция, методы лежат в prototype и неперечисляемы
+      - extends связывает и prototype, и сами классы (статика наследуется)
+      - super опирается на класс, где объявлен метод, а не на this
+      - Без new — TypeError, тело в строгом режиме, TDZ до объявления
+      - В наследнике this создаёт базовый конструктор — сначала super()
+      - Поля наследника инициализируются после super()
+    links:
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes
+      - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/extends
+    source: own

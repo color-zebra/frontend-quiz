@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=../../speech-schema.json
+topic: nextjs
+subtopic: actions
+questions:
+  - id: speech-nextjs-actions-001
+    level: middle
+    tags: [server-actions, route-handlers]
+    question: |
+      Что такое Server Actions и чем они отличаются от Route Handlers?
+    answer: |
+      Server Action — асинхронная функция с директивой `'use server'`, которая выполняется на сервере, а
+      вызывать её можно прямо из компонентов: передать в `<form action={createPost}>`, вызвать из обработчика
+      или через `useActionState`. Next.js сам превращает вызов в POST-запрос, сериализует аргументы и
+      возвращает результат. Формы с действием в серверных компонентах работают даже до загрузки JavaScript, а
+      в клиентских отправка ждёт гидратации. После мутации в действии обычно сбрасывают кэш через `updateTag`
+      или `revalidatePath` и делают `redirect`.
+
+      Route Handler — обычный HTTP-эндпоинт: файл `route.ts` в папке `app`, экспортирующий функции `GET`,
+      `POST` и другие. Он принимает `Request` и возвращает `Response`, у него стабильный адрес, и его может
+      вызвать кто угодно: мобильное приложение, сторонний сервис, вебхук платёжной системы, `curl`.
+
+      Разница по назначению. Server Actions — для мутаций изнутри своего приложения: отправка форм, лайки,
+      сохранение настроек. Они типобезопасны и не требуют писать API. Route Handlers — для публичного API,
+      вебхуков, отдачи файлов, нестандартных ответов и всего, что вызывают извне.
+
+      Важно про безопасность: Server Action — это всё равно публичный эндпоинт. Его можно вызвать прямым
+      запросом в обход интерфейса, поэтому внутри каждого действия проверяют авторизацию и права и валидируют
+      входные данные.
+    points:
+      - Server Action — функция с 'use server', вызывается из компонентов
+      - Вызов становится POST-запросом; формы работают без JS
+      - Route Handler — route.ts с GET/POST, принимает Request, отдаёт Response
+      - Actions — для внутренних мутаций, Route Handlers — для внешних вызовов и вебхуков
+      - Action — публичный эндпоинт, права проверяют внутри
+    links:
+      - https://nextjs.org/docs/app/getting-started/mutating-data
+      - https://nextjs.org/docs/app/getting-started/route-handlers
+    source: own

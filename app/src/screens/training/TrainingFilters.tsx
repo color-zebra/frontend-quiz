@@ -55,9 +55,9 @@ export function TrainingFilters({ bank, kind, onStart }: TrainingFiltersProps) {
   const source = mode === "all" ? all : isIn(mode);
   const pool = getPool(source, effective);
   const modeOptions = [
-    { value: "all" as const, label: "Все" },
-    { value: "new" as const, label: `Новые · ${counts.new}`, disabled: counts.new === 0 },
-    { value: "mistakes" as const, label: `Ошибки · ${counts.mistakes}`, disabled: counts.mistakes === 0 },
+    { value: "all" as const, label: "Все", count: all.length },
+    { value: "new" as const, label: "Новые", count: counts.new, disabled: counts.new === 0 },
+    { value: "mistakes" as const, label: "Ошибки", count: counts.mistakes, disabled: counts.mistakes === 0 },
   ];
 
   const selectedTopics = bank.topics.filter((t) => filters.topics.includes(t.id));

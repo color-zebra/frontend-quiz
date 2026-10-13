@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=../../speech-schema.json
+topic: typescript
+subtopic: narrowing
+questions:
+  - id: speech-typescript-narrowing-001
+    level: middle
+    tags: [discriminated-union, exhaustiveness]
+    question: |
+      Что такое discriminated union и зачем он нужен?
+    code: |
+      type State =
+        | { status: 'loading' }
+        | { status: 'success'; data: User }
+        | { status: 'error'; error: Error };
+    codeLang: ts
+    answer: |
+      Discriminated union — это объединение объектных типов, у которых есть общее поле с литеральным
+      значением, «дискриминант». В примере это `status`. Проверив его, TypeScript точно знает, какой вариант
+      перед ним: в ветке `status === 'success'` доступно `data`, а в ветке `'error'` — `error`. Без
+      дискриминанта пришлось бы делать все поля необязательными и проверять каждое.
+
+      Главная польза — невозможные состояния становятся невыразимыми. Если описать состояние как `{ loading:
+      boolean; data?: User; error?: Error }`, легко получить одновременно `loading: true` и `error`. С union
+      таких комбинаций просто нет.
+
+      Второй плюс — исчерпывающая проверка. В `switch` по `status` можно добавить `default` с присваиванием
+      `const unreachable: never = state`. Когда в union появится новый вариант, а `switch` забудут обновить,
+      компилятор покажет ошибку ровно в этом месте. Так описывают состояния запросов, экшены в Redux, события,
+      результаты операций вида `{ ok: true, value } | { ok: false, error }`.
+    points:
+      - Union объектов с общим литеральным полем-дискриминантом
+      - Проверка дискриминанта сужает тип до варианта
+      - Невозможные комбинации полей не выражаются в типе
+      - Исчерпывающая проверка через never в default
+      - Применение — состояния запросов, экшены, Result-типы
+    links:
+      - https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions
+    source: own
