@@ -4,11 +4,23 @@
   gap: 14px;
 }
 
+/* Тема, подтема и уровень — всегда одной строкой: длинная подпись обрезается многоточием, значок уровня не уезжает. */
 .meta {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+}
+
+.meta > * {
+  flex: none;
+}
+
+.meta > .pill {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pill {
@@ -16,6 +28,13 @@
   border-radius: 999px;
   color: var(--text-2);
   font-size: 12px;
+}
+
+/* На совсем узком экране тема уступает место подтеме. */
+@media (max-width: 330px) {
+  .pillTopic {
+    display: none;
+  }
 }
 
 .text {

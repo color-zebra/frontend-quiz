@@ -173,4 +173,28 @@ export default async function screen(t) {
     await t.shot(p, "330-five");
     await ctx.close();
   });
+
+  // 5. Строка над вопросом: «Сети в браузере · HTTP — методы, статусы, заголовки» не влезает целиком.
+  const httpQuestion = question("s-http", "HTTP: какой верен?", fourOptions("H"), { topic: "network", subtopic: "http", level: "senior" });
+  await withBank({ questions: [httpQuestion] }, async () => {
+    for (const width of [390, 330]) {
+      const ctx = await t.newContext({ serviceWorkers: "block", viewport: { width, height: 700 } });
+      const p = await ctx.newPage();
+      await p.goto(t.url);
+      await p.getByRole("button", { name: /^Начать/ }).click();
+      const pill = p.locator("article > div").first().locator("> span").first();
+      const badge = p.locator("article > div").first().getByText("senior", { exact: true });
+      const [pillBox, badgeBox] = await Promise.all([pill.boundingBox(), badge.boundingBox()]);
+      check(`${width}px: подпись темы и уровень — одной строкой`, badgeBox.y < pillBox.y + pillBox.height && pillBox.height < 40, `${pillBox.height}px`);
+      const text = await pill.innerText();
+      if (width === 390) {
+        check("390px: тема видна, хвост подтемы обрезан многоточием", text.startsWith("Сети в браузере · ") && (await pill.evaluate((el) => el.scrollWidth > el.clientWidth)));
+        check("полная подпись — в подсказке", (await pill.getAttribute("title")) === "Сети в браузере · HTTP — методы, статусы, заголовки");
+      } else {
+        check("330px: тема скрыта, видна подтема", text.startsWith("HTTP — методы"), text);
+      }
+      await t.shot(p, `topic-line-${width}`);
+      await ctx.close();
+    }
+  });
 }

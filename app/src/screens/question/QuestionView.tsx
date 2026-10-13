@@ -2,7 +2,7 @@ import clsx from "clsx";
 import { useLayoutEffect, useRef, type Ref, type RefObject } from "react";
 import { getHasExplanation, getIsAnswerCorrect, getIsMultiple, getIsSpeech } from "../../data/answers";
 import { formatTopicLine, getTopicTitles } from "../../data/titles";
-import type { Question, QuestionBank } from "../../data/types";
+import { UNGROUPED, type Question, type QuestionBank } from "../../data/types";
 import { formatLink } from "../../shared/lib/formatLink";
 import glass from "../../shared/ui/glass.module.css";
 import { Icon } from "../../shared/ui/Icon";
@@ -51,8 +51,16 @@ export function QuestionView({
   return (
     <article className={styles.question}>
       <div className={styles.meta}>
-        <span className={clsx(styles.pill, glass.glass)}>
-          {formatTopicLine(topicTitle, subtopicTitle)}
+        {/* Полная подпись — в подсказке: на экране конец может обрезаться, а на узком тема скрыта. */}
+        <span className={clsx(styles.pill, glass.glass)} title={formatTopicLine(topicTitle, subtopicTitle)}>
+          {subtopicTitle === UNGROUPED ? (
+            topicTitle
+          ) : (
+            <>
+              <span className={styles.pillTopic}>{topicTitle} · </span>
+              {subtopicTitle}
+            </>
+          )}
         </span>
         <LevelBadge level={question.level} />
       </div>
