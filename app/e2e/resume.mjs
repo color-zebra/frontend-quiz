@@ -1,7 +1,7 @@
 // Продолжение сессии после перезапуска и плашка «Вышла новая база» с обновлением из кабинета.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { openCabinet, option, question, withBank } from "./fixtures.mjs";
+import { chooseLength, openCabinet, option, question, withBank } from "./fixtures.mjs";
 import { DIST_DIR } from "./lib.mjs";
 
 const four = (id) => [option(`${id}-верно`, true), option(`${id}-нет1`), option(`${id}-нет2`), option(`${id}-нет3`)];
@@ -24,7 +24,7 @@ export default async function resume(t) {
 
     await home();
     check("без прерванной сессии плашки нет", !(await visible(banner, 800)));
-    await page.getByRole("button", { name: "10", exact: true }).click();
+    await chooseLength(page, "10");
     await page.getByRole("button", { name: /^Начать/ }).click();
     await page.locator("ol li button").filter({ hasText: `${await currentId()}-верно` }).click();
     await page.getByRole("button", { name: "Дальше" }).click();

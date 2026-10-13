@@ -1,7 +1,7 @@
 // Устные вопросы: устный набор из файла, эталон и самооценка, раздел в основной базе, галка «Добавлять устные».
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { fileInput, option, question, speechQuestion, withBank } from "./fixtures.mjs";
+import { fileInput, openSettings, option, question, speechQuestion, withBank } from "./fixtures.mjs";
 import { ROOT_DIR } from "./lib.mjs";
 
 export default async function speech(t) {
@@ -21,8 +21,10 @@ export default async function speech(t) {
 
     await page.getByRole("button", { name: /^Пример устного набора/ }).click();
     check("экран набора: раздел «Устные вопросы»", await visible(page.getByText(/^Устные вопросы · 6 вопросов/)));
+    await openSettings(page);
     check("у устного набора нет галки «Добавлять устные»", !(await visible(page.getByText("Добавлять устные вопросы"), 500)));
     await page.getByRole("button", { name: "10", exact: true }).click();
+    await page.getByRole("button", { name: "Назад" }).click();
     await page.getByRole("button", { name: "Начать · 6 вопросов" }).click();
 
     await page.getByText("1 / 6").waitFor();
@@ -92,9 +94,14 @@ questions:
     await page.getByText("Что тренируем?").waitFor();
     check("плитка «Устные вопросы» на главной", await visible(page.getByRole("button", { name: /Устные вопросы/ })));
     check("без галки — только тестовые", await visible(page.getByText(/^Под фильтр подходит 2 вопроса$/)));
+    await openSettings(page);
     await page.getByText("Добавлять устные вопросы").click();
     check("с галкой — тестовые и устные", await visible(page.getByText(/^Под фильтр подходит 4 вопроса$/)));
+    await page.getByRole("button", { name: "Назад" }).click();
+    check("на главной — тоже 4, в сводке «с устными»", (await visible(page.getByText(/^Под фильтр подходит 4 вопроса$/))) && (await visible(page.getByText(/· с устными$/))));
+    await openSettings(page);
     await page.getByText("Добавлять устные вопросы").click();
+    await page.getByRole("button", { name: "Назад" }).click();
 
     await page.getByRole("button", { name: /Устные вопросы/ }).click();
     check("раздел устных: свой экран", await visible(page.getByRole("heading", { name: "Устные вопросы" })));

@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../schema.json
 topic: react
-subtopic: rendering
+subtopic: internals
 questions:
   - id: react-rendering-001
     level: junior

@@ -1,5 +1,5 @@
 // Вопросы с несколькими ответами: галочки, «Ответить», засчёт «все и без лишних», пометки разбора.
-import { option, question, withBank } from "./fixtures.mjs";
+import { chooseLength, option, question, withBank } from "./fixtures.mjs";
 
 export default async function multi(t) {
   const { check, visible } = t;
@@ -14,7 +14,7 @@ export default async function multi(t) {
     const page = await context.newPage();
     await page.goto(t.url);
     await page.getByText("Что тренируем?").waitFor();
-    await page.getByRole("button", { name: "10", exact: true }).click();
+    await chooseLength(page, "10");
     await page.getByRole("button", { name: "Начать · 3 вопроса" }).click();
 
     const optionButton = (text) => page.locator("ol li button").filter({ hasText: new RegExp(`^\\d?${text}`) });

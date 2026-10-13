@@ -1,6 +1,6 @@
 // Поведение экрана: жест «потянуть — обновить» выключен, страница под шторкой не прокручивается,
 // итог ответа виден в нижней панели, выбранный вариант после ответа остаётся под пальцем.
-import { option, question, withBank } from "./fixtures.mjs";
+import { chooseLength, openSettings, option, question, withBank } from "./fixtures.mjs";
 
 const LONG = " Длинное пояснение, которое после ответа раздвигает список вариантов.".repeat(4);
 const longOption = (text, correct = false) => ({ ...option(text, correct), why: `Пояснение к ${text}.${LONG}` });
@@ -26,7 +26,8 @@ export default async function screen(t) {
   check("плитки без размытия — прокрутка лёгкая", tileBlur === "none", tileBlur);
 
   // 2. Шторка подтем: страница под ней стоит.
-  await page.getByRole("button", { name: /Подтемы/ }).click();
+  await openSettings(page);
+  await page.getByRole("button", { name: /^Подтемы «/ }).first().click();
   await page.getByRole("dialog").waitFor();
   // Сжиматель стилей однажды выбросил обычное свойство размытия, оставив -webkit-, — и в Chrome стекло стало прозрачным.
   const sheetBlur = await page.getByRole("dialog").locator('[class*="_panel_"]').evaluate((el) => getComputedStyle(el).backdropFilter);
@@ -54,7 +55,7 @@ export default async function screen(t) {
     const p = await ctx.newPage();
     await p.goto(t.url);
     await p.getByText("Что тренируем?").waitFor();
-    await p.getByRole("button", { name: "10", exact: true }).click();
+    await chooseLength(p, "10");
     await p.getByRole("button", { name: /^Начать/ }).click();
 
     const options = p.locator("ol li button");

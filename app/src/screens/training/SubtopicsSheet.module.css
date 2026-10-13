@@ -1,21 +1,15 @@
-.topics {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-}
-
-.header {
+.head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  color: var(--text-2);
+  font-size: 13px;
 }
 
-.title {
-  margin: 0;
-  font-family: var(--font-heading);
-  font-size: 15px;
+.head b {
+  color: var(--text);
 }
 
 .toggleAll {

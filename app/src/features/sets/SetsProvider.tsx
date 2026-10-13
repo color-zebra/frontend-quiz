@@ -11,11 +11,14 @@ export interface AddResult {
   record: SetRecord;
   /** Пропущенные вопросы с причинами — для отчёта автору набора. */
   skipped: SkippedQuestion[];
+  /** Замечания к файлу, которые не помешали загрузке. */
+  warnings: string[];
 }
 
 export interface UpdateResult {
   diff: BankDiff;
   skipped: SkippedQuestion[];
+  warnings: string[];
 }
 
 /** Загрузка файла: новый набор или обновление уже загруженного файла с тем же именем. */
@@ -75,17 +78,17 @@ export function SetsProvider({ children }: { children: ReactNode }) {
     const existing = sets.find((s) => s.id === id);
     if (existing) throw new Error(`Этот набор уже добавлен: «${existing.title}»`);
 
-    const { file, skipped } = await fetchSet(url);
+    const { file, skipped, warnings } = await fetchSet(url);
     const now = Date.now();
     const record: SetRecord = { id, url, title: file.title ?? "Набор вопросов", addedAt: now, updatedAt: now, skipped: skipped.length, file };
     put(record);
-    return { record, skipped };
+    return { record, skipped, warnings };
   }
 
   /** Набор из файла с устройства. Файл с тем же именем, что уже загружен, обновляет набор. */
   async function importSetFile(source: File): Promise<FileImportResult> {
     const fileName = source.name;
-    const { file, skipped } = parseSetFile(await source.text(), fileName.replace(/\.ya?ml$/i, "") || "Набор вопросов");
+    const { file, skipped, warnings } = parseSetFile(await source.text(), fileName.replace(/\.ya?ml$/i, "") || "Набор вопросов");
     const id = getSetId(`file:${fileName}`);
     const existing = sets.find((s) => s.id === id);
     const now = Date.now();
@@ -95,22 +98,22 @@ export function SetsProvider({ children }: { children: ReactNode }) {
       put(record);
       const diff = getBankDiff(existing.file, file);
       resetQuestions(id, diff.changedIds);
-      return { kind: "updated", record, diff, skipped };
+      return { kind: "updated", record, diff, skipped, warnings };
     }
     const record: SetRecord = { id, fileName, title, addedAt: now, updatedAt: now, skipped: skipped.length, file };
     put(record);
-    return { kind: "added", record, skipped };
+    return { kind: "added", record, skipped, warnings };
   }
 
   async function updateSet(id: string): Promise<UpdateResult> {
     const current = sets.find((s) => s.id === id);
     if (!current) throw new Error("Набор не найден");
     if (!current.url) throw new Error("Этот набор загружен из файла — загрузи файл ещё раз");
-    const { file, skipped } = await fetchSet(current.url);
+    const { file, skipped, warnings } = await fetchSet(current.url);
     put({ ...current, title: file.title ?? current.title, updatedAt: Date.now(), skipped: skipped.length, file });
     const diff = getBankDiff(current.file, file);
     resetQuestions(id, diff.changedIds);
-    return { diff, skipped };
+    return { diff, skipped, warnings };
   }
 
   function removeSet(id: string) {

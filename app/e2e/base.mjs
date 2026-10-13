@@ -2,6 +2,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DIST_DIR } from "./lib.mjs";
+import { chooseLength, openSettings } from "./fixtures.mjs";
 
 const QUESTIONS = join(DIST_DIR, "questions.json");
 
@@ -45,7 +46,7 @@ export default async function base(t) {
     check("повторное открытие — без сети, из копии на устройстве", requests === 0, `запросов: ${requests}`);
 
     // Сессия на 10 вопросов с заметкой.
-    await page.getByRole("button", { name: "10", exact: true }).click();
+    await chooseLength(page, "10");
     await page.getByRole("button", { name: "Начать · 10 вопросов" }).click();
     for (let i = 1; i <= 10; i++) {
       await page.getByText(`${i} / 10`).waitFor();
@@ -66,17 +67,19 @@ export default async function base(t) {
     await page.getByRole("button", { name: "На главную" }).click();
     await page.getByText("Что тренируем?").waitFor();
 
-    // Подтемы.
-    await page.getByRole("button", { name: /Подтемы/ }).click();
-    await page.getByRole("dialog").getByRole("button", { name: "Снять все" }).first().click();
+    // Подтемы — на экране настройки, шторка одной темы.
+    await openSettings(page);
+    await page.getByRole("button", { name: new RegExp(`^Подтемы «${firstTopic.title}»`) }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Снять все" }).click();
     await page.keyboard.press("Escape");
     check(
       `снятие подтем «${firstTopic.title}» сужает пул`,
       await visible(page.getByText(new RegExp(`^Под фильтр подходит ${total - firstTopicCount} `))),
     );
-    await page.getByRole("button", { name: /Подтемы/ }).click();
-    await page.getByRole("dialog").getByRole("button", { name: "Выбрать все" }).first().click();
+    await page.getByRole("button", { name: new RegExp(`^Подтемы «${firstTopic.title}»`) }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Выбрать все" }).click();
     await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Назад" }).click();
 
     // «Обновить» — в кабинете: правим файл на сервере.
     await page.getByRole("button", { name: "Кабинет" }).click();
@@ -108,7 +111,7 @@ export default async function base(t) {
     await page.getByRole("button", { name: "Назад" }).click();
 
     // Бесконечный режим и системная «Назад».
-    await page.getByRole("button", { name: "∞", exact: true }).click();
+    await chooseLength(page, "∞");
     await page.getByRole("button", { name: "Начать · без конца" }).click();
     for (let i = 1; i <= 3; i++) {
       await page.getByText(`Вопрос ${i}`, { exact: true }).waitFor();

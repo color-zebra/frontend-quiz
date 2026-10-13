@@ -2,9 +2,11 @@ import clsx from "clsx";
 import ReactMarkdown, { type Components } from "react-markdown";
 import styles from "./Markdown.module.css";
 
-// Тексты вопросов используют только `код` и **жирный**. Остальное разворачивается в простой текст,
+// Тексты вопросов используют `код`, **жирный** и списки. Остальное разворачивается в простой текст,
 // а HTML внутри текста react-markdown не исполняет — это важно для чужих наборов вопросов.
-const ALLOWED = ["p", "strong", "em", "code", "a", "br"];
+const ALLOWED = ["p", "strong", "em", "code", "a", "br", "ul", "ol", "li"];
+// Варианты ответа и подписи — одна строка: список внутри неё сломал бы вёрстку.
+const INLINE_ALLOWED = ALLOWED.filter((tag) => !["ul", "ol", "li"].includes(tag));
 
 const blockComponents: Components = {
   a: ({ href, children }) => (
@@ -28,7 +30,7 @@ interface MarkdownProps {
 
 export function Markdown({ text, inline = false, className }: MarkdownProps) {
   const content = (
-    <ReactMarkdown allowedElements={ALLOWED} unwrapDisallowed components={inline ? inlineComponents : blockComponents}>
+    <ReactMarkdown allowedElements={inline ? INLINE_ALLOWED : ALLOWED} unwrapDisallowed components={inline ? inlineComponents : blockComponents}>
       {text}
     </ReactMarkdown>
   );

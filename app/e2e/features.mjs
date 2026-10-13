@@ -1,5 +1,5 @@
 // Перенос строк в коде, «Не знаю», заметка только по кнопке, отчёт о пропущенных вопросах набора.
-import { fileInput, option, question, withBank } from "./fixtures.mjs";
+import { chooseLength, fileInput, option, question, withBank } from "./fixtures.mjs";
 
 const LONG_LINE = `const result = someFunction(firstArgument, secondArgument, thirdArgument, fourthArgument, fifthArgument);`;
 
@@ -18,7 +18,7 @@ export default async function features(t) {
     const page = await context.newPage();
     await page.goto(t.url);
     await page.getByText("Что тренируем?").waitFor();
-    await page.getByRole("button", { name: "10", exact: true }).click();
+    await chooseLength(page, "10");
     await page.getByRole("button", { name: "Начать · 2 вопроса" }).click();
     await page.getByText(/^\d \/ 2$/).waitFor();
 
@@ -106,5 +106,48 @@ questions:
   check("причина: непонятный уровень", await visible(page.getByText(/^bad-2: непонятный уровень «easy»/)));
   check("причина: повтор id", await visible(page.getByText("ok-1: такой id уже был выше в файле")));
   await t.shot(page, "skipped");
+
+  // Длинное название подтемы — набор загружается, но с замечанием.
+  const longSubtopic = "Очень длинное название подтемы про всё";
+  const longYaml = `title: Длинные подтемы
+questions:
+  - id: long-1
+    subtopic: ${longSubtopic}
+    level: junior
+    question: Вопрос
+    options:
+      - text: да
+        correct: true
+      - text: нет
+`;
+  await page.locator('input[type="file"]').setInputFiles(fileInput("long.yaml", longYaml));
+  check(
+    "длинная подтема: набор добавлен, есть замечание",
+    await visible(page.getByText("Добавлен «Длинные подтемы»: 1 вопрос. Есть замечания к файлу — подробности ниже.")),
+  );
+  await page.getByText("Что поправить в файле").click();
+  check(
+    "замечание называет подтему и длину",
+    await visible(page.getByText(`Подтема «${longSubtopic}» — ${longSubtopic.length} символов: на телефоне не влезет в одну строку, лучше до 36`)),
+  );
+  await t.shot(page, "long-subtopic");
   await context.close();
+
+  // Списки в пояснении: строки «- пункт» показываются списком, а не склеиваются в абзац.
+  const listQuestion = question("f-list", "Вопрос со списком", [option("Да", true), option("Нет"), option("Нет-2"), option("Нет-3")], {
+    explanation: "**Как улучшить.** Вот так:\n- ПУНКТ-1 с `кодом`\n- ПУНКТ-2\n- ПУНКТ-3\n\nИ абзац после списка.",
+  });
+  await withBank({ questions: [listQuestion] }, async () => {
+    const listContext = await t.newContext({ serviceWorkers: "block" });
+    const p = await listContext.newPage();
+    await p.goto(t.url);
+    await p.getByRole("button", { name: /^Начать/ }).click();
+    await p.getByRole("button", { name: "Не знаю" }).click();
+    const explanation = p.locator("section").filter({ hasText: "ПУНКТ-1" });
+    check("пояснение со списком — три пункта списка", (await explanation.locator("ul > li").count()) === 3);
+    check("абзац после списка — отдельно", await visible(explanation.locator("p").filter({ hasText: "И абзац после списка." })));
+    await explanation.scrollIntoViewIfNeeded();
+    await t.shot(p, "list");
+    await listContext.close();
+  });
 }

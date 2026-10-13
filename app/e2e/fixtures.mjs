@@ -82,3 +82,17 @@ export async function openCabinet(page, url) {
   await page.getByRole("button", { name: "Кабинет" }).click();
   await page.getByRole("heading", { name: "Кабинет" }).waitFor();
 }
+
+/** Экран «Настройка тренировки» — со сводки «Тренировка» на главной, экране устных или набора. */
+export async function openSettings(page) {
+  await page.getByRole("button", { name: /^Тренировка/ }).click();
+  await page.getByRole("heading", { name: "Настройка тренировки" }).waitFor();
+}
+
+/** Длина сессии выбирается на экране настройки: открыть, выбрать, вернуться назад. */
+export async function chooseLength(page, label) {
+  await openSettings(page);
+  await page.getByRole("button", { name: label, exact: true }).click();
+  await page.getByRole("button", { name: "Назад" }).click();
+  await page.getByRole("button", { name: /^Тренировка/ }).waitFor();
+}

@@ -3,6 +3,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ROOT_DIR, readConfig } from "./lib.mjs";
+import { openSettings } from "./fixtures.mjs";
 
 // В config.ts ссылка на пример собрана из REPO_URL тем же способом.
 const SAMPLE_SET_URL = `${readConfig("REPO_URL")}/blob/main/examples/sample-set.yaml`;
@@ -111,11 +112,14 @@ questions:
   // Тренировка по примеру.
   await page.getByRole("button", { name: /Пример набора — сложность и Git/ }).first().click();
   check("экран набора: заголовок", await visible(page.getByRole("heading", { name: "Пример набора — сложность и Git" })));
+  await openSettings(page);
   check(
     "темы набора из поля topic",
-    (await visible(page.getByRole("button", { name: /Сложность алгоритмов/ }))) && (await visible(page.getByRole("button", { name: /^Git/ }))),
+    (await visible(page.getByRole("button", { name: /^Сложность алгоритмов/ }))) && (await visible(page.getByRole("button", { name: /^Git/ }))),
   );
+  check("экран настройки набора: подзаголовок с набором", await visible(page.getByText("Набор «Пример набора — сложность и Git»")));
   await page.getByRole("button", { name: "10", exact: true }).click();
+  await page.getByRole("button", { name: "Назад" }).click();
   await page.getByRole("button", { name: "Начать · 6 вопросов" }).click();
   for (let i = 1; i <= 6; i++) {
     await page.getByText(`${i} / 6`).waitFor();

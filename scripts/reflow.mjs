@@ -1,25 +1,44 @@
 // Заново переносит строки в блоках `explanation: |` и `question: |`, чтобы после правок не оставалось
-// рваных строк. Ширина — 110 символов вместе с отступом. Абзацы (пустые строки) сохраняются.
+// рваных строк. Ширина — 110 символов вместе с отступом. Абзацы (пустые строки) и пункты списков («- …», «1. …»)
+// сохраняются: каждый пункт переносится отдельно, его продолжение — с отступом под текст пункта.
 // Запуск: node scripts/reflow.mjs questions/network/*.yaml
 import { readFileSync, writeFileSync } from "node:fs";
 
 const WIDTH = 110;
+const LIST_ITEM = /^([-*]|\d+\.)\s+/;
 const files = process.argv.slice(2);
 
-function wrap(text, indent) {
+/** hanging — отступ строк после первой: у пункта списка продолжение стоит под его текстом, а не под «-». */
+function wrap(text, indent, hanging = "") {
   const words = text.split(/\s+/).filter(Boolean);
   const lines = [];
   let line = "";
+  const prefix = () => (lines.length ? indent + hanging : indent);
   for (const word of words) {
-    if (line && indent.length + line.length + 1 + word.length > WIDTH) {
-      lines.push(indent + line);
+    if (line && prefix().length + line.length + 1 + word.length > WIDTH) {
+      lines.push(prefix() + line);
       line = word;
     } else {
       line = line ? `${line} ${word}` : word;
     }
   }
-  if (line) lines.push(indent + line);
+  if (line) lines.push(prefix() + line);
   return lines;
+}
+
+/** Абзац — текст и/или пункты списка: каждый пункт начинается с маркера, остальные строки продолжают предыдущее. */
+function wrapParagraph(paragraph, indent) {
+  const chunks = [];
+  for (const raw of paragraph.split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (chunks.length === 0 || LIST_ITEM.test(line)) chunks.push(line);
+    else chunks[chunks.length - 1] += ` ${line}`;
+  }
+  return chunks.flatMap((chunk) => {
+    const marker = chunk.match(LIST_ITEM)?.[0];
+    return wrap(chunk, indent, marker ? " ".repeat(marker.length) : "");
+  });
 }
 
 for (const file of files) {
@@ -41,7 +60,7 @@ for (const file of files) {
     const paragraphs = block.join("\n").split(/\n\s*\n/);
     paragraphs.forEach((p, k) => {
       if (k > 0) out.push("");
-      out.push(...wrap(p, indent));
+      out.push(...wrapParagraph(p, indent));
     });
   }
   writeFileSync(file, out.join(eol));

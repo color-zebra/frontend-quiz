@@ -1,0 +1,148 @@
+.cardHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cardAction {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Темы списком: строка — галка с названием и кнопка подтем справа. */
+.rows {
+  display: flex;
+  flex-direction: column;
+  margin: -4px 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+}
+
+.row + .row {
+  border-top: 1px solid var(--glass-border);
+}
+
+.rowToggle {
+  display: flex;
+  flex: 1;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  text-align: left;
+}
+
+.box {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid var(--chip-border);
+  border-radius: 8px;
+  background: var(--chip-bg);
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.boxOn {
+  border-color: var(--chip-on-border);
+  background: var(--chip-on-bg);
+  box-shadow: var(--chip-on-glow);
+  color: var(--chip-on-text);
+}
+
+.box svg {
+  width: 16px;
+  height: 16px;
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.rowTitle {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.rowSub {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.subtopics {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 6px 0 12px;
+  border: 1px solid var(--chip-border);
+  border-radius: var(--chip-radius);
+  background: var(--chip-bg);
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.subtopics svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Часть подтем выключена — видно сразу, не открывая. */
+.partial {
+  border-color: var(--chip-on-border);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.off {
+  opacity: 0.5;
+}
+
+/* Галка «Добавлять устные вопросы». */
+.toggle {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 4px 4px 0;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.toggle input {
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: var(--accent);
+}
+
+.toggle > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toggleHint {
+  color: var(--muted);
+  font-size: 12.5px;
+}

@@ -30,13 +30,13 @@ topics:
       - id: grid
         title: Grid
       - id: positioning
-        title: Позиционирование и наложение (z-index)
+        title: Позиционирование и z-index
       - id: units
         title: Единицы и адаптивность
       - id: selectors
-        title: Селекторы, псевдоклассы и псевдоэлементы
+        title: Селекторы и псевдоклассы
       - id: rendering
-        title: Отрисовка, анимации и производительность
+        title: Отрисовка и анимации
       - id: modern
         title: Custom properties и современный CSS
       - id: scss
@@ -64,7 +64,7 @@ topics:
       - id: async-await
         title: async/await и асинхронные паттерны
       - id: objects
-        title: Объекты, дескрипторы, копирование, Proxy
+        title: "Объекты: дескрипторы, копии, Proxy"
       - id: arrays
         title: Массивы, Map и Set
       - id: functions
@@ -80,7 +80,7 @@ topics:
       - id: generators
         title: Итераторы и генераторы
       - id: strings
-        title: Строки, Unicode и регулярные выражения
+        title: Строки, Unicode и регулярки
 
   - id: typescript
     title: TypeScript
@@ -88,7 +88,7 @@ topics:
       - id: basics
         title: Типы и вывод типов
       - id: structural
-        title: Структурная типизация и совместимость
+        title: Структурная типизация
       - id: narrowing
         title: Объединения и сужение типов
       - id: objects
@@ -100,19 +100,19 @@ topics:
       - id: utility
         title: Встроенные утилитные типы
       - id: advanced
-        title: Условные, mapped и template literal типы
+        title: Условные, mapped и template-типы
       - id: classes
         title: Классы в TypeScript
       - id: runtime
-        title: TypeScript и рантайм — стирание типов, enum
+        title: TypeScript и рантайм
       - id: config
         title: tsconfig, .d.ts и сборка
 
   - id: react
     title: React
     subtopics:
-      - id: rendering
-        title: Рендер, коммит и reconciliation
+      - id: internals
+        title: React под капотом
       - id: state
         title: Состояние, обновления и батчинг
       - id: effects
@@ -133,8 +133,6 @@ topics:
         title: Формы и Actions
       - id: concurrent
         title: Переходы, Suspense и границы ошибок
-      - id: internals
-        title: Под капотом — Fiber, reconciliation, конкурентный рендер
       - id: versions
         title: Версии React
       - id: typescript
@@ -146,7 +144,7 @@ topics:
       - id: http
         title: HTTP — методы, статусы, заголовки
       - id: transport
-        title: Соединение — DNS, TLS, HTTP/2 и HTTP/3
+        title: DNS, TLS, HTTP/2 и HTTP/3
       - id: cors
         title: Same-origin policy и CORS
       - id: cookies
@@ -156,7 +154,9 @@ topics:
       - id: security
         title: Безопасность — XSS, CSRF, CSP
       - id: api
-        title: Работа с API — REST, GraphQL, WebSocket, повторы
+        title: "API: REST, GraphQL, WebSocket"
+      - id: performance
+        title: Производительность и Core Web Vitals
 
   - id: nextjs
     title: Next.js
@@ -166,7 +166,7 @@ topics:
       - id: components
         title: Server и Client Components
       - id: rendering
-        title: Статический и динамический рендеринг, стриминг
+        title: SSG, SSR и стриминг
       - id: caching
         title: Кэширование и ревалидация
       - id: actions

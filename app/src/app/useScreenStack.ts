@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { TrainingKind } from "../features/session/filters";
 
 export type AppScreen =
   | { name: "home" }
@@ -11,6 +12,7 @@ export type AppScreen =
   | { name: "sets" }
   | { name: "speechHome" }
   | { name: "setHome"; setId: string }
+  | { name: "training"; setId: string; kind: TrainingKind }
   | { name: "help" }
   | { name: "helpBasics" }
   | { name: "helpSets" }

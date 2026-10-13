@@ -16,13 +16,15 @@ import { Icon } from "../../shared/ui/Icon";
 import { Notice } from "../../shared/ui/Notice";
 import { Screen, TopBar } from "../../shared/ui/Screen";
 import { ScreenTitle } from "../../shared/ui/ScreenTitle";
-import { TrainingFilters } from "../training/TrainingFilters";
+import { TrainingStart } from "../training/TrainingStart";
 import styles from "./HomeScreen.module.css";
 
 interface HomeScreenProps {
   bank: QuestionBank;
   onStart: (questionIds: string[], length: SessionLength) => void;
   onOpenSpeech: () => void;
+  /** Экран «Настройка тренировки» тестовых вопросов основной базы. */
+  onOpenSettings: () => void;
   onOpenCabinet: () => void;
   onOpenSets: () => void;
   onOpenHelp: () => void;
@@ -41,6 +43,7 @@ const HELP_HINT_KEY = "fq.helpHintSeen";
 export function HomeScreen({
   bank,
   onStart,
+  onOpenSettings,
   onOpenCabinet,
   onOpenSets,
   onOpenSpeech,
@@ -127,24 +130,27 @@ export function HomeScreen({
         </div>
       )}
 
-      {/* key: после обновления базы фильтры перечитываются — новые темы не должны потеряться */}
-      <TrainingFilters key={bank.generatedAt} bank={bank} kind="test" onStart={onStart} />
+      {/* key: после обновления базы выбор перечитывается — новые темы не должны потеряться */}
+      <TrainingStart key={bank.generatedAt} bank={bank} kind="test" onStart={onStart} onOpenSettings={onOpenSettings} />
 
+      {/* Две плитки в ряд; без устных вопросов «Мои наборы» — во всю ширину. */}
       <div className={styles.tiles}>
         {bank.speech.length > 0 && (
-          <button type="button" className={clsx(styles.tile, styles.wide, glass.glass)} onClick={onOpenSpeech}>
+          <button type="button" className={clsx(styles.tile, glass.glass)} onClick={onOpenSpeech}>
             <Icon name="speech" />
             <span className={styles.tileTitle}>Устные вопросы</span>
-            <span className={styles.tileSub}>
-              {countQuestions(bank.speech.length)} · ответь сам, потом сверься с эталоном
-            </span>
+            <span className={styles.tileSub}>{countQuestions(bank.speech.length)}</span>
           </button>
         )}
-        <button type="button" className={clsx(styles.tile, styles.wide, glass.glass)} onClick={onOpenSets}>
+        <button
+          type="button"
+          className={clsx(styles.tile, bank.speech.length === 0 && styles.wide, glass.glass)}
+          onClick={onOpenSets}
+        >
           <Icon name="folder" />
           <span className={styles.tileTitle}>Мои наборы</span>
           <span className={styles.tileSub}>
-            {sets.length ? `${sets.length} ${plural(sets.length, SET_FORMS)}` : "Свои вопросы — из файла или по ссылке"}
+            {sets.length ? `${sets.length} ${plural(sets.length, SET_FORMS)}` : "Свои вопросы"}
           </span>
         </button>
       </div>

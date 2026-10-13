@@ -20,6 +20,20 @@
   margin: 0;
 }
 
-.block p + p {
+.block :is(p, ul, ol) + :is(p, ul, ol) {
   margin-top: 0.7em;
+}
+
+.block ul,
+.block ol {
+  margin: 0;
+  padding-left: 1.3em;
+}
+
+.block li + li {
+  margin-top: 0.35em;
+}
+
+.block li::marker {
+  color: var(--accent);
 }

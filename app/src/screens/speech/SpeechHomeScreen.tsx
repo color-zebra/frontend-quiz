@@ -4,17 +4,18 @@ import { countQuestions } from "../../shared/lib/plural";
 import { IconButton } from "../../shared/ui/Button";
 import { Screen, TopBar } from "../../shared/ui/Screen";
 import { ScreenTitle } from "../../shared/ui/ScreenTitle";
-import { TrainingFilters } from "../training/TrainingFilters";
+import { TrainingStart } from "../training/TrainingStart";
 import styles from "./SpeechHomeScreen.module.css";
 
 interface SpeechHomeScreenProps {
   bank: QuestionBank;
   onBack: () => void;
   onStart: (questionIds: string[], length: SessionLength) => void;
+  onOpenSettings: () => void;
 }
 
 /** Раздел устных вопросов основной базы: свои фильтры, своя сессия с самооценкой. */
-export function SpeechHomeScreen({ bank, onBack, onStart }: SpeechHomeScreenProps) {
+export function SpeechHomeScreen({ bank, onBack, onStart, onOpenSettings }: SpeechHomeScreenProps) {
   return (
     <Screen>
       <TopBar>
@@ -25,7 +26,7 @@ export function SpeechHomeScreen({ bank, onBack, onStart }: SpeechHomeScreenProp
         Вариантов ответа нет, как на настоящем собеседовании. Ответь про себя или вслух, открой эталон и честно
         оцени себя: знал, частично или не знал. «Частично» и «не знал» попадут в «Повторить слабые».
       </p>
-      <TrainingFilters key={bank.generatedAt} bank={bank} kind="speech" onStart={onStart} />
+      <TrainingStart key={bank.generatedAt} bank={bank} kind="speech" onStart={onStart} onOpenSettings={onOpenSettings} />
     </Screen>
   );
 }

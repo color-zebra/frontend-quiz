@@ -1,7 +1,7 @@
 // Проверяет базу вопросов и (с флагом --build) собирает её в dist/questions.json.
 // Запуск: pnpm check  |  pnpm build
 import { readFileSync, readdirSync, mkdirSync, writeFileSync, statSync } from "node:fs";
-import { join, relative, dirname } from "node:path";
+import { basename, join, relative, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import yaml from "js-yaml";
 
@@ -18,8 +18,20 @@ const fail = (file, message) => errors.push(`${file}: ${message}`);
 // Правильный ответ не должен угадываться по длине: заметно длиннее всех остальных — подозрительно
 const LENGTH_RATIO_LIMIT = 1.3;
 const isText = (value) => typeof value === "string" && value.trim() !== "";
+// Название подтемы — чип одной строкой на экране от 360px, даже с трёхзначным числом вопросов
+const SUBTOPIC_TITLE_LIMIT = 36;
 
 const topicsDoc = yaml.load(readFileSync(join(ROOT, "topics.yaml"), "utf8"));
+for (const topic of topicsDoc.topics) {
+  for (const subtopic of topic.subtopics ?? []) {
+    if (subtopic.title.length > SUBTOPIC_TITLE_LIMIT) {
+      fail("topics.yaml", `название подтемы ${topic.id}/${subtopic.id} длиннее ${SUBTOPIC_TITLE_LIMIT} символов (${subtopic.title.length}): «${subtopic.title}»`);
+    }
+  }
+}
+// id вопроса начинается с имени файла, а не подтемы: подтемы можно сливать и переименовывать, не трогая id
+const getFileKey = (path) => basename(path, ".yaml");
+
 const subtopicsByTopic = new Map(
   topicsDoc.topics.map((topic) => [topic.id, new Set((topic.subtopics ?? []).map((subtopic) => subtopic.id))])
 );
@@ -69,8 +81,8 @@ for (const path of listYamlFiles(QUESTIONS_DIR)) {
     for (const key of Object.keys(q ?? {})) {
       if (!QUESTION_KEYS.includes(key)) fail(where, `лишнее поле "${key}"`);
     }
-    if (!isText(q.id) || !q.id.startsWith(`${topic}-${subtopic}-`) || !/-\d{3}$/.test(q.id)) {
-      fail(where, `id должен быть вида ${topic}-${subtopic}-NNN`);
+    if (!isText(q.id) || !q.id.startsWith(`${topic}-${getFileKey(path)}-`) || !/-\d{3}$/.test(q.id)) {
+      fail(where, `id должен быть вида ${topic}-${getFileKey(path)}-NNN`);
     } else if (seenIds.has(q.id)) {
       fail(where, `id повторяется, первый раз в ${seenIds.get(q.id)}`);
     } else {
@@ -180,8 +192,8 @@ for (const path of speechFiles) {
     for (const key of Object.keys(q ?? {})) {
       if (!SPEECH_KEYS.includes(key)) fail(where, `лишнее поле "${key}"${key === "options" ? " — у устного вопроса вариантов нет" : ""}`);
     }
-    if (!isText(q.id) || !q.id.startsWith(`speech-${topic}-${subtopic}-`) || !/-\d{3}$/.test(q.id)) {
-      fail(where, `id должен быть вида speech-${topic}-${subtopic}-NNN`);
+    if (!isText(q.id) || !q.id.startsWith(`speech-${topic}-${getFileKey(path)}-`) || !/-\d{3}$/.test(q.id)) {
+      fail(where, `id должен быть вида speech-${topic}-${getFileKey(path)}-NNN`);
     } else if (seenIds.has(q.id)) {
       fail(where, `id повторяется, первый раз в ${seenIds.get(q.id)}`);
     } else {

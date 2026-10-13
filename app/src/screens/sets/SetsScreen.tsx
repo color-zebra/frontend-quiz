@@ -17,7 +17,13 @@ import { ScreenTitle } from "../../shared/ui/ScreenTitle";
 import { Sheet } from "../../shared/ui/Sheet";
 import styles from "./SetsScreen.module.css";
 
-type Message = { kind: "ok" | "error"; text: string; skipped?: SkippedQuestion[] };
+type Message = { kind: "ok" | "error"; text: string; skipped?: SkippedQuestion[]; warnings?: string[] };
+
+/** Что приложение сказало о файле набора: пропущенные вопросы и замечания. */
+interface FileReport {
+  skipped: readonly SkippedQuestion[];
+  warnings: readonly string[];
+}
 
 function getErrorText(error: unknown) {
   return error instanceof Error ? error.message : "Неизвестная ошибка";
@@ -33,15 +39,20 @@ function getKindLabel(record: SetRecord) {
   return record.file.speech?.length ? "устные · " : "";
 }
 
-function getSkippedText(skipped: readonly SkippedQuestion[]) {
-  return skipped.length ? ` Пропущено ${skipped.length} — причины ниже.` : "";
+function getReportText({ skipped, warnings }: FileReport) {
+  if (skipped.length && warnings.length) return ` Пропущено ${skipped.length}, есть замечания к файлу — подробности ниже.`;
+  if (skipped.length) return ` Пропущено ${skipped.length} — причины ниже.`;
+  if (warnings.length) return " Есть замечания к файлу — подробности ниже.";
+  return "";
 }
 
-/** Подробности для сообщения: какие вопросы набора пропущены и почему. */
-function getSkippedDetails(message: Message) {
-  return message.skipped?.length
-    ? { title: "Что пропущено", items: message.skipped.map((s) => `${s.label}: ${s.reason}`) }
-    : undefined;
+/** Подробности для сообщения: какие вопросы набора пропущены и почему, что поправить в файле. */
+function getReportDetails(message: Message) {
+  const skipped = message.skipped ?? [];
+  const warnings = message.warnings ?? [];
+  if (!skipped.length && !warnings.length) return undefined;
+  const title = !warnings.length ? "Что пропущено" : skipped.length ? "Что пропущено и что поправить" : "Что поправить в файле";
+  return { title, items: [...skipped.map((s) => `${s.label}: ${s.reason}`), ...warnings] };
 }
 
 /**
@@ -89,11 +100,12 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
     setAdding(true);
     setAddMessage(null);
     try {
-      const { record, skipped } = await addSet(link);
+      const { record, skipped, warnings } = await addSet(link);
       setAddMessage({
         kind: "ok",
-        text: `Добавлен «${record.title}»: ${countQuestions(getQuestionCount(record))}.${getSkippedText(skipped)}`,
+        text: `Добавлен «${record.title}»: ${countQuestions(getQuestionCount(record))}.${getReportText({ skipped, warnings })}`,
         skipped,
+        warnings,
       });
       setLink("");
     } catch (error) {
@@ -116,7 +128,7 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
         result.kind === "added"
           ? `Добавлен «${title}»: ${countQuestions(getQuestionCount(result.record))}.`
           : formatDiff(result.diff, `Набор «${title}» обновлён`, `Набор «${title}» не изменился.`);
-      setAddMessage({ kind: "ok", text: text + getSkippedText(result.skipped), skipped: result.skipped });
+      setAddMessage({ kind: "ok", text: text + getReportText(result), skipped: result.skipped, warnings: result.warnings });
     } catch (error) {
       setAddMessage({ kind: "error", text: getErrorText(error) });
     } finally {
@@ -128,11 +140,12 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
     setBusyId(record.id);
     showSetMessage(record.id, null);
     try {
-      const { diff, skipped } = await updateSet(record.id);
+      const { diff, skipped, warnings } = await updateSet(record.id);
       showSetMessage(record.id, {
         kind: "ok",
-        text: formatDiff(diff, "Набор обновлён", "Набор не изменился.") + getSkippedText(skipped),
+        text: formatDiff(diff, "Набор обновлён", "Набор не изменился.") + getReportText({ skipped, warnings }),
         skipped,
+        warnings,
       });
     } catch (error) {
       showSetMessage(record.id, { kind: "error", text: `Не удалось обновить: ${getErrorText(error)}` });
@@ -197,7 +210,7 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
       {addMessage && <Notice
           kind={addMessage.kind}
           text={addMessage.text}
-          details={getSkippedDetails(addMessage)}
+          details={getReportDetails(addMessage)}
           onClose={() => setAddMessage(null)}
         />}
 
@@ -234,7 +247,7 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
                 <Notice
                   kind={message.kind}
                   text={message.text}
-                  details={getSkippedDetails(message)}
+                  details={getReportDetails(message)}
                   onClose={() => showSetMessage(record.id, null)}
                 />
               )}

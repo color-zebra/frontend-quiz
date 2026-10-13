@@ -1,6 +1,6 @@
 // Закладки «Вернуться позже»: третья кнопка капсулы, раздел в статистике, разбор, «Прорешать отмеченные»,
 // «Снять все закладки» с подтверждением; сброс статистики закладки не трогает; капсула на 330px.
-import { openCabinet, option, question, withBank } from "./fixtures.mjs";
+import { chooseLength, openCabinet, option, question, withBank } from "./fixtures.mjs";
 
 const four = (id) => [option(`${id}-верно`, true), option(`${id}-нет1`), option(`${id}-нет2`), option(`${id}-нет3`)];
 
@@ -72,7 +72,7 @@ export default async function bookmarks(t) {
   const narrow = await t.newContext({ serviceWorkers: "block", viewport: { width: 330, height: 640 } });
   const p = await narrow.newPage();
   await p.goto(t.url);
-  await p.getByRole("button", { name: "∞", exact: true }).click();
+  await chooseLength(p, "∞");
   await p.getByRole("button", { name: /^Начать/ }).click();
   const tools = ["Не согласен с вопросом", "Вернуться позже", "Заметка"];
   const boxes = await Promise.all(tools.map((name) => p.getByRole("button", { name, exact: true }).boundingBox()));

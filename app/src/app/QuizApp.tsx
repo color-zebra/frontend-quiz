@@ -3,6 +3,7 @@ import type { BankDiff } from "../data/loadQuestions";
 import { BUILTIN_SET_ID, type Question, type QuestionBank } from "../data/types";
 import { useProgress } from "../features/progress/ProgressProvider";
 import { dismissBankVersion, fetchBankVersion, getIsNewerBank } from "../features/bank/bankVersion";
+import type { TrainingKind } from "../features/session/filters";
 import { clearSavedSession, readSavedSession, restoreSession, saveSession } from "../features/session/savedSession";
 import { useSets } from "../features/sets/SetsProvider";
 import {
@@ -32,6 +33,7 @@ import { SetsScreen } from "../screens/sets/SetsScreen";
 import { SpeechHomeScreen } from "../screens/speech/SpeechHomeScreen";
 import { StatsScreen } from "../screens/stats/StatsScreen";
 import { SummaryScreen } from "../screens/summary/SummaryScreen";
+import { TrainingSettingsScreen } from "../screens/training/TrainingSettingsScreen";
 import { ThemeSheet } from "../theme/ThemeSheet";
 import { applyTheme, readSavedTheme, type ThemeId } from "../theme/themes";
 import { useScreenStack, type AppScreen } from "./useScreenStack";
@@ -226,6 +228,7 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
           <HomeScreen
             bank={bank}
             onStart={(ids, length) => begin(bank, ids, length, "push")}
+            onOpenSettings={() => nav.push({ name: "training", setId: BUILTIN_SET_ID, kind: "test" })}
             onOpenCabinet={() => nav.push({ name: "cabinet" })}
             onOpenSets={() => nav.push({ name: "sets" })}
             onOpenSpeech={() => nav.push({ name: "speechHome" })}
@@ -271,7 +274,29 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
           />
         );
       case "speechHome":
-        return <SpeechHomeScreen bank={bank} onBack={nav.back} onStart={(ids, length) => begin(bank, ids, length, "push")} />;
+        return (
+          <SpeechHomeScreen
+            bank={bank}
+            onBack={nav.back}
+            onStart={(ids, length) => begin(bank, ids, length, "push")}
+            onOpenSettings={() => nav.push({ name: "training", setId: BUILTIN_SET_ID, kind: "speech" })}
+          />
+        );
+      case "training": {
+        const trainingBank = getBank(screen.setId);
+        // Набор удалили, пока экран был в истории, — показывать нечего.
+        if (!trainingBank) return null;
+        return (
+          <TrainingSettingsScreen
+            bank={trainingBank}
+            kind={screen.kind}
+            subtitle={describeTraining(trainingBank, screen.kind)}
+            onBack={nav.back}
+            // Сессия встаёт на место экрана настройки: из итога «Назад» ведёт туда, откуда пришли, — на главную или к набору.
+            onStart={(ids, length) => begin(trainingBank, ids, length, "replace")}
+          />
+        );
+      }
       case "sets":
         return (
           <SetsScreen
@@ -286,6 +311,7 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
             setId={screen.setId}
             onBack={nav.back}
             onStart={(setBank, ids, length) => begin(setBank, ids, length, "push")}
+            onOpenSettings={(kind) => nav.push({ name: "training", setId: screen.setId, kind })}
           />
         );
       case "help":
@@ -339,6 +365,12 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
         return <ReviewScreen bank={getBank(screen.setId)} questionId={screen.questionId} onBack={nav.back} />;
     }
   }
+}
+
+/** Подзаголовок экрана настройки: откуда вопросы. */
+function describeTraining(bank: QuestionBank, kind: TrainingKind) {
+  if (bank.setId !== BUILTIN_SET_ID) return `Набор «${bank.title ?? ""}»`;
+  return kind === "speech" ? "Устные вопросы" : "Тестовые вопросы";
 }
 
 /** Подпись плашки «Незаконченная сессия»: где остановился и откуда вопросы. */

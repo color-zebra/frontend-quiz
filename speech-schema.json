@@ -22,7 +22,7 @@
         "id": {
           "type": "string",
           "pattern": "^speech-[a-z]+-[a-z0-9]+(-[a-z0-9]+)*-[0-9]{3}$",
-          "description": "speech-<topic>-<subtopic>-NNN. Никогда не менять и не переиспользовать: к id привязаны заметки"
+          "description": "speech-<topic>-<имя файла>-NNN. Никогда не менять и не переиспользовать: к id привязаны заметки и прогресс"
         },
         "level": { "enum": ["junior", "middle", "senior"] },
         "tags": { "type": "array", "items": { "type": "string" } },

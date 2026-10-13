@@ -1,5 +1,6 @@
 import { load } from "js-yaml";
 import { CODE_LANGS, LEVELS, UNGROUPED, type CodeLang, type Level, type Option, type Question, type QuestionsFile, type Topic } from "../../data/types";
+import { plural } from "../../shared/lib/plural";
 
 /** Пропущенный вопрос: как его узнать в файле и почему он не подошёл. */
 export interface SkippedQuestion {
@@ -12,7 +13,13 @@ export interface ParsedSet {
   file: QuestionsFile;
   /** Вопросы, которые не удалось прочитать или которые повторили id. */
   skipped: SkippedQuestion[];
+  /** Замечания к файлу, которые не мешают загрузке, например слишком длинное название подтемы. */
+  warnings: string[];
 }
+
+/** Как в проверке нашей базы: подтема — чип одной строкой на экране от 360px, даже с трёхзначным числом. */
+const SUBTOPIC_TITLE_LIMIT = 36;
+const CHAR_FORMS = ["символ", "символа", "символов"] as const;
 
 type Raw = Record<string, unknown>;
 
@@ -115,6 +122,17 @@ function collectTopics(questions: readonly Question[]): Topic[] {
   return [...topics.values()];
 }
 
+function getLongSubtopicWarnings(topics: readonly Topic[]) {
+  return topics.flatMap((topic) =>
+    topic.subtopics
+      .filter((s) => s.title.length > SUBTOPIC_TITLE_LIMIT)
+      .map(
+        (s) =>
+          `Подтема «${s.title}» — ${s.title.length} ${plural(s.title.length, CHAR_FORMS)}: на телефоне не влезет в одну строку, лучше до ${SUBTOPIC_TITLE_LIMIT}`,
+      ),
+  );
+}
+
 /**
  * Разбирает файл набора. Понимает два вида:
  * - формат набора: `title` и `questions`, тема у каждого вопроса в поле `topic` (необязательно);
@@ -170,13 +188,15 @@ export function parseSetFile(text: string, fallbackTitle: string): ParsedSet {
     );
   }
 
+  const topics = collectTopics(questions);
   return {
     file: {
       title: isText(doc.title) ? doc.title.trim() : fallbackTitle,
-      topics: collectTopics(questions),
+      topics,
       questions: kind === "test" ? questions : [],
       speech: kind === "speech" ? questions : [],
     },
     skipped,
+    warnings: getLongSubtopicWarnings(topics),
   };
 }

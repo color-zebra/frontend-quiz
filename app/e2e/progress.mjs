@@ -2,7 +2,7 @@
 // посреди сессии, сохранение после перезагрузки, сброс ошибки у исправленного вопроса, устные оценки.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { option, question, speechQuestion, withBank } from "./fixtures.mjs";
+import { chooseLength, option, question, speechQuestion, withBank } from "./fixtures.mjs";
 import { DIST_DIR } from "./lib.mjs";
 
 const four = (prefix) => [option(`${prefix}-верно`, true), option(`${prefix}-нет1`), option(`${prefix}-нет2`), option(`${prefix}-нет3`)];
@@ -35,7 +35,7 @@ export default async function progress(t) {
     };
     const start = async (mode) => {
       await segment(mode).click();
-      await page.getByRole("button", { name: "10", exact: true }).click();
+      await chooseLength(page, "10");
       await page.getByRole("button", { name: /^Начать/ }).click();
     };
 

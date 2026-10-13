@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { formatDiff } from "../../data/formatDiff";
 import type { QuestionBank } from "../../data/types";
-import type { SessionLength } from "../../features/session/filters";
+import type { SessionLength, TrainingKind } from "../../features/session/filters";
 import { useSets } from "../../features/sets/SetsProvider";
 import { formatShortDate } from "../../shared/lib/formatDate";
 import { countQuestions } from "../../shared/lib/plural";
@@ -9,19 +9,20 @@ import { IconButton } from "../../shared/ui/Button";
 import { Notice } from "../../shared/ui/Notice";
 import { Screen, TopBar } from "../../shared/ui/Screen";
 import { ScreenTitle } from "../../shared/ui/ScreenTitle";
-import { TrainingFilters } from "../training/TrainingFilters";
+import { TrainingStart } from "../training/TrainingStart";
 import styles from "./SetHomeScreen.module.css";
 
 interface SetHomeScreenProps {
   setId: string;
   onBack: () => void;
   onStart: (bank: QuestionBank, questionIds: string[], length: SessionLength) => void;
+  onOpenSettings: (kind: TrainingKind) => void;
 }
 
 type Message = { kind: "ok" | "error"; text: string };
 
 /** Тренировка по своему набору: то же, что главная, но только вопросы набора. */
-export function SetHomeScreen({ setId, onBack, onStart }: SetHomeScreenProps) {
+export function SetHomeScreen({ setId, onBack, onStart, onOpenSettings }: SetHomeScreenProps) {
   const { sets, getSetBank, updateSet } = useSets();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
@@ -69,9 +70,14 @@ export function SetHomeScreen({ setId, onBack, onStart }: SetHomeScreenProps) {
 
       {message && <Notice kind={message.kind} text={message.text} onClose={() => setMessage(null)} />}
 
-      {/* key: после обновления набора фильтры перечитываются под новые темы */}
-      <TrainingFilters key={record.updatedAt} bank={bank} kind={isSpeechSet ? "speech" : "test"}
-        onStart={(ids, length) => onStart(bank, ids, length)} />
+      {/* key: после обновления набора выбор перечитывается под новые темы */}
+      <TrainingStart
+        key={record.updatedAt}
+        bank={bank}
+        kind={isSpeechSet ? "speech" : "test"}
+        onStart={(ids, length) => onStart(bank, ids, length)}
+        onOpenSettings={() => onOpenSettings(isSpeechSet ? "speech" : "test")}
+      />
     </Screen>
   );
 }

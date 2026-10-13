@@ -23,7 +23,7 @@ questions:
     subtopic: Быстрая сортировка  # необязательно: подтема внутри темы
     level: middle                 # junior | middle | senior
     question: |
-      Текст вопроса. Можно `код` и **жирный**.
+      Текст вопроса. Можно `код`, **жирный** и списки строками «- пункт».
     code: |                       # необязательно: код к вопросу
       [3, 1, 2].sort()
     codeLang: js                  # html | css | scss | js | ts | jsx | tsx | http | json | text
