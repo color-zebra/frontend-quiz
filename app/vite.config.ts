@@ -206,6 +206,17 @@ const pwa = VitePWA({
         handler: "CacheFirst",
         options: { cacheName: "fonts", expiration: { maxEntries: 40 } },
       },
+      // Картинки уроков с чужих сайтов: увиденная картинка доступна и без сети. Только обычные ответы (200):
+      // «непрозрачный» ответ сайта без CORS Chrome учитывает в квоте как мегабайты, такие картинки — только онлайн.
+      {
+        urlPattern: ({ request, sameOrigin }) => request.destination === "image" && !sameOrigin,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "lesson-images",
+          expiration: { maxEntries: 150, maxAgeSeconds: 30 * 24 * 60 * 60, purgeOnQuotaError: true },
+          cacheableResponse: { statuses: [200] },
+        },
+      },
     ],
   },
 });

@@ -55,6 +55,24 @@ export function startSession(bank: QuestionBank, ids: readonly string[], length:
   };
 }
 
+/**
+ * Вопросы урока: очередь в порядке урока, с вопроса startIndex, — а варианты перемешаны, чтобы не запоминать,
+ * где стоит правильный. Вопросы до startIndex уже отвечены раньше: они идут в счёт полосы прогресса.
+ */
+export function startOrderedSession(bank: QuestionBank, ids: readonly string[], startIndex = 0): Session {
+  return {
+    infinite: false,
+    pool: [...ids],
+    queue: [...ids],
+    index: startIndex,
+    optionOrder: getOptionOrder(bank, ids[startIndex]),
+    selected: [],
+    answered: false,
+    gaveUp: false,
+    answers: ids.slice(0, startIndex).map((questionId) => ({ questionId, correct: false })),
+  };
+}
+
 export function getCurrentQuestion(bank: QuestionBank, session: Session): Question | undefined {
   return bank.byId.get(session.queue[session.index]);
 }

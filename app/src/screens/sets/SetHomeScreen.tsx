@@ -10,6 +10,7 @@ import { Notice } from "../../shared/ui/Notice";
 import { Screen, TopBar } from "../../shared/ui/Screen";
 import { ScreenTitle } from "../../shared/ui/ScreenTitle";
 import { TrainingStart } from "../training/TrainingStart";
+import { LearningStart } from "./LearningStart";
 import styles from "./SetHomeScreen.module.css";
 
 interface SetHomeScreenProps {
@@ -17,12 +18,23 @@ interface SetHomeScreenProps {
   onBack: () => void;
   onStart: (bank: QuestionBank, questionIds: string[], length: SessionLength) => void;
   onOpenSettings: (kind: TrainingKind) => void;
+  onOpenCourse: () => void;
+  onOpenLesson: (lessonId: string) => void;
+  onOpenLessonQuiz: (lessonId: string) => void;
 }
 
 type Message = { kind: "ok" | "error"; text: string };
 
 /** Тренировка по своему набору: то же, что главная, но только вопросы набора. */
-export function SetHomeScreen({ setId, onBack, onStart, onOpenSettings }: SetHomeScreenProps) {
+export function SetHomeScreen({
+  setId,
+  onBack,
+  onStart,
+  onOpenSettings,
+  onOpenCourse,
+  onOpenLesson,
+  onOpenLessonQuiz,
+}: SetHomeScreenProps) {
   const { sets, getSetBank, updateSet } = useSets();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
@@ -78,6 +90,11 @@ export function SetHomeScreen({ setId, onBack, onStart, onOpenSettings }: SetHom
         onStart={(ids, length) => onStart(bank, ids, length)}
         onOpenSettings={() => onOpenSettings(isSpeechSet ? "speech" : "test")}
       />
+
+      {/* Уроки бывают только у тестового набора: у устного парсер их не читает. */}
+      {!isSpeechSet && !!bank.lessons?.length && (
+        <LearningStart bank={bank} onOpenLesson={onOpenLesson} onOpenQuiz={onOpenLessonQuiz} onOpenCourse={onOpenCourse} />
+      )}
     </Screen>
   );
 }

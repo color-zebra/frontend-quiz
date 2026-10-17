@@ -1,17 +1,28 @@
 import { load } from "js-yaml";
-import { CODE_LANGS, LEVELS, UNGROUPED, type CodeLang, type Level, type Option, type Question, type QuestionsFile, type Topic } from "../../data/types";
+import {
+  CODE_LANGS,
+  LEVELS,
+  UNGROUPED,
+  type CodeLang,
+  type Lesson,
+  type Level,
+  type Option,
+  type Question,
+  type QuestionsFile,
+  type Topic,
+} from "../../data/types";
 import { plural } from "../../shared/lib/plural";
 
-/** Пропущенный вопрос: как его узнать в файле и почему он не подошёл. */
+/** Пропущенный вопрос или урок: как его узнать в файле и почему он не подошёл. */
 export interface SkippedQuestion {
-  /** «q-12» или «№7», если у вопроса нет id. */
+  /** «q-12» или «№7», если у вопроса нет id; у урока — «урок req-intro» или «урок №3». */
   label: string;
   reason: string;
 }
 
 export interface ParsedSet {
   file: QuestionsFile;
-  /** Вопросы, которые не удалось прочитать или которые повторили id. */
+  /** Вопросы и уроки, которые не удалось прочитать или которые повторили id. */
   skipped: SkippedQuestion[];
   /** Замечания к файлу, которые не мешают загрузке, например слишком длинное название подтемы. */
   warnings: string[];
@@ -133,11 +144,101 @@ function getLongSubtopicWarnings(topics: readonly Topic[]) {
   );
 }
 
+/** Как урок называют в отчёте: в журнале «Что пропущено» он стоит рядом с вопросами. */
+function getLessonLabel(raw: unknown, index: number) {
+  const id = isRecord(raw) ? asText(raw.id) : undefined;
+  return `урок ${isText(id) ? id.trim() : `№${index + 1}`}`;
+}
+
+/**
+ * Вопросы урока: явный список `questions` в его порядке, иначе тестовые вопросы той же темы и подтемы в порядке
+ * файла, иначе ни одного. Тема урока без своей — как у вопроса без своей: тема файла или «Все вопросы».
+ */
+function getLessonQuestionIds(
+  raw: Raw,
+  lesson: { id: string; topic?: string; subtopic?: string },
+  questions: readonly Question[],
+  fileTopic: string | undefined,
+  warnings: string[],
+) {
+  if (Array.isArray(raw.questions)) {
+    const known = new Set(questions.map((q) => q.id));
+    const ids = [...new Set(raw.questions.map(asText).filter(isText).map((id) => id.trim()))];
+    const unknown = ids.filter((id) => !known.has(id));
+    if (unknown.length) {
+      warnings.push(
+        `Урок «${lesson.id}»: ${unknown.length > 1 ? "нет вопросов" : "нет вопроса"} ${unknown.map((id) => `«${id}»`).join(", ")} — в файле такого id нет или вопрос пропущен`,
+      );
+    }
+    return ids.filter((id) => known.has(id));
+  }
+  if (raw.questions !== undefined) {
+    warnings.push(`Урок «${lesson.id}»: questions — это список id вопросов, например [q-1, q-2]; вопросы взяты по подтеме`);
+  }
+  if (!lesson.subtopic) return [];
+  const topic = lesson.topic ?? fileTopic ?? UNGROUPED;
+  const ids = questions.filter((q) => q.topic === topic && q.subtopic === lesson.subtopic).map((q) => q.id);
+  if (ids.length === 0) {
+    warnings.push(
+      `Урок «${lesson.id}»: в подтеме «${lesson.subtopic}» темы «${topic}» нет тестовых вопросов — после урока сразу следующий. Проверь topic и subtopic урока`,
+    );
+  }
+  return ids;
+}
+
+/** Урок без вопросов: их подбирают, только когда ясно, что урок не пропущен. */
+function readLesson(raw: unknown): Omit<Lesson, "questionIds"> | string {
+  if (!isRecord(raw)) return "это не урок — нет полей id, title и body";
+  const id = asText(raw.id);
+  if (!isText(id)) return "нет id";
+  const title = asText(raw.title);
+  if (!isText(title)) return "нет названия (title)";
+  if (!isText(raw.body)) return "нет текста урока (body)";
+  return {
+    id: id.trim(),
+    title: title.trim(),
+    ...(isText(raw.topic) ? { topic: raw.topic.trim() } : {}),
+    ...(isText(raw.subtopic) ? { subtopic: raw.subtopic.trim() } : {}),
+    body: raw.body,
+  };
+}
+
+/**
+ * Уроки режима обучения в порядке файла. Урок без id, названия или текста и урок с повторным id пропускаются
+ * с причиной, как вопросы. Старые версии приложения раздел lessons просто не читают — вопросы у них работают.
+ */
+function readLessons(raw: unknown, questions: readonly Question[], fileTopic: string | undefined, skipped: SkippedQuestion[], warnings: string[]) {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) {
+    warnings.push("lessons — это список уроков вида «- id: … title: … body: …»; уроки не загружены");
+    return [];
+  }
+  const seen = new Set<string>();
+  const lessons: Lesson[] = [];
+  for (const [index, item] of raw.entries()) {
+    const label = getLessonLabel(item, index);
+    const result = readLesson(item);
+    if (typeof result === "string") {
+      skipped.push({ label, reason: result });
+      continue;
+    }
+    // Повтор id — берём первый урок: к id привязана отметка «прочитан».
+    if (seen.has(result.id)) {
+      skipped.push({ label, reason: "такой id урока уже был выше в файле" });
+      continue;
+    }
+    seen.add(result.id);
+    lessons.push({ ...result, questionIds: getLessonQuestionIds(item as Raw, result, questions, fileTopic, warnings) });
+  }
+  return lessons;
+}
+
 /**
  * Разбирает файл набора. Понимает два вида:
  * - формат набора: `title` и `questions`, тема у каждого вопроса в поле `topic` (необязательно);
  * - файл подтемы из нашей базы: `topic` и `subtopic` в начале файла, у вопросов их нет.
  * `kind: speech` в начале файла делает набор устным: у вопросов вместо вариантов `answer` и `points`.
+ * Необязательный раздел `lessons` в тестовом наборе — уроки режима обучения.
  */
 export function parseSetFile(text: string, fallbackTitle: string): ParsedSet {
   let doc: unknown;
@@ -189,14 +290,19 @@ export function parseSetFile(text: string, fallbackTitle: string): ParsedSet {
   }
 
   const topics = collectTopics(questions);
+  const warnings = getLongSubtopicWarnings(topics);
+  let lessons: Lesson[] = [];
+  if (kind === "test") lessons = readLessons(doc.lessons, questions, fileTopic, skipped, warnings);
+  else if (doc.lessons !== undefined) warnings.push("Уроки работают только в тестовых наборах — в устном наборе они не показываются");
   return {
     file: {
       title: isText(doc.title) ? doc.title.trim() : fallbackTitle,
       topics,
       questions: kind === "test" ? questions : [],
       speech: kind === "speech" ? questions : [],
+      ...(lessons.length ? { lessons } : {}),
     },
     skipped,
-    warnings: getLongSubtopicWarnings(topics),
+    warnings,
   };
 }

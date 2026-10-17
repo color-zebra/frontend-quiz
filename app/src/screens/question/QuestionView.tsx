@@ -24,6 +24,8 @@ interface QuestionViewProps {
   reveal?: boolean;
   /** Ответ открыт кнопкой «Не знаю». */
   gaveUp?: boolean;
+  /** Режим обучения: ответ не попадает в «Ошибки», и подпись после «Не знаю» об этом не врёт. */
+  learning?: boolean;
   /** Блок «Как это устроено» — по нему экран понимает, видно ли пояснение и нужна ли кнопка «Почему?». */
   explanationRef?: Ref<HTMLElement>;
   onSelect?: (optionIndex: number) => void;
@@ -37,6 +39,7 @@ export function QuestionView({
   answered,
   reveal = false,
   gaveUp = false,
+  learning = false,
   explanationRef,
   onSelect,
 }: QuestionViewProps) {
@@ -72,7 +75,7 @@ export function QuestionView({
       {multiple && !showResult && <p className={styles.hint}>Выберите все подходящие варианты</p>}
       {gaveUp && (
         <p className={clsx(styles.verdict, styles.verdictBad)} role="status">
-          Ответ показан — вопрос попадёт в «Прорешать ошибки»
+          {learning ? "Ответ показан" : "Ответ показан — вопрос попадёт в «Прорешать ошибки»"}
         </p>
       )}
       {multiple && answered && !reveal && <MultipleVerdict correct={getIsAnswerCorrect(question, selected)} />}

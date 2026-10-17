@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { loadInitialBank, updateBank } from "../data/loadQuestions";
 import type { QuestionBank } from "../data/types";
 import { BookmarksProvider } from "../features/bookmarks/BookmarksProvider";
+import { LessonsProvider } from "../features/lessons/LessonsProvider";
 import { NotesProvider } from "../features/notes/NotesProvider";
 import { ProgressProvider } from "../features/progress/ProgressProvider";
 import { AppUpdateToast } from "../features/pwa/AppUpdateToast";
@@ -43,9 +44,11 @@ export function App() {
         <NotesProvider>
           <ProgressProvider>
             <BookmarksProvider>
-              <SetsProvider>
-                <QuizApp bank={state.bank} onUpdate={() => update(state.bank)} />
-              </SetsProvider>
+              <LessonsProvider>
+                <SetsProvider>
+                  <QuizApp bank={state.bank} onUpdate={() => update(state.bank)} />
+                </SetsProvider>
+              </LessonsProvider>
             </BookmarksProvider>
           </ProgressProvider>
         </NotesProvider>

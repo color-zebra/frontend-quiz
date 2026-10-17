@@ -96,3 +96,83 @@ export async function chooseLength(page, label) {
   await page.getByRole("button", { name: "Назад" }).click();
   await page.getByRole("button", { name: /^Тренировка/ }).waitFor();
 }
+
+/** Тестовый вопрос набора в YAML: правильный вариант — «Правильный», остальные — «Мимо …». */
+function yamlQuestion(id, text, subtopic) {
+  return `  - id: ${id}
+    topic: Раздел А
+    subtopic: ${subtopic}
+    level: junior
+    question: ${text}
+    options:
+      - text: 'Правильный'
+        correct: true
+        why: 'Так и есть.'
+      - text: 'Мимо А'
+        why: 'Нет.'
+      - text: 'Мимо Б'
+        why: 'Нет.'
+      - text: 'Мимо В'
+        why: 'Нет.'
+    explanation: Разбор вопроса.
+`;
+}
+
+/**
+ * Набор с уроками для режима обучения: разметка урока (таблица, картинка, код, цитата, ссылки, сноска, HTML),
+ * связь урока с вопросами по подтеме и явным списком, три битых урока для «Что пропущено». extraLesson — урок
+ * в конец, для проверки обновления набора.
+ */
+export function lessonsSetYaml({ firstTitle = "Первый урок", extraLesson = "" } = {}) {
+  return `title: Курс для проверки
+lessons:
+  - id: l-intro
+    topic: Раздел А
+    subtopic: Подтема 1
+    title: ${firstTitle}
+    body: |
+      ## Зачем
+
+      Текст урока с **жирным** и \`кодом\`[^1].
+
+      > Важная мысль урока.
+
+      ![Схема кэша](images/pic.png "Подпись к схеме")
+
+      ![Пропавшая схема](images/none.png)
+
+      \`\`\`js
+      const answer = 42;
+      \`\`\`
+
+      | Колонка один | Колонка два | Колонка три | Колонка четыре | Колонка пять |
+      |---|---|---|---|---|
+      | длинное значение ячейки | длинное значение ячейки | длинное значение | ещё значение | последнее значение |
+
+      Ссылка на [MDN](https://developer.mozilla.org/ru/) и опасная [ссылка](javascript:alert(1)).
+
+      HTML: <script>window.__lessonScript = 1</script> <img src="x" onerror="window.__lessonImg = 1">
+
+      [^1]: Текст сноски.
+  - id: l-order
+    topic: Раздел А
+    subtopic: Подтема 1
+    title: Порядок важнее подтемы
+    questions: [q-3, q-1, missing-1]
+    body: |
+      Второй урок: вопросы заданы списком.
+  - title: Урок без id
+    body: Текст.
+  - id: l-notitle
+    body: Текст.
+  - id: l-intro
+    title: Повтор id
+    body: Текст.
+  - id: l-last
+    topic: Раздел Б
+    title: Последний урок
+    body: |
+      Урок без вопросов.
+${extraLesson}questions:
+${yamlQuestion("q-1", "Вопрос один", "Подтема 1")}${yamlQuestion("q-2", "Вопрос два", "Подтема 1")}${yamlQuestion("q-3", "Вопрос три", "Подтема 2")}`;
+}

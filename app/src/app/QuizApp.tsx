@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, useEffect, useRef, useState } from "react";
 import type { BankDiff } from "../data/loadQuestions";
 import { BUILTIN_SET_ID, type Question, type QuestionBank } from "../data/types";
 import { useProgress } from "../features/progress/ProgressProvider";
@@ -36,7 +36,19 @@ import { SummaryScreen } from "../screens/summary/SummaryScreen";
 import { TrainingSettingsScreen } from "../screens/training/TrainingSettingsScreen";
 import { ThemeSheet } from "../theme/ThemeSheet";
 import { applyTheme, readSavedTheme, type ThemeId } from "../theme/themes";
+import { LazyScreen } from "./LazyScreen";
 import { useScreenStack, type AppScreen } from "./useScreenStack";
+
+// Режим обучения — отдельным файлом сборки: его код и разметка уроков грузятся, только когда открывают уроки.
+const loadLessonScreens = () => import("../screens/lessons/lessonScreens");
+const CourseScreen = lazy(() => loadLessonScreens().then((m) => ({ default: m.CourseScreen })));
+const LessonScreen = lazy(() => loadLessonScreens().then((m) => ({ default: m.LessonScreen })));
+const LessonQuizScreen = lazy(() => loadLessonScreens().then((m) => ({ default: m.LessonQuizScreen })));
+
+/** Экран курса этого набора: оглавление, урок или вопросы урока. */
+function isCourseScreen(screen: AppScreen, setId: string) {
+  return (screen.name === "course" || screen.name === "lesson" || screen.name === "lessonQuiz") && screen.setId === setId;
+}
 
 /** Прямые ссылки на помощь: …/#help, …/#help-basics и …/#help-sets открывают её поверх главной. */
 function getInitialStack(): AppScreen[] {
@@ -206,6 +218,19 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
     nav.back();
   }
 
+  /**
+   * Оглавление на место всех экранов курса, открытых поверх экрана набора: из урока или его вопросов «Назад»
+   * потом ведёт к набору, а не обратно в пройденный урок. С экрана набора оглавление просто открывается.
+   */
+  function openCourse(setId: string, finished = false) {
+    const stack = nav.getStack();
+    let first = stack.length;
+    while (first > 0 && isCourseScreen(stack[first - 1], setId)) first--;
+    const course: AppScreen = { name: "course", setId, finished };
+    if (first === stack.length) nav.push(course);
+    else nav.rewind(stack.length - 1 - first, course);
+  }
+
   function selectTheme(id: ThemeId) {
     applyTheme(id);
     setTheme(id);
@@ -312,8 +337,19 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
             onBack={nav.back}
             onStart={(setBank, ids, length) => begin(setBank, ids, length, "push")}
             onOpenSettings={(kind) => nav.push({ name: "training", setId: screen.setId, kind })}
+            onOpenCourse={() => openCourse(screen.setId)}
+            onOpenLesson={(lessonId) => nav.push({ name: "lesson", setId: screen.setId, lessonId })}
+            // Под вопросами — их урок: системная «Назад» из вопросов ведёт к тексту урока.
+            onOpenLessonQuiz={(lessonId) => {
+              nav.push({ name: "lesson", setId: screen.setId, lessonId });
+              nav.push({ name: "lessonQuiz", setId: screen.setId, lessonId });
+            }}
           />
         );
+      case "course":
+      case "lesson":
+      case "lessonQuiz":
+        return renderCourseScreen(screen);
       case "help":
         return (
           <HelpHubScreen
@@ -364,6 +400,49 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
       case "review":
         return <ReviewScreen bank={getBank(screen.setId)} questionId={screen.questionId} onBack={nav.back} />;
     }
+  }
+
+  /** Экраны режима обучения. Ответы в них не проходят через updateActive — в ленту ничего не пишется. */
+  function renderCourseScreen(screen: Extract<AppScreen, { name: "course" | "lesson" | "lessonQuiz" }>) {
+    const courseBank = getBank(screen.setId);
+    // Набор удалили, пока экран был в истории, — показывать нечего.
+    if (!courseBank) return null;
+    const { setId } = screen;
+    return (
+      <LazyScreen key={screen.name} onBack={nav.back}>
+        {screen.name === "course" && (
+          <CourseScreen
+            bank={courseBank}
+            finished={!!screen.finished}
+            onBack={nav.back}
+            onOpenLesson={(lessonId) => nav.push({ name: "lesson", setId, lessonId })}
+          />
+        )}
+        {screen.name === "lesson" && (
+          <LessonScreen
+            bank={courseBank}
+            lessonId={screen.lessonId}
+            onBack={nav.back}
+            onOpenCourse={() => openCourse(setId)}
+            onOpenLesson={(lessonId) => nav.replace({ name: "lesson", setId, lessonId })}
+            onOpenQuiz={() => nav.push({ name: "lessonQuiz", setId, lessonId: screen.lessonId })}
+            onFinishCourse={() => openCourse(setId, true)}
+          />
+        )}
+        {screen.name === "lessonQuiz" && (
+          <LessonQuizScreen
+            // Новый урок — новые вопросы с нуля, даже если экран тот же.
+            key={screen.lessonId}
+            bank={courseBank}
+            lessonId={screen.lessonId}
+            onBack={nav.back}
+            onNextLesson={(lessonId) => nav.rewind(1, { name: "lesson", setId, lessonId })}
+            onOpenCourse={() => openCourse(setId)}
+            onFinishCourse={() => openCourse(setId, true)}
+          />
+        )}
+      </LazyScreen>
+    );
   }
 }
 

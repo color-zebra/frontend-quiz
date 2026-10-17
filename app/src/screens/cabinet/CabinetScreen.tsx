@@ -6,6 +6,7 @@ import { getAchievements } from "../../features/achievements/compute";
 import { useBankUpdate } from "../../features/bank/useBankUpdate";
 import { exportBackup, parseBackupFile } from "../../features/backup/backupFile";
 import { useBookmarks } from "../../features/bookmarks/BookmarksProvider";
+import { useLessons } from "../../features/lessons/LessonsProvider";
 import { useNotes, type ImportStats } from "../../features/notes/NotesProvider";
 import { useProgress } from "../../features/progress/ProgressProvider";
 import { getBankStats } from "../../features/progress/stats";
@@ -34,12 +35,23 @@ interface CabinetScreenProps {
 
 type Message = { kind: "ok" | "error"; text: string };
 
-function formatImport(notes: ImportStats, answers: number | null) {
+const SET_FORMS = ["набор", "набора", "наборов"] as const;
+
+/**
+ * Прогресс уроков в сообщении о загрузке. В старой копии его нет — говорим, что свой остался, но только тому,
+ * у кого он есть: остальным эта фраза ни к чему. lessons — у скольких наборов прогресс изменился.
+ */
+function formatLessonsImport(lessons: number | null, hasOwnProgress: boolean) {
+  if (lessons === null) return hasOwnProgress ? " Прогресса уроков в копии нет — твой остался как был." : "";
+  return lessons ? ` Прогресс уроков обновлён: ${lessons} ${plural(lessons, SET_FORMS)}.` : "";
+}
+
+function formatImport(notes: ImportStats, answers: number | null, lessonsPart: string) {
   const skipped = notes.skipped ? `, пропущено ${notes.skipped} — у тебя версия новее или такая же` : "";
   const notesPart = `Заметки: добавлено ${notes.added}, обновлено ${notes.updated}${skipped}.`;
   const answersPart =
     answers === null ? "Ответов в файле нет — это старая копия с одними заметками." : `Ответы: добавлено ${answers}.`;
-  return `Копия загружена. ${notesPart} ${answersPart}`;
+  return `Копия загружена. ${notesPart} ${answersPart}${lessonsPart}`;
 }
 
 /** Кабинет: статистика, заметки, оформление и всё, что хранится на устройстве, — копия и сброс. */
@@ -58,6 +70,7 @@ export function CabinetScreen({
   const { notes, importNotes } = useNotes();
   const { records, getProgress, importRecords, resetAll } = useProgress();
   const { bookmarks, importBookmarks } = useBookmarks();
+  const { courses, importCourses } = useLessons();
   const fileInput = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState<Message | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -77,7 +90,8 @@ export function CabinetScreen({
       const notesStats = importNotes(backup.notes);
       const answers = backup.answers && importRecords(backup.answers);
       importBookmarks(backup.bookmarks);
-      setMessage({ kind: "ok", text: formatImport(notesStats, answers) });
+      const lessons = backup.lessons && importCourses(backup.lessons);
+      setMessage({ kind: "ok", text: formatImport(notesStats, answers, formatLessonsImport(lessons, courses.length > 0)) });
     } catch (error) {
       setMessage({ kind: "error", text: error instanceof Error ? error.message : "Не удалось прочитать файл" });
     }
@@ -137,15 +151,15 @@ export function CabinetScreen({
 
       <Card label="Данные на этом устройстве">
         <p className={styles.hint}>
-          Заметки, ответы и закладки — в одном файле. Сохрани копию, перенеси файл на другой телефон или ноутбук
-          (например, отправь себе в Telegram) и загрузи там. Повторная загрузка ничего не задвоит.
+          Заметки, ответы, закладки и прогресс уроков — в одном файле. Сохрани копию, перенеси файл на другой телефон
+          или ноутбук (например, отправь себе в Telegram) и загрузи там. Повторная загрузка ничего не задвоит.
         </p>
         <div className={styles.fileButtons}>
           <Button
             variant="secondary"
             icon="download"
-            disabled={notes.size === 0 && records.length === 0 && bookmarks.size === 0}
-            onClick={() => exportBackup([...notes.values()], records, [...bookmarks.values()])}
+            disabled={notes.size === 0 && records.length === 0 && bookmarks.size === 0 && courses.length === 0}
+            onClick={() => exportBackup([...notes.values()], records, [...bookmarks.values()], courses)}
           >
             Сохранить копию
           </Button>
@@ -171,7 +185,8 @@ export function CabinetScreen({
         <div className={styles.confirm}>
           <p>
             Удалятся все твои ответы на этом устройстве — и в основной базе, и в своих наборах: ошибки, новые вопросы
-            и статистика начнутся с нуля. Заметки и наборы останутся. Отменить сброс нельзя.
+            и статистика начнутся с нуля. Заметки, наборы и прогресс уроков останутся — прогресс курса сбрасывается
+            в его оглавлении. Отменить сброс нельзя.
           </p>
           <div className={styles.confirmButtons}>
             <Button variant="secondary" onClick={() => setConfirmOpen(false)}>

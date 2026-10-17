@@ -55,6 +55,21 @@ export interface Topic {
   subtopics: Subtopic[];
 }
 
+/** Урок режима обучения: связный текст, который читают до вопросов, и вопросы, которые его закрепляют. */
+export interface Lesson {
+  /** Постоянный id: к нему привязаны отметка «прочитан» и место, где человек остановился. */
+  id: string;
+  title: string;
+  /** Раздел оглавления; подряд идущие уроки с одним разделом — одна группа. */
+  topic?: string;
+  /** Подтема, из которой урок взял вопросы, если их список не задан явно. */
+  subtopic?: string;
+  /** Текст урока — Markdown с таблицами, картинками и блоками кода. */
+  body: string;
+  /** Тестовые вопросы после урока, в порядке показа. Пусто — после урока сразу следующий. */
+  questionIds: string[];
+}
+
 /** Формат dist/questions.json. */
 export interface QuestionsFile {
   /** Название — есть у своих наборов, у основной базы нет. */
@@ -66,6 +81,8 @@ export interface QuestionsFile {
   questions: Question[];
   /** Устные вопросы — отдельным списком, с ними не смешиваются. */
   speech?: Question[];
+  /** Уроки режима обучения, в порядке изучения. Бывают только у тестовых наборов. */
+  lessons?: Lesson[];
 }
 
 export interface QuestionBank extends QuestionsFile {

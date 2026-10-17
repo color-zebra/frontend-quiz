@@ -63,6 +63,23 @@ export interface BankDiff {
   removed: number;
   /** Исправленные вопросы: прежние ошибки в них больше не считаются. */
   changedIds: string[];
+  /** Уроки режима обучения: у основной базы их нет, и тут всегда нули. */
+  lessons: { added: number; changed: number; removed: number };
+}
+
+/** Сравнение уроков по id: дописали уроки и нажали «Обновить» — сообщение не должно говорить «не изменился». */
+function getLessonsDiff(previous: QuestionsFile, next: QuestionsFile) {
+  const before = new Map((previous.lessons ?? []).map((l) => [l.id, JSON.stringify(l)]));
+  const diff = { added: 0, changed: 0, removed: 0 };
+  const nextIds = new Set<string>();
+  for (const lesson of next.lessons ?? []) {
+    nextIds.add(lesson.id);
+    const old = before.get(lesson.id);
+    if (old === undefined) diff.added++;
+    else if (old !== JSON.stringify(lesson)) diff.changed++;
+  }
+  for (const id of before.keys()) if (!nextIds.has(id)) diff.removed++;
+  return diff;
 }
 
 /** Все вопросы файла — тестовые и устные. */
@@ -78,7 +95,7 @@ function getContent({ line: _line, ...content }: Question) {
 /** Сравнение баз по id: новые, изменённые (любое поле) и удалённые вопросы. */
 export function getBankDiff(previous: QuestionsFile, next: QuestionsFile): BankDiff {
   const before = new Map(getAllQuestions(previous).map((q) => [q.id, getContent(q)]));
-  const diff: BankDiff = { added: 0, changed: 0, removed: 0, changedIds: [] };
+  const diff: BankDiff = { added: 0, changed: 0, removed: 0, changedIds: [], lessons: getLessonsDiff(previous, next) };
   const nextIds = new Set<string>();
   for (const question of getAllQuestions(next)) {
     nextIds.add(question.id);

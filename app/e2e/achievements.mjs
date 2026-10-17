@@ -49,7 +49,10 @@ export default async function achievements(t) {
     await page.keyboard.press("Escape");
 
     // 9 верных ответов до сессии: <body>билдер (80 % HTML) уже получен. Десятый ответ — в сессии: Hello world и Снайпер.
-    await seedAnswers(page, ids.slice(0, 9).map((id, i) => answerRecord(id, i + 1, true)));
+    // Время старых ответов — полдень среды в прошлом: ни ночь, ни пятничный вечер. С меткой около нуля (03:00
+    // по Москве) прогон после полуночи давал лишний «Ночной деплой»: к девяти «ночным» добавлялись ответы сессии.
+    const noon = new Date(2026, 0, 14, 12, 0).getTime();
+    await seedAnswers(page, ids.slice(0, 9).map((id, i) => answerRecord(id, noon + i * 60_000, true)));
     await answerOneAndFinish();
     const fresh = page.locator("section").filter({ hasText: "Новые достижения" });
     check("в итоге — блок «Новые достижения»", await visible(fresh));

@@ -1,0 +1,232 @@
+/* Текст урока: читается с телефона, поэтому крупнее и просторнее текста справки. */
+.lesson {
+  /* Первый заголовок урока не липнет к строке «раздел · урок 3 из 12» над ним. */
+  margin-top: 8px;
+  color: var(--text-2);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-wrap: break-word;
+}
+
+.lesson > * {
+  margin: 0;
+}
+
+.lesson > * + * {
+  margin-top: 14px;
+}
+
+.lesson h2,
+.lesson h3,
+.lesson h4 {
+  margin: 28px 0 0;
+  color: var(--text);
+  font-family: var(--font-heading);
+  line-height: 1.3;
+}
+
+.lesson > :first-child {
+  margin-top: 0;
+}
+
+.lesson h2 {
+  font-size: 20px;
+}
+
+.lesson h3 {
+  font-size: 17px;
+}
+
+.lesson h4 {
+  font-size: 15px;
+}
+
+/* Заголовок ближе к своему тексту, чем к предыдущему. */
+.lesson :is(h2, h3, h4) + * {
+  margin-top: 8px;
+}
+
+.lesson :is(strong, b) {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.lesson del {
+  color: var(--muted);
+}
+
+.lesson a {
+  color: var(--link);
+  overflow-wrap: anywhere;
+}
+
+/* Строчный код — как в вопросах; длинное имя переносится, а не раздвигает экран. */
+.lesson :not(pre) > code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--inline-code-bg);
+  color: var(--inline-code-text);
+  font-size: 0.88em;
+  overflow-wrap: anywhere;
+}
+
+.lesson ul,
+.lesson ol {
+  padding-left: 1.4em;
+}
+
+.lesson li + li,
+.lesson li > :is(ul, ol) {
+  margin-top: 6px;
+}
+
+.lesson li::marker {
+  color: var(--accent);
+}
+
+/* Список задач из GitHub-разметки: «- [x] пункт» — без маркера, с галочкой. */
+.lesson :global(.contains-task-list) {
+  padding-left: 0.2em;
+  list-style: none;
+}
+
+.lesson :global(.task-list-item) input {
+  margin: 0 8px 0 0;
+  vertical-align: -2px;
+  accent-color: var(--accent);
+}
+
+/* Цитата — блок «важно»: как подсказки в справке. */
+.note {
+  padding: 10px 14px;
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--text);
+}
+
+.note > * {
+  margin: 0;
+}
+
+.note > * + * {
+  margin-top: 8px;
+}
+
+.lesson hr {
+  height: 1px;
+  margin: 26px 0;
+  border: 0;
+  background: var(--glass-border);
+}
+
+/* Таблица шире экрана прокручивается внутри рамки; у страницы горизонтальной прокрутки нет. */
+.tableWrap {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: var(--glass-bg);
+}
+
+.tableWrap:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.tableWrap table {
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* Ячейка шириной хотя бы в пару слов: иначе на телефоне таблица сжимается в столбик по слову. */
+.tableWrap th,
+.tableWrap td {
+  min-width: 7.5em;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--glass-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.tableWrap th {
+  background: var(--chip-bg);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.tableWrap tr:last-child td {
+  border-bottom: 0;
+}
+
+.tableWrap th + th,
+.tableWrap td + td {
+  border-left: 1px solid var(--glass-border);
+}
+
+/* Картинка не шире экрана; подпись — из title картинки. */
+.figure {
+  display: block;
+}
+
+.figure img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border-radius: 10px;
+}
+
+.caption {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+/* Картинку не показать — вместо битой иконки её описание и причина. */
+.imageStub {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 1px dashed var(--glass-border);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.imageStub svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.stubAlt {
+  display: block;
+  color: var(--text-2);
+}
+
+.stubReason {
+  display: block;
+  font-size: 13px;
+}
+
+/* Сноски [^1] внизу урока. */
+.lesson :global(.footnotes) {
+  padding-top: 14px;
+  border-top: 1px solid var(--glass-border);
+  font-size: 14px;
+}
+
+.lesson :global(.footnotes) h4 {
+  margin: 0 0 8px;
+}
+
+.lesson sup a {
+  text-decoration: none;
+}

@@ -24,6 +24,8 @@ interface SessionScreenProps {
   onGrade: (question: Question, grade: SpeechGrade) => void;
   onNext: () => void;
   onExit: () => void;
+  /** Вопросы урока в режиме обучения: ответы никуда не записываются, крестик возвращает к уроку. */
+  learning?: boolean;
 }
 
 /** Кнопки и клавиши самооценки устного ответа. */
@@ -33,7 +35,17 @@ const GRADES: { grade: SpeechGrade; label: string; key: string }[] = [
   { grade: "knew", label: "Знал", key: "3" },
 ];
 
-export function SessionScreen({ bank, session, onSelect, onSubmit, onGiveUp, onGrade, onNext, onExit }: SessionScreenProps) {
+export function SessionScreen({
+  bank,
+  session,
+  onSelect,
+  onSubmit,
+  onGiveUp,
+  onGrade,
+  onNext,
+  onExit,
+  learning = false,
+}: SessionScreenProps) {
   const { getNote } = useNotes();
   const [noteOpen, setNoteOpen] = useState(false);
   const [complaintOpen, setComplaintOpen] = useState(false);
@@ -98,7 +110,7 @@ export function SessionScreen({ bank, session, onSelect, onSubmit, onGiveUp, onG
   return (
     <Screen>
       <TopBar>
-        <IconButton icon="close" label="Выйти из сессии" onClick={onExit} />
+        <IconButton icon="close" label={learning ? "Вернуться к уроку" : "Выйти из сессии"} onClick={onExit} />
         <div className={styles.progressBox}>
           {session.infinite ? (
             // Две строки всегда: в одну «Вопрос 1000 · верно 799» рядом с капсулой не влезает.
@@ -139,6 +151,7 @@ export function SessionScreen({ bank, session, onSelect, onSubmit, onGiveUp, onG
         answered={session.answered}
         reveal={session.gaveUp || revealed}
         gaveUp={session.gaveUp}
+        learning={learning}
         explanationRef={explanationRef}
         onSelect={(optionIndex) => onSelect(question, optionIndex)}
       />

@@ -16,7 +16,11 @@ export type AppScreen =
   | { name: "help" }
   | { name: "helpBasics" }
   | { name: "helpSets" }
-  | { name: "review"; setId: string; questionId: string };
+  | { name: "review"; setId: string; questionId: string }
+  // Режим обучения: оглавление курса (finished — пришли с последнего урока), урок и вопросы урока.
+  | { name: "course"; setId: string; finished?: boolean }
+  | { name: "lesson"; setId: string; lessonId: string }
+  | { name: "lessonQuiz"; setId: string; lessonId: string };
 
 interface HistoryState {
   depth: number;
@@ -34,6 +38,8 @@ export function useScreenStack<S>(initialStack: S[], onPop: (popped: S[]) => voi
   const onPopRef = useRef(onPop);
   // В режиме разработки StrictMode запускает эффект дважды — записи истории создаём один раз.
   const historyReady = useRef(false);
+  // Экран, который встанет на место верхнего, когда история вернётся назад (см. rewind).
+  const pendingReplace = useRef<S | null>(null);
 
   useEffect(() => {
     onPopRef.current = onPop;
@@ -61,7 +67,9 @@ export function useScreenStack<S>(initialStack: S[], onPop: (popped: S[]) => voi
       const current = stackRef.current;
       // Переход «вперёд» по истории не поддерживаем: экран, с которого ушли, уже не восстановить.
       if (depth >= current.length) return;
-      commit(current.slice(0, depth));
+      const replacement = pendingReplace.current;
+      pendingReplace.current = null;
+      commit(replacement ? [...current.slice(0, depth - 1), replacement] : current.slice(0, depth));
       onPopRef.current(current.slice(depth));
     }
 
@@ -80,6 +88,26 @@ export function useScreenStack<S>(initialStack: S[], onPop: (popped: S[]) => voi
     commit([...stackRef.current.slice(0, -1), screen]);
   }
 
+  /**
+   * Вернуться на steps экранов назад и подменить тот, что окажется сверху. Так из вопросов урока переходят
+   * к следующему уроку: системная «Назад» потом ведёт к набору, а не листает все пройденные уроки по одному.
+   */
+  function rewind(steps: number, screen: S) {
+    // Двойное нажатие, пока история ещё возвращается, ушло бы на лишний шаг назад.
+    if (pendingReplace.current) return;
+    const target = Math.min(steps, stackRef.current.length - 1);
+    if (target <= 0) {
+      replace(screen);
+      return;
+    }
+    pendingReplace.current = screen;
+    history.go(-target);
+    // Подстраховка: если браузер так и не сообщит о переходе назад, кнопки не должны залипнуть до перезагрузки.
+    setTimeout(() => {
+      if (pendingReplace.current === screen) pendingReplace.current = null;
+    }, 1000);
+  }
+
   function back() {
     if (stackRef.current.length > 1) history.back();
   }
@@ -89,5 +117,5 @@ export function useScreenStack<S>(initialStack: S[], onPop: (popped: S[]) => voi
     if (steps > 0) history.go(-steps);
   }
 
-  return { screen: stack[stack.length - 1], push, replace, back, backToRoot };
+  return { screen: stack[stack.length - 1], getStack: () => stackRef.current, push, replace, rewind, back, backToRoot };
 }

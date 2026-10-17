@@ -15,7 +15,7 @@ import { Notice } from "../../shared/ui/Notice";
 import { Screen, TopBar } from "../../shared/ui/Screen";
 import { ScreenTitle } from "../../shared/ui/ScreenTitle";
 import { Sheet } from "../../shared/ui/Sheet";
-import { getErrorText, getQuestionCount, getReportDetails, getReportText, type Message } from "./setMessages";
+import { describeSetContents, getErrorText, getQuestionCount, getReportDetails, getReportText, type Message } from "./setMessages";
 import { SetsCatalog } from "./SetsCatalog";
 import styles from "./SetsScreen.module.css";
 
@@ -63,7 +63,7 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
       const { record, skipped, warnings } = await addSet(link);
       setAddMessage({
         kind: "ok",
-        text: `Добавлен «${record.title}»: ${countQuestions(getQuestionCount(record))}.${getReportText({ skipped, warnings })}`,
+        text: `Добавлен «${record.title}»: ${describeSetContents(record)}.${getReportText({ skipped, warnings })}`,
         skipped,
         warnings,
       });
@@ -86,7 +86,7 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
       const title = result.record.title;
       const text =
         result.kind === "added"
-          ? `Добавлен «${title}»: ${countQuestions(getQuestionCount(result.record))}.`
+          ? `Добавлен «${title}»: ${describeSetContents(result.record)}.`
           : formatDiff(result.diff, `Набор «${title}» обновлён`, `Набор «${title}» не изменился.`);
       setAddMessage({ kind: "ok", text: text + getReportText(result), skipped: result.skipped, warnings: result.warnings });
     } catch (error) {
