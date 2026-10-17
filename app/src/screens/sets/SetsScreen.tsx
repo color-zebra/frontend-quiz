@@ -174,7 +174,7 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
           onClose={() => setAddMessage(null)}
         />}
 
-      <SetsCatalog onOpenSet={onOpenSet} />
+      <SetsCatalog onOpenSet={onOpenSet} onDeleteSet={setToDelete} />
 
       {sets.length === 0 ? (
         <p className={styles.empty}>Наборов пока нет.</p>

@@ -56,8 +56,14 @@ function getSummary(total: number, added: number) {
   return `${count} · ${added === total ? "все уже у тебя" : `${added} уже у тебя`}`;
 }
 
+interface SetsCatalogProps {
+  onOpenSet: (setId: string) => void;
+  /** Спросить, удалять ли набор, — то же подтверждение, что у корзины в списке своих наборов. */
+  onDeleteSet: (record: SetRecord) => void;
+}
+
 /** Каталог готовых наборов: список из custom-sets/catalog.yaml, набор скачивается по кнопке «Добавить». */
-export function SetsCatalog({ onOpenSet }: { onOpenSet: (setId: string) => void }) {
+export function SetsCatalog({ onOpenSet, onDeleteSet }: SetsCatalogProps) {
   const { sets, addSet } = useSets();
   const [open, setOpen] = useState(() => readStorage(OPEN_KEY) !== "0");
   const [busyKeys, setBusyKeys] = useState<string[]>([]);
@@ -125,6 +131,7 @@ export function SetsCatalog({ onOpenSet }: { onOpenSet: (setId: string) => void 
               message={message && (message.kind === "ok") === !!record ? message : undefined}
               onAdd={() => handleAdd(entry)}
               onOpen={onOpenSet}
+              onDelete={onDeleteSet}
               onCloseMessage={() => showMessage(entry.url, null)}
             />
           );
@@ -142,15 +149,16 @@ interface CatalogRowProps {
   message: Message | undefined;
   onAdd: () => void;
   onOpen: (setId: string) => void;
+  onDelete: (record: SetRecord) => void;
   onCloseMessage: () => void;
 }
 
 /**
  * Пункт каталога — сворачиваемая карточка. Свёрнута: название и сколько вопросов каких уровней, по строке с троеточием;
- * раскрыта: всё целиком, описание и кнопка «Добавить» или «Открыть». Добавленный набор видно и в свёрнутом виде:
+ * раскрыта: всё целиком, описание и кнопки — «Добавить» или «Удалить» и «Открыть». Добавленный набор видно и в свёрнутом виде:
  * зелёная рамка и «добавлен».
  */
-function CatalogRow({ entry, record, busy, message, onAdd, onOpen, onCloseMessage }: CatalogRowProps) {
+function CatalogRow({ entry, record, busy, message, onAdd, onOpen, onDelete, onCloseMessage }: CatalogRowProps) {
   return (
     <li className={styles.row}>
       <details className={clsx(styles.item, glass.glass, record && styles.added)}>
@@ -163,29 +171,42 @@ function CatalogRow({ entry, record, busy, message, onAdd, onOpen, onCloseMessag
         </summary>
         <div className={styles.itemBody}>
           <p className={styles.description}>{entry.description}</p>
-          {record ? (
-            <Button
-              variant="secondary"
-              iconAfter="arrowRight"
-              className={styles.action}
-              aria-label={`Открыть «${entry.title}»`}
-              onClick={() => onOpen(record.id)}
-            >
-              Открыть
-            </Button>
-          ) : (
-            <Button
-              variant="secondary"
-              icon="plus"
-              className={clsx(styles.action, styles.add)}
-              disabled={busy}
-              aria-busy={busy || undefined}
-              aria-label={`Добавить «${entry.title}»`}
-              onClick={onAdd}
-            >
-              {busy ? "Загружаем…" : "Добавить"}
-            </Button>
-          )}
+          <div className={clsx(styles.actions, record && styles.pair)}>
+            {record ? (
+              <>
+                <Button
+                  variant="secondary"
+                  icon="trash"
+                  className={clsx(styles.action, styles.delete)}
+                  aria-label={`Удалить «${entry.title}»`}
+                  onClick={() => onDelete(record)}
+                >
+                  Удалить
+                </Button>
+                <Button
+                  variant="secondary"
+                  iconAfter="arrowRight"
+                  className={styles.action}
+                  aria-label={`Открыть «${entry.title}»`}
+                  onClick={() => onOpen(record.id)}
+                >
+                  Открыть
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="secondary"
+                icon="plus"
+                className={clsx(styles.action, styles.add)}
+                disabled={busy}
+                aria-busy={busy || undefined}
+                aria-label={`Добавить «${entry.title}»`}
+                onClick={onAdd}
+              >
+                {busy ? "Загружаем…" : "Добавить"}
+              </Button>
+            )}
+          </div>
         </div>
       </details>
       {message && (

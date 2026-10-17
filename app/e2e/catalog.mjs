@@ -138,12 +138,26 @@ export default async function catalog(t) {
     await collapse(second);
   }
 
-  // Удалили набор — карточка снова обычная, внутри «Добавить».
-  await page.getByRole("button", { name: `Удалить «${first.title}»` }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Удалить" }).click();
+  // Удаление прямо из карточки каталога: то же подтверждение, что у корзины в списке своих наборов.
+  const deleteButton = (entry) => card(entry).getByRole("button", { name: `Удалить «${entry.title}»` });
+  const dialog = page.getByRole("dialog");
   await expand(first);
-  check("после удаления в каталоге снова «Добавить»", await visible(addButton(first)));
+  check("у добавленного набора — «Удалить» рядом с «Открыть»", (await visible(deleteButton(first))) && (await visible(openButton(first))));
+  await t.shot(page, "delete-button");
+  await deleteButton(first).click();
+  check("«Удалить» спрашивает подтверждение", await visible(dialog.getByText(`Набор «${first.title}» пропадёт с этого устройства.`, { exact: false })));
+  await page.waitForTimeout(400);
+  await t.shot(page, "delete-confirm");
+  await dialog.getByRole("button", { name: "Отмена" }).click();
+  await dialog.waitFor({ state: "hidden" });
+  check("«Отмена» ничего не удаляет", (await visible(addedMark(first))) && (await visible(page.getByRole("button", { name: `Обновить «${first.title}»` }))));
+  await deleteButton(first).click();
+  await dialog.getByRole("button", { name: "Удалить" }).click();
+  await dialog.waitFor({ state: "hidden" });
+  check("после удаления набора нет в списке своих", (await page.getByRole("button", { name: `Обновить «${first.title}»` }).count()) === 0);
+  check("карточка снова обычная: внутри «Добавить»", await visible(addButton(first)));
   check("и пометки «добавлен» нет", !(await addedMark(first).isVisible()));
+  await collapse(first);
 
   // Свернуть каталог: остаётся одна строка, после перезапуска он по-прежнему свёрнут.
   await summary.click();
@@ -164,11 +178,17 @@ export default async function catalog(t) {
   let oneLine = true;
   for (const entry of entries) oneLine &&= await isOneLine(entry);
   check("на узком экране свёрнутые карточки — название в одну строку", oneLine);
+  // Раскрытая карточка: название не обрезано и может переноситься — сколько строк займёт, зависит от длины.
   const longest = entries.reduce((a, b) => (b.title.length > a.title.length ? b : a));
   await expand(longest);
-  check("раскрытая карточка показывает длинное название целиком", !(await isOneLine(longest)), longest.title);
+  const fullTitle = await cardHead(longest)
+    .getByText(longest.title, { exact: true })
+    .evaluate((el) => el.scrollWidth <= el.clientWidth && getComputedStyle(el).whiteSpace !== "nowrap");
+  check("раскрытая карточка показывает название целиком", fullTitle, longest.title);
   await collapse(longest);
   await expand(first);
+  // Добавленный набор раскрыт: «Удалить» и «Открыть» помещаются рядом.
+  if (second) await expand(second);
   await t.shot(page, "320", true);
 
   // Тема «Терминал»: свой шрифт и «// » у заголовков карточек.

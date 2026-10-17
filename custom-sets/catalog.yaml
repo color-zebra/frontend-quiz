@@ -25,15 +25,3 @@
 
 - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/module-federation.yaml
   description: Host и remote, shared и версии, рантайм MF 2.0, сборщики, ошибки, роутинг и деплой.
-
-- url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/fsd-foundations-tests.yaml
-  description: Основы проектирования фронтенда — постановка задачи, декомпозиция на подсистемы, архитектура состояния, потоки данных и контракты API, архитектурные решения.
-
-- url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/fsd-foundations-speech.yaml
-  description: Те же основы в формате собеседования — проведи архитектурное обсуждение вслух и сверься с эталонным ответом.
-
-- url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/fsd-applied-tests.yaml
-  description: Прикладная архитектура — загрузка и кэширование данных, мутации и согласованность, надёжность и восстановление, real-time, UI на больших объёмах, рендеринг и доставка.
-
-- url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/fsd-applied-speech.yaml
-  description: Прикладные сценарии устно — спроектируй решение под условия задачи и сверься с эталоном.
