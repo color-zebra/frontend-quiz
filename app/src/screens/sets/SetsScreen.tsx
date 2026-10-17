@@ -3,70 +3,30 @@ import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { SAMPLE_SET_URL } from "../../config";
 import { formatDiff } from "../../data/formatDiff";
 import { useSets } from "../../features/sets/SetsProvider";
-import type { SkippedQuestion } from "../../features/sets/parseSet";
+import { formatRawSource } from "../../features/sets/setUrl";
 import type { SetRecord } from "../../features/sets/setsStore";
 import { formatShortDate } from "../../shared/lib/formatDate";
 import { countQuestions } from "../../shared/lib/plural";
 import { Button, IconButton } from "../../shared/ui/Button";
-import { Card } from "../../shared/ui/Card";
+import { Card, SectionLabel } from "../../shared/ui/Card";
 import glass from "../../shared/ui/glass.module.css";
 import { Icon } from "../../shared/ui/Icon";
 import { Notice } from "../../shared/ui/Notice";
 import { Screen, TopBar } from "../../shared/ui/Screen";
 import { ScreenTitle } from "../../shared/ui/ScreenTitle";
 import { Sheet } from "../../shared/ui/Sheet";
+import { getErrorText, getQuestionCount, getReportDetails, getReportText, type Message } from "./setMessages";
+import { SetsCatalog } from "./SetsCatalog";
 import styles from "./SetsScreen.module.css";
-
-type Message = { kind: "ok" | "error"; text: string; skipped?: SkippedQuestion[]; warnings?: string[] };
-
-/** Что приложение сказало о файле набора: пропущенные вопросы и замечания. */
-interface FileReport {
-  skipped: readonly SkippedQuestion[];
-  warnings: readonly string[];
-}
-
-function getErrorText(error: unknown) {
-  return error instanceof Error ? error.message : "Неизвестная ошибка";
-}
-
-/** Вопросов в наборе: тестовый набор — тестовые, устный — устные. */
-function getQuestionCount(record: SetRecord) {
-  return record.file.questions.length + (record.file.speech?.length ?? 0);
-}
 
 /** Пометка устного набора в списке. */
 function getKindLabel(record: SetRecord) {
   return record.file.speech?.length ? "устные · " : "";
 }
 
-function getReportText({ skipped, warnings }: FileReport) {
-  if (skipped.length && warnings.length) return ` Пропущено ${skipped.length}, есть замечания к файлу — подробности ниже.`;
-  if (skipped.length) return ` Пропущено ${skipped.length} — причины ниже.`;
-  if (warnings.length) return " Есть замечания к файлу — подробности ниже.";
-  return "";
-}
-
-/** Подробности для сообщения: какие вопросы набора пропущены и почему, что поправить в файле. */
-function getReportDetails(message: Message) {
-  const skipped = message.skipped ?? [];
-  const warnings = message.warnings ?? [];
-  if (!skipped.length && !warnings.length) return undefined;
-  const title = !warnings.length ? "Что пропущено" : skipped.length ? "Что пропущено и что поправить" : "Что поправить в файле";
-  return { title, items: [...skipped.map((s) => `${s.label}: ${s.reason}`), ...warnings] };
-}
-
-/**
- * Откуда набор: GitHub — «владелец/репозиторий › файл», остальные сайты — «сайт › файл».
- * «raw.githubusercontent.com/color-zebra/frontend-quiz/main/examples/sample-set.yaml» → «color-zebra/frontend-quiz › sample-set.yaml».
- */
+/** Откуда набор: ссылка — «владелец/репозиторий › файл» или «сайт › файл», иначе — имя файла с устройства. */
 function formatSource(record: SetRecord) {
-  if (!record.url) return `Файл с устройства · ${record.fileName}`;
-  const { hostname, pathname } = new URL(record.url);
-  const parts = pathname.split("/").filter(Boolean);
-  const file = decodeURIComponent(parts[parts.length - 1] ?? "");
-  const isGitHub = hostname === "raw.githubusercontent.com" || hostname === "gist.githubusercontent.com";
-  if (isGitHub && parts.length >= 2) return `${parts[0]}/${parts[1]} › ${file}`;
-  return file ? `${hostname} › ${file}` : hostname;
+  return record.url ? formatRawSource(record.url) : `Файл с устройства · ${record.fileName}`;
 }
 
 interface SetsScreenProps {
@@ -160,7 +120,7 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
         <IconButton icon="arrowLeft" label="Назад" onClick={onBack} />
       </TopBar>
 
-      <ScreenTitle title="Мои наборы" subtitle="Свои вопросы из YAML-файла — по ссылке или с устройства" />
+      <ScreenTitle title="Мои наборы" subtitle="Свои вопросы из YAML-файла — по ссылке, с устройства или из готовых" />
 
       {!persistent && (
         <p className={clsx(styles.banner, glass.glass)}>
@@ -214,7 +174,14 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
           onClose={() => setAddMessage(null)}
         />}
 
-      {sets.length === 0 && <p className={styles.empty}>Наборов пока нет.</p>}
+      <SetsCatalog onOpenSet={onOpenSet} />
+
+      {sets.length === 0 ? (
+        <p className={styles.empty}>Наборов пока нет.</p>
+      ) : (
+        // Подпись отделяет свои наборы от каталога над ними.
+        <SectionLabel className={styles.listLabel}>Добавленные · {sets.length}</SectionLabel>
+      )}
 
       <ul className={styles.list}>
         {sets.map((record) => {

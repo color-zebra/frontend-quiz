@@ -53,6 +53,23 @@ export function toPageUrl(rawUrl: string): string {
   return url.href;
 }
 
+/**
+ * Откуда набор по ссылке на сырой файл: GitHub — «владелец/репозиторий › файл», gist — «gist.github.com › автор»,
+ * остальные сайты — «сайт › файл».
+ * «raw.githubusercontent.com/color-zebra/frontend-quiz/main/examples/sample-set.yaml» → «color-zebra/frontend-quiz › sample-set.yaml».
+ */
+export function formatRawSource(rawUrl: string) {
+  const { hostname, pathname } = new URL(rawUrl);
+  const parts = pathname.split("/").filter(Boolean);
+  const file = decodeURIComponent(parts[parts.length - 1] ?? "");
+  // gist.githubusercontent.com/<автор>/<id>/raw[/<версия>/<файл>]: id ничего не говорит, а «raw» — не имя файла.
+  if (hostname === "gist.githubusercontent.com" && parts.length >= 2) {
+    return parts.length > 3 ? `gist.github.com › ${parts[0]} › ${file}` : `gist.github.com › ${parts[0]}`;
+  }
+  if (hostname === "raw.githubusercontent.com" && parts.length >= 2) return `${parts[0]}/${parts[1]} › ${file}`;
+  return file ? `${hostname} › ${file}` : hostname;
+}
+
 /** Название набора по умолчанию — имя файла без расширения. */
 export function getTitleFromUrl(rawUrl: string) {
   const last = new URL(rawUrl).pathname.split("/").filter(Boolean).pop() ?? "";

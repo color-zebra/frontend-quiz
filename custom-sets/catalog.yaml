@@ -1,0 +1,39 @@
+# Каталог готовых наборов: экран «Мои наборы» → «Готовые наборы». Это список ссылок, а не встроенные вопросы:
+# набор скачивается, когда человек нажимает «Добавить», и дальше живёт как любой набор по ссылке.
+# Порядок пунктов здесь — порядок в приложении. Наборы из custom-sets/, которых нет в этом списке, в приложении
+# не видны.
+#
+# Пункт — ссылка на набор и одна-две фразы о том, что внутри:
+#   - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/websockets.yaml
+#     description: …
+# Ссылка — такая же, как в поле «Добавить набор». Набор из этой папки должен быть запушен в main: приложение
+# скачивает его с GitHub. Название, число вопросов и уровни сборка берёт из файла рядом — руками их не пиши.
+# Не меняй ссылку у пункта, который уже могли добавить: к ней привязаны прогресс и заметки людей.
+#
+# Набор из другого места (gist, чужой репозиторий) сборка не скачивает, поэтому ему нужно название:
+#   - url: https://gist.github.com/имя/abc123
+#     title: Название в каталоге
+#     description: …
+# Вместо числа вопросов в карточке будет видно, откуда набор; после добавления — название и вопросы из файла.
+#
+# Опечатка в имени файла, неизвестное поле или пустое описание остановят сборку с понятной ошибкой.
+# Правка этого файла пересобирает сайт (.github/workflows/deploy.yml), правка самих наборов — нет: число вопросов
+# в карточке обновится со следующим деплоем.
+
+- url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/websockets.yaml
+  description: Рукопожатие и кадры, API браузера, переподключение и heartbeat, безопасность, Socket.IO и альтернативы.
+
+- url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/module-federation.yaml
+  description: Host и remote, shared и версии, рантайм MF 2.0, сборщики, ошибки, роутинг и деплой.
+
+- url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/fsd-foundations-tests.yaml
+  description: Основы проектирования фронтенда — постановка задачи, декомпозиция на подсистемы, архитектура состояния, потоки данных и контракты API, архитектурные решения.
+
+- url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/fsd-foundations-speech.yaml
+  description: Те же основы в формате собеседования — проведи архитектурное обсуждение вслух и сверься с эталонным ответом.
+
+- url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/fsd-applied-tests.yaml
+  description: Прикладная архитектура — загрузка и кэширование данных, мутации и согласованность, надёжность и восстановление, real-time, UI на больших объёмах, рендеринг и доставка.
+
+- url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/fsd-applied-speech.yaml
+  description: Прикладные сценарии устно — спроектируй решение под условия задачи и сверься с эталоном.

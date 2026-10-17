@@ -1,0 +1,167 @@
+/* Каталог готовых наборов: сворачиваемая карточка, как разделы инструкции и наборы в статистике. */
+.catalog {
+  overflow: hidden;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.head .label {
+  margin: 0;
+}
+
+.line {
+  color: var(--text-2);
+  font-size: 14px;
+}
+
+.marker {
+  flex: none;
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+
+.catalog[open] .marker {
+  transform: rotate(90deg);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0 16px 16px;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Пункт каталога — сворачиваемая карточка: свёрнута — название и цифры, раскрыта — ещё описание и кнопка. */
+.item {
+  overflow: hidden;
+}
+
+.itemSummary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px 12px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.itemSummary::-webkit-details-marker {
+  display: none;
+}
+
+.itemHead {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Раскрыта: длинный источник набора по ссылке переносится, а не вылезает за карточку. */
+.meta {
+  color: var(--muted);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+
+.metaPart {
+  white-space: nowrap;
+}
+
+/* Свёрнута: название и подпись — по одной строке, остальное за троеточием; целиком видно в раскрытой. */
+.item:not([open]) .title,
+.item:not([open]) .meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemMarker {
+  flex: none;
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+
+.item[open] .itemMarker {
+  transform: rotate(90deg);
+}
+
+.itemBody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 12px 12px 14px;
+}
+
+.description {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+/*
+ * Набор уже на устройстве — как верный ответ в вопросе: зелёная рамка, зелёный отсвет поверх тёмного стекла
+ * (иначе яркое пятно фона съедает контраст) и «добавлен» в подписи. Видно и в свёрнутом виде.
+ */
+.added {
+  border-color: var(--ok);
+  background: linear-gradient(var(--ok-bg), var(--ok-bg)), var(--glass-bg);
+}
+
+.addedText {
+  color: var(--ok);
+  font-weight: 600;
+}
+
+/* Кнопка в карточке — ниже и уже обычной, справа, чтобы не спорить с кнопками формы над каталогом. */
+.itemBody .action {
+  align-self: flex-end;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+/* «Добавить» — стеклянная с цветом темы: яркая главная кнопка на экране одна, в форме над каталогом. */
+.itemBody .add {
+  color: var(--accent);
+}
+
+.itemBody .action svg {
+  width: 16px;
+  height: 16px;
+}

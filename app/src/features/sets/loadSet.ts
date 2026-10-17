@@ -1,6 +1,9 @@
 import { parseSetFile, type ParsedSet } from "./parseSet";
 import { getTitleFromUrl } from "./setUrl";
 
+/** Файл не скачался совсем: нет связи или сайт запретил чтение с других сайтов (CORS). */
+export class SetNetworkError extends Error {}
+
 /** Скачивает и разбирает файл набора по ссылке на сырой файл. */
 export async function fetchSet(rawUrl: string): Promise<ParsedSet> {
   let response: Response;
@@ -9,7 +12,7 @@ export async function fetchSet(rawUrl: string): Promise<ParsedSet> {
     response = await fetch(`${rawUrl}${rawUrl.includes("?") ? "&" : "?"}t=${Date.now()}`, { cache: "no-store" });
   } catch {
     // Браузер не говорит, что именно случилось: нет сети или сайт запретил чтение с других сайтов (CORS).
-    throw new Error(
+    throw new SetNetworkError(
       "Не удалось скачать файл: нет связи или сайт не разрешает загрузку с других сайтов. " +
         "Скачай файл и добавь его через «Загрузить файл с устройства».",
     );

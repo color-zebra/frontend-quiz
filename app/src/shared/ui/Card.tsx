@@ -18,6 +18,6 @@ export function Card({ label, className, children }: CardProps) {
   );
 }
 
-export function SectionLabel({ children }: { children: ReactNode }) {
-  return <div className={styles.label}>{children}</div>;
+export function SectionLabel({ className, children }: { className?: string; children: ReactNode }) {
+  return <div className={clsx(styles.label, className)}>{children}</div>;
 }
