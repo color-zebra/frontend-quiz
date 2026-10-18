@@ -25,3 +25,9 @@
 
 - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/module-federation.yaml
   description: Host и remote, shared и версии, рантайм MF 2.0, сборщики, ошибки, роутинг и деплой.
+
+- url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-basics.yaml
+  description: Курс 1 из 5, с уроками. Требования, деление на модули, состояние и владелец данных, контракт API, сравнение решений.
+
+- url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-data.yaml
+  description: Курс 2 из 5, с уроками. Кэш и свежесть, гонки, оптимизм, повторы без дублей, конфликты, офлайн, файлы, сессия.
