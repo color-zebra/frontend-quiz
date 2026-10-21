@@ -84,6 +84,15 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Скорость — капсулой, как чипы в приложении: видно, что это кнопка, а не подпись. */
+.rateButton {
+  padding: 5px 0;
+  border: 1px solid var(--chip-border);
+  border-radius: var(--chip-radius);
+  background: var(--chip-bg);
+  color: var(--text);
+}
+
 .play {
   display: grid;
   place-items: center;

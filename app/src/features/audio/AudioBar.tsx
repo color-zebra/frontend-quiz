@@ -70,7 +70,7 @@ export function AudioBar({ onOpenLesson }: AudioBarProps) {
         onChange={(e) => audio.seekTo(Number(e.target.value))}
       />
       <div className={styles.controls}>
-        <button type="button" className={styles.rate} aria-label="Скорость" onClick={audio.cycleRate}>
+        <button type="button" className={clsx(styles.rate, styles.rateButton)} aria-label="Скорость" onClick={audio.cycleRate}>
           {formatRate(audio.rate)}
         </button>
         <IconButton icon="back15" label={`−${SKIP_SECONDS} секунд`} bare className={styles.skip} onClick={() => audio.seekBy(-SKIP_SECONDS)} />
