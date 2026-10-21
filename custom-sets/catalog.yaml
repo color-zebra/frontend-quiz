@@ -21,7 +21,7 @@
 # в карточке обновится со следующим деплоем.
 
 - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/websockets.yaml
-  description: Рукопожатие и кадры, API браузера, переподключение и heartbeat, безопасность, Socket.IO и альтернативы.
+  description: С уроками. Рукопожатие и кадры, API браузера, переподключение и heartbeat, доставка, безопасность, серверы и прокси, Socket.IO и другие библиотеки.
 
 - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/module-federation.yaml
   description: Host и remote, shared и версии, рантайм MF 2.0, сборщики, ошибки, роутинг и деплой.
