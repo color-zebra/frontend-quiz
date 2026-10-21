@@ -5,6 +5,7 @@ import type { QuestionBank } from "../../data/types";
 import { getAchievements } from "../../features/achievements/compute";
 import { useBankUpdate } from "../../features/bank/useBankUpdate";
 import { exportBackup, parseBackupFile } from "../../features/backup/backupFile";
+import { formatBytes, useAudioDownloads } from "../../features/audio/AudioDownloadsProvider";
 import { useBookmarks } from "../../features/bookmarks/BookmarksProvider";
 import { useLessons } from "../../features/lessons/LessonsProvider";
 import { useNotes, type ImportStats } from "../../features/notes/NotesProvider";
@@ -71,6 +72,7 @@ export function CabinetScreen({
   const { records, getProgress, importRecords, resetAll } = useProgress();
   const { bookmarks, importBookmarks } = useBookmarks();
   const { courses, importCourses } = useLessons();
+  const { totalBytes: audioBytes } = useAudioDownloads();
   const fileInput = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState<Message | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -154,6 +156,11 @@ export function CabinetScreen({
           Заметки, ответы, закладки и прогресс уроков — в одном файле. Сохрани копию, перенеси файл на другой телефон
           или ноутбук (например, отправь себе в Telegram) и загрузи там. Повторная загрузка ничего не задвоит.
         </p>
+        {audioBytes > 0 && (
+          <p className={styles.hint}>
+            Аудио уроков на телефоне — {formatBytes(audioBytes)}. В копию оно не входит; удаляется в оглавлении курса.
+          </p>
+        )}
         <div className={styles.fileButtons}>
           <Button
             variant="secondary"

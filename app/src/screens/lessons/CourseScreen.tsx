@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { Fragment, useState } from "react";
 import type { QuestionBank } from "../../data/types";
 import { countMastered, getLessonGroups, getLessonQuestionIds, getPosition, isMastered } from "../../features/lessons/course";
+import { useAudioDownloads } from "../../features/audio/AudioDownloadsProvider";
 import { useLessons } from "../../features/lessons/LessonsProvider";
 import { countQuestions, LESSON_FORMS, plural } from "../../shared/lib/plural";
 import { Button, IconButton } from "../../shared/ui/Button";
@@ -12,6 +13,7 @@ import { Notice } from "../../shared/ui/Notice";
 import { Screen, TopBar } from "../../shared/ui/Screen";
 import { ScreenTitle } from "../../shared/ui/ScreenTitle";
 import { Sheet } from "../../shared/ui/Sheet";
+import { CourseAudio } from "./CourseAudio";
 import styles from "./Lessons.module.css";
 
 interface CourseScreenProps {
@@ -32,6 +34,7 @@ function getFinishedText(total: number, mastered: number) {
 /** Оглавление курса: уроки по порядку файла, по разделам, с отметками «освоен» и местом, где человек остановился. */
 export function CourseScreen({ bank, finished, onBack, onOpenLesson }: CourseScreenProps) {
   const { getCourse, resetCourse } = useLessons();
+  const { isStored } = useAudioDownloads();
   const [finishedShown, setFinishedShown] = useState(finished);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const lessons = bank.lessons ?? [];
@@ -51,6 +54,8 @@ export function CourseScreen({ bank, finished, onBack, onOpenLesson }: CourseScr
       />
 
       {finishedShown && <Notice kind="ok" text={getFinishedText(lessons.length, mastered)} onClose={() => setFinishedShown(false)} />}
+
+      <CourseAudio setId={bank.setId} />
 
       {getLessonGroups(lessons).map((group, groupIndex) => (
         <Fragment key={`${groupIndex}-${group.topic ?? ""}`}>
@@ -74,6 +79,9 @@ export function CourseScreen({ bank, finished, onBack, onOpenLesson }: CourseScr
                       <span className={styles.rowMeta}>
                         {done && <span className={styles.masteredText}>освоен · </span>}
                         {count ? countQuestions(count) : "без вопросов"}
+                        {lesson.audio && (
+                          <span className={styles.audioMark}>{isStored(lesson.audio) ? " · аудио на телефоне" : " · аудио"}</span>
+                        )}
                         {here && (
                           <span className={styles.hereText}>
                             {" · "}

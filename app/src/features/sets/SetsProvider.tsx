@@ -29,6 +29,11 @@ interface SetsContextValue {
   sets: SetRecord[];
   /** false — IndexedDB недоступна, наборы живут до закрытия вкладки. */
   persistent: boolean;
+  /**
+   * Список наборов прочитан с устройства. До этого sets пуст не потому, что наборов нет: уборка скачанного аудио
+   * ждёт этого флага, иначе при запуске стёрла бы всё.
+   */
+  loaded: boolean;
   getSetBank: (id: string) => QuestionBank | undefined;
   addSet: (link: string) => Promise<AddResult>;
   importSetFile: (file: File) => Promise<FileImportResult>;
@@ -44,11 +49,15 @@ const bankCache = new WeakMap<SetRecord, QuestionBank>();
 export function SetsProvider({ children }: { children: ReactNode }) {
   const [sets, setSets] = useState<SetRecord[]>([]);
   const [persistent, setPersistent] = useState(true);
+  const [loaded, setLoaded] = useState(false);
   const { resetQuestions } = useProgress();
 
   useEffect(() => {
     readAllSets()
-      .then((list) => setSets((prev) => mergeSets(list, prev)))
+      .then((list) => {
+        setSets((prev) => mergeSets(list, prev));
+        setLoaded(true);
+      })
       .catch(() => setPersistent(false));
   }, []);
 
@@ -122,7 +131,7 @@ export function SetsProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <SetsContext value={{ sets, persistent, getSetBank, addSet, importSetFile, updateSet, removeSet }}>{children}</SetsContext>
+    <SetsContext value={{ sets, persistent, loaded, getSetBank, addSet, importSetFile, updateSet, removeSet }}>{children}</SetsContext>
   );
 }
 

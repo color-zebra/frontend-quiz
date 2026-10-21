@@ -217,6 +217,19 @@ const pwa = VitePWA({
           cacheableResponse: { statuses: [200] },
         },
       },
+      // Озвучка уроков. Скачанный файл (кнопка «Скачать аудио», хранилище lesson-audio) отдаём с телефона — кусками,
+      // чтобы работала перемотка. Нескачанный — из сети, и сами ничего не сохраняем: плеер качает файл кусками (206),
+      // их не собрать в целый файл. Vary не сверяем: GitHub его отдаёт, и сохранённый файл иначе не нашёлся бы.
+      {
+        urlPattern: ({ request }) => request.destination === "audio",
+        handler: "CacheFirst",
+        options: {
+          cacheName: "lesson-audio",
+          rangeRequests: true,
+          matchOptions: { ignoreVary: true },
+          cacheableResponse: { headers: { "x-zubrilka-cache-audio": "never" } },
+        },
+      },
     ],
   },
 });

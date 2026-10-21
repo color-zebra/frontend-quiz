@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { loadInitialBank, updateBank } from "../data/loadQuestions";
 import type { QuestionBank } from "../data/types";
+import { AudioDownloadsProvider } from "../features/audio/AudioDownloadsProvider";
 import { AudioProvider } from "../features/audio/AudioProvider";
 import { BookmarksProvider } from "../features/bookmarks/BookmarksProvider";
 import { LessonsProvider } from "../features/lessons/LessonsProvider";
@@ -48,7 +49,9 @@ export function App() {
               <LessonsProvider>
                 <AudioProvider>
                   <SetsProvider>
-                    <QuizApp bank={state.bank} onUpdate={() => update(state.bank)} />
+                    <AudioDownloadsProvider>
+                      <QuizApp bank={state.bank} onUpdate={() => update(state.bank)} />
+                    </AudioDownloadsProvider>
                   </SetsProvider>
                 </AudioProvider>
               </LessonsProvider>

@@ -141,3 +141,44 @@
   font-size: 13.5px;
   line-height: 1.45;
 }
+
+/* «Аудио курса» в оглавлении. */
+.audioText {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.audioError {
+  margin: 10px 0 0;
+  color: var(--bad);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.audioProgress {
+  width: 100%;
+  height: 6px;
+  margin-top: 10px;
+  accent-color: var(--accent);
+}
+
+.audioButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.audioButtons > * {
+  flex: 1 1 auto;
+}
+
+.audioDelete.audioDelete {
+  color: var(--bad);
+}
+
+.audioMark {
+  color: var(--text-2);
+}

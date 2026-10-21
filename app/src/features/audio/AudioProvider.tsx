@@ -223,6 +223,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       lastSaved.current = saved;
       audio.src = track.src;
       setState((prev) => ({ ...EMPTY, rate: prev.rate, track, time: saved }));
+    } else if (audio.error) {
+      // Файл не загрузился (не было сети) — грузим заново; место, с которого начинали, ещё ждёт в pendingSeek.
+      audio.src = track.src;
+      patch({ error: false });
     } else if (audio.ended) {
       audio.currentTime = 0;
     }

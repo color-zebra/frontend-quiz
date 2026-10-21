@@ -502,7 +502,11 @@ questions:
 async function offline(t, files, image) {
   const { check, visible } = t;
   const context = await t.newContext();
+  // Подставные ответы Playwright отдаёт и в режиме «без сети» — с выключенной сетью рвём соединение сами,
+  // иначе картинка «без сети» пришла бы от теста, а не из кэша.
+  let networkDown = false;
   await context.route(`${BASE}**`, (route) => {
+    if (networkDown) return route.abort("internetdisconnected");
     const name = new URL(route.request().url()).pathname.split("/main/")[1];
     if (name === "images/pic.png") {
       return route.fulfill({ status: 200, contentType: "image/png", headers: { "Access-Control-Allow-Origin": "*" }, body: image });
@@ -530,6 +534,7 @@ async function offline(t, files, image) {
     });
     check("увиденная картинка урока — в кэше картинок", cached.some((path) => path.endsWith("/images/pic.png")), JSON.stringify(cached));
 
+    networkDown = true;
     await context.setOffline(true);
     await page.goto(t.url);
     await page.getByText("Что тренируем?").waitFor();

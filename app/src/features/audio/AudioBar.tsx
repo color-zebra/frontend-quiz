@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { useEffect, useRef } from "react";
 import { IconButton } from "../../shared/ui/Button";
 import { Icon } from "../../shared/ui/Icon";
+import { useAudioDownloads } from "./AudioDownloadsProvider";
 import { formatAudioTime, SKIP_SECONDS, useAudio } from "./AudioProvider";
 import styles from "./AudioBar.module.css";
 
@@ -21,6 +22,7 @@ function formatRate(rate: number) {
  */
 export function AudioBar({ onOpenLesson }: AudioBarProps) {
   const audio = useAudio();
+  const { isStored } = useAudioDownloads();
   const barRef = useRef<HTMLDivElement>(null);
   const { track } = audio;
 
@@ -39,7 +41,9 @@ export function AudioBar({ onOpenLesson }: AudioBarProps) {
   if (!track) return null;
   const duration = audio.duration || 0;
   const status = audio.error
-    ? "Не удалось загрузить аудио — проверь связь"
+    ? !navigator.onLine && !isStored(track.src)
+      ? "Нет сети, а аудио этого урока не скачано"
+      : "Не удалось загрузить аудио — проверь связь"
     : audio.ended
       ? "Урок дослушан"
       : `${formatAudioTime(audio.time)} / ${duration ? formatAudioTime(duration) : "…"}`;
