@@ -34,3 +34,6 @@
 
 - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-delivery.yaml
   description: Курс 3 из 7, с уроками. Метрики скорости, SSR и SSG, загрузка кода и картинок, выкатка версий, Service Worker, безопасность, доступность, наблюдаемость, локализация.
+
+- url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-live.yaml
+  description: Курс 4 из 7, с уроками. Большие списки и виртуализация, тяжёлая работа без зависаний, выбор по фильтру, SSE и WebSocket, обрывы, дубли событий, снимок и догоняющие события, чат, уведомления.
