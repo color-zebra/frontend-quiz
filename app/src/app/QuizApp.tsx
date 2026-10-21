@@ -1,6 +1,8 @@
 import { lazy, useEffect, useRef, useState } from "react";
 import type { BankDiff } from "../data/loadQuestions";
 import { BUILTIN_SET_ID, type Question, type QuestionBank } from "../data/types";
+import { AudioBar } from "../features/audio/AudioBar";
+import { useAudio } from "../features/audio/AudioProvider";
 import { useProgress } from "../features/progress/ProgressProvider";
 import { dismissBankVersion, fetchBankVersion, getIsNewerBank } from "../features/bank/bankVersion";
 import type { TrainingKind } from "../features/session/filters";
@@ -79,6 +81,7 @@ interface FinishedSession {
 
 export function QuizApp({ bank, onUpdate }: QuizAppProps) {
   const { getSetBank } = useSets();
+  const audio = useAudio();
   const { recordAnswer, records } = useProgress();
   const [active, setActive] = useState<ActiveSession | null>(null);
   const activeRef = useRef<ActiveSession | null>(null);
@@ -95,6 +98,14 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
   }, []);
 
   const nav = useScreenStack(getInitialStack(), handlePop);
+
+  // Набор или урок, который играет, удалили — плеер закрывается: играть больше нечего.
+  const playingTrack = audio.track;
+  const playingBank = playingTrack ? getSetBank(playingTrack.setId) : undefined;
+  const trackGone = !!playingTrack && !playingBank?.lessons?.some((l) => l.id === playingTrack.lessonId && l.audio);
+  useEffect(() => {
+    if (trackGone) audio.close();
+  }, [trackGone]);
 
   // Новый экран всегда открывается с начала.
   useEffect(() => {
@@ -231,6 +242,13 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
     else nav.rewind(stack.length - 1 - first, course);
   }
 
+  /** Нажатие на название в мини-плеере: открыть урок, который играет, если он уже не на экране. */
+  function openPlayingLesson(setId: string, lessonId: string) {
+    const screen = nav.screen;
+    if (screen.name === "lesson" && screen.setId === setId && screen.lessonId === lessonId) return;
+    nav.push({ name: "lesson", setId, lessonId });
+  }
+
   function selectTheme(id: ThemeId) {
     applyTheme(id);
     setTheme(id);
@@ -239,6 +257,7 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
   return (
     <>
       {renderScreen()}
+      <AudioBar onOpenLesson={openPlayingLesson} />
       <ThemeSheet open={themeOpen} current={theme} onSelect={selectTheme} onClose={() => setThemeOpen(false)} />
     </>
   );

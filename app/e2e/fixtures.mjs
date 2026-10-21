@@ -120,7 +120,8 @@ function yamlQuestion(id, text, subtopic) {
 
 /**
  * Набор с уроками для режима обучения: разметка урока (таблица, картинка, код, цитата, ссылки, сноска, HTML),
- * связь урока с вопросами по подтеме и явным списком, три битых урока для «Что пропущено». extraLesson — урок
+ * связь урока с вопросами по подтеме и явным списком, три битых урока для «Что пропущено», озвучка: относительный
+ * путь, полная ссылка и ссылка по http (замечание). extraLesson — урок
  * в конец, для проверки обновления набора.
  */
 export function lessonsSetYaml({ firstTitle = "Первый урок", extraLesson = "" } = {}) {
@@ -130,6 +131,7 @@ lessons:
     topic: Раздел А
     subtopic: Подтема 1
     title: ${firstTitle}
+    audio: audio/intro.mp3
     body: |
       ## Зачем
 
@@ -159,6 +161,7 @@ lessons:
     subtopic: Подтема 1
     title: Порядок важнее подтемы
     questions: [q-3, q-1, missing-1]
+    audio: https://audio.example.test/order.mp3
     body: |
       Второй урок: вопросы заданы списком.
   - title: Урок без id
@@ -171,6 +174,7 @@ lessons:
   - id: l-last
     topic: Раздел Б
     title: Последний урок
+    audio: http://audio.example.test/last.mp3
     body: |
       Урок без вопросов.
 ${extraLesson}questions:

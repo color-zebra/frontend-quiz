@@ -186,6 +186,36 @@ function getLessonQuestionIds(
   return ids;
 }
 
+/**
+ * Озвучка урока: `https://…` или путь относительно файла набора — как у картинок в уроке. Храним полную ссылку:
+ * по ней аудио скачивают на телефон и узнают, какие скачанные файлы ещё нужны. Плохая ссылка — урок без аудио
+ * и замечание автору.
+ */
+function readLessonAudio(raw: unknown, lessonId: string, baseUrl: string | undefined, warnings: string[]) {
+  if (raw === undefined || raw === null) return undefined;
+  const value = asText(raw);
+  if (!isText(value)) {
+    warnings.push(`Урок «${lessonId}»: audio — это ссылка на аудиофайл; аудио пропущено`);
+    return undefined;
+  }
+  const link = value.trim();
+  const absolute = /^[a-z][a-z\d+.-]*:/i.test(link) || link.startsWith("//");
+  if (!absolute && !baseUrl) {
+    warnings.push(
+      `Урок «${lessonId}»: у набора из файла аудио по относительному пути не работает — нужна полная ссылка https://`,
+    );
+    return undefined;
+  }
+  try {
+    const url = new URL(link, baseUrl);
+    if (url.protocol === "https:") return url.href;
+  } catch {
+    // Непонятный адрес — то же замечание, что и не-https.
+  }
+  warnings.push(`Урок «${lessonId}»: аудио только по ссылке https:// — «${link}» пропущено`);
+  return undefined;
+}
+
 /** Урок без вопросов: их подбирают, только когда ясно, что урок не пропущен. */
 function readLesson(raw: unknown): Omit<Lesson, "questionIds"> | string {
   if (!isRecord(raw)) return "это не урок — нет полей id, title и body";
@@ -207,7 +237,14 @@ function readLesson(raw: unknown): Omit<Lesson, "questionIds"> | string {
  * Уроки режима обучения в порядке файла. Урок без id, названия или текста и урок с повторным id пропускаются
  * с причиной, как вопросы. Старые версии приложения раздел lessons просто не читают — вопросы у них работают.
  */
-function readLessons(raw: unknown, questions: readonly Question[], fileTopic: string | undefined, skipped: SkippedQuestion[], warnings: string[]) {
+function readLessons(
+  raw: unknown,
+  questions: readonly Question[],
+  fileTopic: string | undefined,
+  baseUrl: string | undefined,
+  skipped: SkippedQuestion[],
+  warnings: string[],
+) {
   if (raw === undefined || raw === null) return [];
   if (!Array.isArray(raw)) {
     warnings.push("lessons — это список уроков вида «- id: … title: … body: …»; уроки не загружены");
@@ -228,7 +265,12 @@ function readLessons(raw: unknown, questions: readonly Question[], fileTopic: st
       continue;
     }
     seen.add(result.id);
-    lessons.push({ ...result, questionIds: getLessonQuestionIds(item as Raw, result, questions, fileTopic, warnings) });
+    const audio = readLessonAudio((item as Raw).audio, result.id, baseUrl, warnings);
+    lessons.push({
+      ...result,
+      questionIds: getLessonQuestionIds(item as Raw, result, questions, fileTopic, warnings),
+      ...(audio ? { audio } : {}),
+    });
   }
   return lessons;
 }
@@ -238,9 +280,10 @@ function readLessons(raw: unknown, questions: readonly Question[], fileTopic: st
  * - формат набора: `title` и `questions`, тема у каждого вопроса в поле `topic` (необязательно);
  * - файл подтемы из нашей базы: `topic` и `subtopic` в начале файла, у вопросов их нет.
  * `kind: speech` в начале файла делает набор устным: у вопросов вместо вариантов `answer` и `points`.
- * Необязательный раздел `lessons` в тестовом наборе — уроки режима обучения.
+ * Необязательный раздел `lessons` в тестовом наборе — уроки режима обучения. baseUrl — ссылка набора: от неё
+ * разрешаются относительные пути к аудио уроков; у набора из файла её нет.
  */
-export function parseSetFile(text: string, fallbackTitle: string): ParsedSet {
+export function parseSetFile(text: string, fallbackTitle: string, baseUrl?: string): ParsedSet {
   let doc: unknown;
   try {
     doc = load(text);
@@ -292,7 +335,7 @@ export function parseSetFile(text: string, fallbackTitle: string): ParsedSet {
   const topics = collectTopics(questions);
   const warnings = getLongSubtopicWarnings(topics);
   let lessons: Lesson[] = [];
-  if (kind === "test") lessons = readLessons(doc.lessons, questions, fileTopic, skipped, warnings);
+  if (kind === "test") lessons = readLessons(doc.lessons, questions, fileTopic, baseUrl, skipped, warnings);
   else if (doc.lessons !== undefined) warnings.push("Уроки работают только в тестовых наборах — в устном наборе они не показываются");
   return {
     file: {

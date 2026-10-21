@@ -25,5 +25,5 @@ export async function fetchSet(rawUrl: string): Promise<ParsedSet> {
   if ((response.headers.get("content-type") ?? "").includes("text/html") || /^\s*<(!doctype|html)/i.test(text)) {
     throw new Error("По ссылке пришла веб-страница, а не файл. Нужна ссылка на сам файл — обычно кнопка Raw");
   }
-  return parseSetFile(text, getTitleFromUrl(rawUrl));
+  return parseSetFile(text, getTitleFromUrl(rawUrl), rawUrl);
 }

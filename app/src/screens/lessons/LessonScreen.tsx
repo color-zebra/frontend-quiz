@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import type { QuestionBank } from "../../data/types";
+import type { Lesson, QuestionBank } from "../../data/types";
+import { formatAudioTime, useAudio } from "../../features/audio/AudioProvider";
 import { getLessonQuestionIds } from "../../features/lessons/course";
 import { useLessons } from "../../features/lessons/LessonsProvider";
 import { useSets } from "../../features/sets/SetsProvider";
@@ -97,6 +98,8 @@ export function LessonScreen({ bank, lessonId, onBack, onOpenCourse, onOpenLesso
         subtitle={`${lesson.topic ? `${lesson.topic} · ` : ""}урок ${index + 1} из ${lessons.length}`}
       />
 
+      {lesson.audio && <ListenButton bank={bank} lesson={lesson} audio={lesson.audio} />}
+
       <LessonMarkdown text={lesson.body} baseUrl={sets.find((s) => s.id === bank.setId)?.url} />
 
       <div className={styles.lessonNav}>
@@ -110,5 +113,33 @@ export function LessonScreen({ bank, lessonId, onBack, onOpenCourse, onOpenLesso
         )}
       </div>
     </Screen>
+  );
+}
+
+/**
+ * «Слушать урок» под заголовком. Урок уже начинали слушать — «Продолжить слушать · с 3:20»; играет он сейчас —
+ * «Пауза». Сам звук — в общем плеере приложения: уйдёшь с урока, а он продолжит играть.
+ */
+function ListenButton({ bank, lesson, audio: src }: { bank: QuestionBank; lesson: Lesson; audio: string }) {
+  const audio = useAudio();
+  const { getCourse } = useLessons();
+  const current = audio.track?.setId === bank.setId && audio.track.lessonId === lesson.id;
+  const from = current ? (audio.ended ? 0 : audio.time) : (getCourse(bank.setId)?.audio?.[lesson.id] ?? 0);
+
+  if (current && audio.playing) {
+    return (
+      <Button variant="secondary" icon="pause" onClick={audio.pause}>
+        Пауза
+      </Button>
+    );
+  }
+  return (
+    <Button
+      variant="secondary"
+      icon="headphones"
+      onClick={() => audio.play({ setId: bank.setId, lessonId: lesson.id, src, title: lesson.title, course: bank.title ?? "" })}
+    >
+      {from >= 1 ? `Продолжить слушать · с ${formatAudioTime(from)}` : "Слушать урок"}
+    </Button>
   );
 }

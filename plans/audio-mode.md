@@ -1,7 +1,19 @@
 # Озвучка уроков: план
 
-> **Статус: план, код не начат. Этап 0 (проверка на телефоне) пройден 2026-10-21.** Решения согласованы
-> с автором. Код — только после согласования плана, этапами.
+> **Статус (2026-10-21): этапы 0–2 сделаны** — проверка на телефоне, поле `audio`, плеер с фоном. Дальше этап 3:
+> скачивание аудио на телефон и уборка. Решения согласованы с автором.
+
+**Где код (этапы 1–2)**
+- Поле `audio` — `Lesson` в [types.ts](../app/src/data/types.ts), разбор и замечания — `readLessonAudio` в
+  [parseSet.ts](../app/src/features/sets/parseSet.ts): хранится уже полная ссылка (относительный путь разрешён от
+  ссылки набора — её передаёт [loadSet.ts](../app/src/features/sets/loadSet.ts)).
+- Плеер — [features/audio/AudioProvider.tsx](../app/src/features/audio/AudioProvider.tsx): один `<audio>` над
+  экранами, Media Session, место в аудио (`audio` в прогрессе курса,
+  [lessonsStore.ts](../app/src/features/lessons/lessonsStore.ts)), скорость (`fq.audioRate`).
+- Мини-плеер — [AudioBar.tsx](../app/src/features/audio/AudioBar.tsx); его высота — переменная `--audio-bar`,
+  на неё поднимаются низ экрана и нижняя панель ([Screen.module.css](../app/src/shared/ui/Screen.module.css)).
+- «Слушать урок» — `ListenButton` в [LessonScreen.tsx](../app/src/screens/lessons/LessonScreen.tsx).
+- Сквозные тесты — [e2e/audio.mjs](../app/e2e/audio.mjs) (звук — тишина в WAV, собранная в тесте).
 
 ## Зачем
 

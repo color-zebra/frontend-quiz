@@ -128,6 +128,32 @@ const PATHS = {
     </>
   ),
   list: <path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" />,
+  headphones: (
+    <>
+      <path d="M4 15v-3a8 8 0 0 1 16 0v3" />
+      <path d="M4 15h3v5H5a1 1 0 0 1-1-1ZM20 15h-3v5h2a1 1 0 0 0 1-1Z" />
+    </>
+  ),
+  play: <path d="M7 4.5v15l12-7.5Z" fill="currentColor" />,
+  pause: <path d="M7 5h3.5v14H7ZM13.5 5H17v14h-3.5Z" fill="currentColor" />,
+  back15: (
+    <>
+      <path d="M4.5 9.5A8.5 8.5 0 1 1 3.5 13" />
+      <path d="M4 4.5v5h5" />
+      <text x="12.5" y="16" fontSize="7.5" fontWeight="700" textAnchor="middle" fill="currentColor" stroke="none">
+        15
+      </text>
+    </>
+  ),
+  fwd15: (
+    <>
+      <path d="M19.5 9.5A8.5 8.5 0 1 0 20.5 13" />
+      <path d="M20 4.5v5h-5" />
+      <text x="11.5" y="16" fontSize="7.5" fontWeight="700" textAnchor="middle" fill="currentColor" stroke="none">
+        15
+      </text>
+    </>
+  ),
   image: (
     <>
       <rect x="3" y="4" width="18" height="16" rx="2" />

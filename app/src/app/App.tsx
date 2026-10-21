@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { loadInitialBank, updateBank } from "../data/loadQuestions";
 import type { QuestionBank } from "../data/types";
+import { AudioProvider } from "../features/audio/AudioProvider";
 import { BookmarksProvider } from "../features/bookmarks/BookmarksProvider";
 import { LessonsProvider } from "../features/lessons/LessonsProvider";
 import { NotesProvider } from "../features/notes/NotesProvider";
@@ -45,9 +46,11 @@ export function App() {
           <ProgressProvider>
             <BookmarksProvider>
               <LessonsProvider>
-                <SetsProvider>
-                  <QuizApp bank={state.bank} onUpdate={() => update(state.bank)} />
-                </SetsProvider>
+                <AudioProvider>
+                  <SetsProvider>
+                    <QuizApp bank={state.bank} onUpdate={() => update(state.bank)} />
+                  </SetsProvider>
+                </AudioProvider>
               </LessonsProvider>
             </BookmarksProvider>
           </ProgressProvider>

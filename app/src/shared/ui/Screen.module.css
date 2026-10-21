@@ -6,7 +6,8 @@
   max-width: 600px;
   min-height: 100dvh;
   margin: 0 auto;
-  padding: calc(18px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+  /* --audio-bar — высота мини-плеера озвучки, пока он открыт: низ экрана не прячется под ним. */
+  padding: calc(18px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom) + var(--audio-bar, 0px));
 }
 
 .topBar {
@@ -21,7 +22,7 @@
    размытого блока своё размытие видит только этот блок, и кнопка стала бы просто полупрозрачной. */
 .dock {
   position: sticky;
-  bottom: calc(10px + env(safe-area-inset-bottom));
+  bottom: calc(10px + env(safe-area-inset-bottom) + var(--audio-bar, 0px));
   z-index: 1;
   margin-top: auto;
   /* Внизу страницы панель стоит там же, где прилипает при прокрутке: у экрана поле снизу 24px, у прилипшей — 10px.

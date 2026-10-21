@@ -37,6 +37,26 @@ function countAnswers(page) {
   );
 }
 
+/** Аудио уроков набора, как оно сохранено на устройстве: id урока → ссылка или null. */
+function readStoredAudio(page, title) {
+  return page.evaluate(
+    (setTitle) =>
+      new Promise((resolve, reject) => {
+        const open = indexedDB.open("frontend-quiz-sets");
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const request = open.result.transaction("sets").objectStore("sets").getAll();
+          request.onsuccess = () => {
+            const record = request.result.find((r) => r.title === setTitle);
+            resolve(Object.fromEntries((record?.file.lessons ?? []).map((l) => [l.id, l.audio ?? null])));
+          };
+          request.onerror = () => reject(request.error);
+        };
+      }),
+    title,
+  );
+}
+
 export default async function lessons(t) {
   const { check, visible } = t;
   let courseYaml = lessonsSetYaml();
@@ -150,10 +170,46 @@ export default async function lessons(t) {
     "урок l-notitle: нет названия (title)",
     "урок l-intro: такой id урока уже был выше в файле",
     "Урок «l-order»: нет вопроса «missing-1» — в файле такого id нет или вопрос пропущен",
+    "Урок «l-last»: аудио только по ссылке https:// — «http://audio.example.test/last.mp3» пропущено",
   ]) {
     check(`«Что пропущено»: ${item}`, await visible(courseMessage.getByText(item, { exact: true })));
   }
   await t.shot(page, "report", true);
+
+  // Озвучка: относительный путь — от ссылки набора, полная https-ссылка — как есть, http — без аудио.
+  const audio = await readStoredAudio(page, "Курс для проверки");
+  check(
+    "аудио уроков: путь от ссылки набора, https как есть, http пропущен",
+    JSON.stringify(audio) ===
+      JSON.stringify({ "l-intro": `${BASE}audio/intro.mp3`, "l-order": "https://audio.example.test/order.mp3", "l-last": null }),
+    JSON.stringify(audio),
+  );
+  await page.locator('input[type="file"]').setInputFiles(
+    fileInput(
+      "audio-file.yaml",
+      `title: Файл с аудио
+lessons:
+  - id: a
+    title: Урок
+    audio: audio/a.mp3
+    body: Текст.
+questions:
+  - id: q
+    level: junior
+    question: Вопрос
+    options:
+      - text: да
+        correct: true
+      - text: нет
+`,
+    ),
+  );
+  const fileMessage = page.getByRole("status").filter({ hasText: "Файл с аудио" }).first();
+  await fileMessage.getByText("Что поправить в файле").click();
+  check(
+    "набор из файла: относительный путь к аудио — замечание",
+    await visible(fileMessage.getByText("Урок «a»: у набора из файла аудио по относительному пути не работает — нужна полная ссылка https://")),
+  );
 
   // Экран набора: стеклянная «Учиться» под «Начать» и ссылка на оглавление.
   await openSet("Курс для проверки");

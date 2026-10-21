@@ -22,6 +22,8 @@ export interface CourseProgress {
    * Старые отметки засчитаны как «освоен» — так решил автор, переносить их не нужно.
    */
   read: Record<string, number>;
+  /** Озвучка: id урока → с какой секунды продолжить. Урок дослушан — записи нет. */
+  audio?: Record<string, number>;
   updatedAt: number;
 }
 
@@ -35,6 +37,10 @@ function isPosition(value: unknown): value is CoursePosition {
   return p.step === "quiz" && typeof p.index === "number" && p.index >= 0 && typeof p.correct === "number";
 }
 
+function isNumberMap(value: unknown): value is Record<string, number> {
+  return !!value && typeof value === "object" && Object.values(value).every((v) => typeof v === "number");
+}
+
 /** Проверка записи — и с устройства, и из резервной копии. */
 export function isCourseProgress(value: unknown): value is CourseProgress {
   const p = value as Partial<CourseProgress> | null;
@@ -43,9 +49,8 @@ export function isCourseProgress(value: unknown): value is CourseProgress {
     typeof p.setId === "string" &&
     typeof p.updatedAt === "number" &&
     (p.position === null || isPosition(p.position)) &&
-    !!p.read &&
-    typeof p.read === "object" &&
-    Object.values(p.read).every((at) => typeof at === "number")
+    isNumberMap(p.read) &&
+    (p.audio === undefined || isNumberMap(p.audio))
   );
 }
 
