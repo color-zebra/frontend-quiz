@@ -245,7 +245,7 @@ export default async function lessons(t) {
     await learn.innerText(),
   );
   await courseLink.click();
-  check("отметка «прочитан» пережила перезагрузку", (await rows.nth(0).innerText()).includes("прочитан"));
+  check("«К вопросам» отметку «освоен» не ставит", !(await rows.nth(0).innerText()).includes("освоен"));
   await page.getByRole("button", { name: "Назад" }).click();
   await learn.click();
   await page.getByText("2 / 2").waitFor();
@@ -263,7 +263,19 @@ export default async function lessons(t) {
   await t.shot(page, "gave-up");
   await page.getByRole("button", { name: "Завершить" }).click();
   check("итог: «Верно 1 из 2» с учётом ответа до перезагрузки", await visible(page.getByText("Верно 1 из 2")));
+  check("с ошибкой урок не освоен — так и сказано", await visible(page.getByText("Для отметки «освоен» нужны все ответы верно за один проход.")));
+  const navButtons = page.locator("main div > button");
+  check("с ошибкой главная кнопка — «Пройти вопросы ещё раз»", (await navButtons.first().innerText()).includes("Пройти вопросы ещё раз"), await navButtons.first().innerText());
   await t.shot(page, "summary");
+  await page.getByRole("button", { name: "Пройти вопросы ещё раз" }).click();
+  await page.getByText("1 / 2").waitFor();
+  await answer("Правильный");
+  await page.getByRole("button", { name: "Дальше" }).click();
+  await answer("Правильный");
+  await page.getByRole("button", { name: "Завершить" }).click();
+  check("проход без ошибок — «Урок освоен»", (await visible(page.getByText("Верно 2 из 2"))) && (await visible(page.getByText("Урок освоен", { exact: true }))));
+  check("освоил — главная кнопка «Следующий урок»", (await navButtons.first().innerText()).includes("Следующий урок"));
+  await t.shot(page, "summary-mastered");
 
   // Явный список вопросов важнее подтемы.
   await page.getByRole("button", { name: "Следующий урок" }).click();
@@ -279,22 +291,24 @@ export default async function lessons(t) {
   await page.getByText("Верно 2 из 2").waitFor();
   await page.getByRole("button", { name: "Пройти вопросы ещё раз" }).click();
   check("«Пройти вопросы ещё раз» — с первого вопроса", (await visible(page.getByText("1 / 2"))) && (await visible(page.getByText("Вопрос три"))));
-  await answer("Правильный");
+  await answer("Мимо А");
   await page.getByRole("button", { name: "Дальше" }).click();
   await answer("Правильный");
   await page.getByRole("button", { name: "Завершить" }).click();
+  check("ошибся после освоения — отметка остаётся", await visible(page.getByText("Урок уже освоен раньше — отметка остаётся.")));
   await page.getByRole("button", { name: "Следующий урок" }).click();
   await lessonTitle("Последний урок").waitFor();
   await page.getByRole("button", { name: "Завершить курс" }).click();
   await page.getByRole("heading", { name: "Оглавление" }).waitFor();
-  check("последний урок → оглавление «Курс пройден»", await visible(page.getByText("Курс пройден: прочитаны все уроки.")));
+  check("последний урок без вопросов освоен кнопкой — «Курс пройден: все уроки освоены.»", await visible(page.getByText("Курс пройден: все уроки освоены.")));
+  check("в оглавлении «освоено 3» и отметки у всех уроков", (await visible(page.getByText(/· освоено 3$/))) && (await page.getByText("освоен ·").count()) === 3);
   await t.shot(page, "finished");
   await page.goBack();
   await page.getByRole("heading", { level: 1, name: "Курс для проверки" }).waitFor();
   check("«Назад» из оглавления — к набору, уроки не копятся в истории", await visible(learn));
   check(
-    "курс пройден: «Курс пройден · прочитано 3 из 3» и снова «Учиться»",
-    (await visible(learn.getByText("Курс пройден · прочитано 3 из 3"))) && (await learn.innerText()).startsWith("Учиться"),
+    "курс пройден: «Курс пройден · освоено 3 из 3» и снова «Учиться»",
+    (await visible(learn.getByText("Курс пройден · освоено 3 из 3"))) && (await learn.innerText()).startsWith("Учиться"),
   );
 
   check("после всего обучения лента ответов прежняя", (await countAnswers(page)) === answersBefore);
@@ -324,7 +338,7 @@ export default async function lessons(t) {
   await page.getByRole("button", { name: "Сбросить прогресс курса" }).click();
   await t.shot(page, "reset-confirm");
   await page.getByRole("dialog").getByRole("button", { name: "Сбросить" }).click();
-  check("сброс курса снял отметки", !(await page.getByText(/прочитан ·/).count()) && !(await page.getByRole("button", { name: "Сбросить прогресс курса" }).isVisible()));
+  check("сброс курса снял отметки", !(await page.getByText(/освоен ·/).count()) && !(await page.getByRole("button", { name: "Сбросить прогресс курса" }).isVisible()));
   await page.getByRole("button", { name: "Назад" }).click();
   check("после сброса — «Учиться» с первого урока", (await visible(learn.getByText("урок 1 из 3 · Первый урок"))) && (await learn.innerText()).startsWith("Учиться"));
 
@@ -342,7 +356,7 @@ export default async function lessons(t) {
   await page.getByRole("button", { name: "Назад" }).click();
   await openSets();
   await openSet("Курс для проверки");
-  check("прогресс вернулся из копии", await visible(learn.getByText("Курс пройден · прочитано 3 из 3")));
+  check("прогресс вернулся из копии", await visible(learn.getByText("Курс пройден · освоено 3 из 3")));
 
   // Обновление набора: изменились только уроки — сообщение об этом говорит.
   courseYaml = lessonsSetYaml({

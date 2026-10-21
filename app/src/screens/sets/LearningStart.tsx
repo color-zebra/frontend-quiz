@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import type { QuestionBank } from "../../data/types";
-import { countRead, getLessonQuestionIds, getPosition, getStartLesson } from "../../features/lessons/course";
+import { countMastered, getLessonQuestionIds, getPosition, getStartLesson } from "../../features/lessons/course";
 import { useLessons } from "../../features/lessons/LessonsProvider";
 import glass from "../../shared/ui/glass.module.css";
 import { Icon } from "../../shared/ui/Icon";
@@ -24,13 +24,14 @@ export function LearningStart({ bank, onOpenLesson, onOpenQuiz, onOpenCourse }: 
   const lessons = bank.lessons ?? [];
   const progress = getCourse(bank.setId);
   const position = getPosition(bank, progress);
-  const read = countRead(lessons, progress);
+  const mastered = countMastered(lessons, progress);
   const lesson = (position && lessons.find((l) => l.id === position.lessonId)) || getStartLesson(lessons, progress);
   const count = getLessonQuestionIds(bank, lesson).length;
   const inQuiz = position?.step === "quiz" && position.index < count;
-  const finished = !position && read === lessons.length;
+  // «Курс пройден» — только когда освоены все уроки, а не просто дошёл до конца.
+  const finished = !position && mastered === lessons.length;
   const details = finished
-    ? `Курс пройден · прочитано ${read} из ${lessons.length}`
+    ? `Курс пройден · освоено ${mastered} из ${lessons.length}`
     : `урок ${lessons.indexOf(lesson) + 1} из ${lessons.length}${inQuiz ? `, вопрос ${position.index + 1} из ${count}` : ""} · ${lesson.title}`;
 
   return (

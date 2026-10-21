@@ -23,14 +23,19 @@ export function getLessonQuestionIds(bank: QuestionBank, lesson: Lesson) {
   return lesson.questionIds.filter((id) => bank.byId.has(id));
 }
 
-/** Сколько уроков набора прочитано. Отметки удалённых уроков не считаются. */
-export function countRead(lessons: readonly Lesson[], progress: CourseProgress | undefined) {
-  return progress ? lessons.filter((l) => progress.read[l.id]).length : 0;
+/** Урок освоен: его вопросы пройдены без ошибок за один проход (урок без вопросов — закрыт кнопкой «дальше»). */
+export function isMastered(progress: CourseProgress | undefined, lessonId: string) {
+  return !!progress?.read[lessonId];
+}
+
+/** Сколько уроков набора освоено. Отметки удалённых уроков не считаются. */
+export function countMastered(lessons: readonly Lesson[], progress: CourseProgress | undefined) {
+  return lessons.filter((l) => isMastered(progress, l.id)).length;
 }
 
 /**
  * Сохранённое место, если с ним ещё можно продолжить: урок есть в наборе, номер вопроса — в пределах его вопросов.
- * Урок удалили при обновлении набора — места нет, и «Учиться» начнёт с первого непрочитанного.
+ * Урок удалили при обновлении набора — места нет, и «Учиться» начнёт с первого неосвоенного.
  */
 export function getPosition(bank: QuestionBank, progress: CourseProgress | undefined): CoursePosition | null {
   const position = progress?.position;
@@ -43,7 +48,7 @@ export function getPosition(bank: QuestionBank, progress: CourseProgress | undef
   return { ...position, index: Math.min(position.index, count) };
 }
 
-/** С какого урока начать, если места нет: первый непрочитанный, а если прочитаны все — первый. */
+/** С какого урока начать, если места нет: первый неосвоенный, а если освоены все — первый. */
 export function getStartLesson(lessons: readonly Lesson[], progress: CourseProgress | undefined) {
-  return lessons.find((l) => !progress?.read[l.id]) ?? lessons[0];
+  return lessons.find((l) => !isMastered(progress, l.id)) ?? lessons[0];
 }

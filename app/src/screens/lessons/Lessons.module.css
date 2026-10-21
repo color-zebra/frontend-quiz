@@ -67,14 +67,14 @@
   color: var(--muted);
 }
 
-/* Прочитанный урок — как добавленный набор в каталоге: зелёный номер и слово «прочитан», без галок. */
-.read .number {
+/* Освоенный урок — как добавленный набор в каталоге: зелёный номер и слово «освоен», без галок. */
+.mastered .number {
   border-color: var(--ok);
   background: var(--ok-bg);
   color: var(--ok);
 }
 
-.readText {
+.masteredText {
   color: var(--ok);
   font-weight: 600;
 }
@@ -126,6 +126,13 @@
 .scoreValue {
   font-family: var(--font-heading);
   font-size: 26px;
+  font-weight: 700;
+}
+
+/* «Урок освоен» в итоге вопросов — тем же зелёным, что отметка в оглавлении. */
+.masteredNote {
+  color: var(--ok);
+  font-size: 15px;
   font-weight: 700;
 }
 

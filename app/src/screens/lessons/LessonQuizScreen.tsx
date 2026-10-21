@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Question, QuestionBank } from "../../data/types";
-import { getLessonQuestionIds, getPosition } from "../../features/lessons/course";
+import { getLessonQuestionIds, getPosition, isMastered } from "../../features/lessons/course";
 import { useLessons } from "../../features/lessons/LessonsProvider";
 import {
   getIsLastQuestion,
@@ -76,9 +76,10 @@ export function LessonQuizScreen({ bank, lessonId, onBack, onNextLesson, onOpenC
     const answer = session.answers.length > quiz.session.answers.length ? session.answers[session.answers.length - 1] : null;
     const correct = quiz.correct + (answer?.correct ? 1 : 0);
     setQuiz({ ...quiz, session, correct });
-    if (answer) {
-      updateCourse(bank.setId, { position: { lessonId, step: "quiz", index: session.index + 1, correct } });
-    }
+    if (!answer) return;
+    // Последний вопрос, и все ответы прохода верны — урок освоен сразу, даже если «Завершить» не нажмут.
+    const mastered = session.index === ids.length - 1 && correct === ids.length ? lessonId : undefined;
+    updateCourse(bank.setId, { mastered, position: { lessonId, step: "quiz", index: session.index + 1, correct } });
   }
 
   function goNext() {
@@ -100,6 +101,21 @@ export function LessonQuizScreen({ bank, lessonId, onBack, onNextLesson, onOpenC
   }
 
   if (quiz.done) {
+    const perfect = quiz.correct === ids.length;
+    const nextButton = next ? (
+      <Button variant={perfect ? "primary" : "secondary"} iconAfter="arrowRight" onClick={() => onNextLesson(next.id)}>
+        Следующий урок
+      </Button>
+    ) : (
+      <Button variant={perfect ? "primary" : "secondary"} iconAfter="check" onClick={onFinishCourse}>
+        Завершить курс
+      </Button>
+    );
+    const retryButton = (
+      <Button variant={perfect ? "secondary" : "primary"} icon="refresh" onClick={restart}>
+        Пройти вопросы ещё раз
+      </Button>
+    );
     return (
       <Screen>
         <TopBar>
@@ -110,21 +126,21 @@ export function LessonQuizScreen({ bank, lessonId, onBack, onNextLesson, onOpenC
           <span className={styles.scoreValue}>
             Верно {quiz.correct} из {ids.length}
           </span>
+          {perfect ? (
+            <span className={styles.masteredNote}>Урок освоен</span>
+          ) : (
+            <span className={styles.scoreHint}>
+              {isMastered(getCourse(bank.setId), lessonId)
+                ? "Урок уже освоен раньше — отметка остаётся."
+                : "Для отметки «освоен» нужны все ответы верно за один проход."}
+            </span>
+          )}
           <span className={styles.scoreHint}>Ответы в режиме обучения не идут в статистику и в «Ошибки».</span>
         </Card>
+        {/* Освоил — дальше; ошибся — главная кнопка «ещё раз»: отметка ставится только за проход без ошибок. */}
         <div className={styles.lessonNav}>
-          {next ? (
-            <Button iconAfter="arrowRight" onClick={() => onNextLesson(next.id)}>
-              Следующий урок
-            </Button>
-          ) : (
-            <Button iconAfter="check" onClick={onFinishCourse}>
-              Завершить курс
-            </Button>
-          )}
-          <Button variant="secondary" icon="refresh" onClick={restart}>
-            Пройти вопросы ещё раз
-          </Button>
+          {perfect ? nextButton : retryButton}
+          {perfect ? retryButton : nextButton}
           <Button variant="secondary" icon="list" onClick={onOpenCourse}>
             К оглавлению
           </Button>

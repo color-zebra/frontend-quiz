@@ -2,8 +2,8 @@ import { createContext, use, useEffect, useRef, useState, type ReactNode } from 
 import { deleteCourse, readAllCourses, writeCourse, type CoursePosition, type CourseProgress } from "./lessonsStore";
 
 interface CourseChange {
-  /** Урок, который отмечается прочитанным. */
-  read?: string;
+  /** Урок, который отмечается освоенным. Отметка не снимается. */
+  mastered?: string;
   /** Новое место в курсе; null — курс пройден. Не передано — место не меняется. */
   position?: CoursePosition | null;
 }
@@ -13,7 +13,7 @@ interface LessonsContextValue {
   courses: CourseProgress[];
   getCourse: (setId: string) => CourseProgress | undefined;
   updateCourse: (setId: string, change: CourseChange) => void;
-  /** Кнопка «Сбросить прогресс курса»: отметки «прочитан» и место удаляются. */
+  /** Кнопка «Сбросить прогресс курса»: отметки «освоен» и место удаляются. */
   resetCourse: (setId: string) => void;
   /** Прогресс из резервной копии дописывается к своему. Возвращает, у скольких наборов что-то изменилось. */
   importCourses: (incoming: readonly CourseProgress[]) => number;
@@ -22,7 +22,7 @@ interface LessonsContextValue {
 const LessonsContext = createContext<LessonsContextValue | null>(null);
 
 /**
- * Две копии одного курса: урок прочитан, если прочитан хоть в одной (время — первое), место — из более свежей.
+ * Две копии одного курса: урок освоен, если освоен хоть в одной (время — первое), место — из более свежей.
  * Так повторная загрузка той же копии ничего не меняет.
  */
 function mergeCourse(own: CourseProgress | undefined, incoming: CourseProgress): CourseProgress {
@@ -33,7 +33,7 @@ function mergeCourse(own: CourseProgress | undefined, incoming: CourseProgress):
   return { setId: own.setId, read, position: fresher.position, updatedAt: fresher.updatedAt };
 }
 
-/** Отметки «прочитан» и место в курсе для каждого набора с уроками. Ответы режима обучения сюда не попадают. */
+/** Отметки «освоен» и место в курсе для каждого набора с уроками. Ответы режима обучения сюда не попадают. */
 export function LessonsProvider({ children }: { children: ReactNode }) {
   const [courses, setCourses] = useState<Map<string, CourseProgress>>(new Map());
   // Ссылка — чтобы два изменения подряд в одном обработчике видели друг друга.
@@ -63,7 +63,7 @@ export function LessonsProvider({ children }: { children: ReactNode }) {
   function updateCourse(setId: string, change: CourseChange) {
     const current = coursesRef.current.get(setId) ?? { setId, position: null, read: {}, updatedAt: 0 };
     const now = Date.now();
-    const read = change.read && !current.read[change.read] ? { ...current.read, [change.read]: now } : current.read;
+    const read = change.mastered && !current.read[change.mastered] ? { ...current.read, [change.mastered]: now } : current.read;
     const position = change.position === undefined ? current.position : change.position;
     if (read === current.read && JSON.stringify(position) === JSON.stringify(current.position)) return;
     put({ setId, read, position, updatedAt: now });

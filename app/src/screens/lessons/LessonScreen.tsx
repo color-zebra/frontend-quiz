@@ -17,13 +17,13 @@ interface LessonScreenProps {
   /** Соседний урок — на место этого, без новой записи в истории. */
   onOpenLesson: (lessonId: string) => void;
   onOpenQuiz: () => void;
-  /** Последний урок без вопросов прочитан: курс пройден. */
+  /** Последний урок без вопросов закрыт: курс пройден. */
   onFinishCourse: () => void;
 }
 
 /**
- * Урок: раздел и название, текст, внизу — дальше и «Предыдущий урок». Прочитанным урок становится только по кнопке
- * «К вопросам» или «Следующий урок»: по прокрутке не угадать, дочитал ли человек.
+ * Урок: раздел и название, текст, внизу — дальше и «Предыдущий урок». Освоенным урок становится, когда его вопросы
+ * пройдены без ошибок за один проход; урок без вопросов — когда его закрыли кнопкой «Следующий урок».
  */
 export function LessonScreen({ bank, lessonId, onBack, onOpenCourse, onOpenLesson, onOpenQuiz, onFinishCourse }: LessonScreenProps) {
   const { getCourse, updateCourse } = useLessons();
@@ -61,16 +61,17 @@ export function LessonScreen({ bank, lessonId, onBack, onOpenCourse, onOpenLesso
 
   function goForward() {
     if (count > 0) {
+      // «К вопросам» ничего не отмечает: урок осваивают вопросы без ошибок.
       updateCourse(bank.setId, {
-        read: lesson.id,
         position: resumeIndex && quizPosition ? quizPosition : { lessonId: lesson.id, step: "quiz", index: 0, correct: 0 },
       });
       onOpenQuiz();
     } else if (next) {
-      updateCourse(bank.setId, { read: lesson.id, position: { lessonId: next.id, step: "lesson" } });
+      // Урок без вопросов проверить нечем — освоен, когда его закрыли.
+      updateCourse(bank.setId, { mastered: lesson.id, position: { lessonId: next.id, step: "lesson" } });
       onOpenLesson(next.id);
     } else {
-      updateCourse(bank.setId, { read: lesson.id, position: null });
+      updateCourse(bank.setId, { mastered: lesson.id, position: null });
       onFinishCourse();
     }
   }

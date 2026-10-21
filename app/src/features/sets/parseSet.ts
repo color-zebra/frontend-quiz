@@ -222,7 +222,7 @@ function readLessons(raw: unknown, questions: readonly Question[], fileTopic: st
       skipped.push({ label, reason: result });
       continue;
     }
-    // Повтор id — берём первый урок: к id привязана отметка «прочитан».
+    // Повтор id — берём первый урок: к id привязана отметка «освоен».
     if (seen.has(result.id)) {
       skipped.push({ label, reason: "такой id урока уже был выше в файле" });
       continue;

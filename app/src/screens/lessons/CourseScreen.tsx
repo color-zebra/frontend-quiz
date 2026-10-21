@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { Fragment, useState } from "react";
 import type { QuestionBank } from "../../data/types";
-import { countRead, getLessonGroups, getLessonQuestionIds, getPosition } from "../../features/lessons/course";
+import { countMastered, getLessonGroups, getLessonQuestionIds, getPosition, isMastered } from "../../features/lessons/course";
 import { useLessons } from "../../features/lessons/LessonsProvider";
 import { countQuestions, LESSON_FORMS, plural } from "../../shared/lib/plural";
 import { Button, IconButton } from "../../shared/ui/Button";
@@ -22,14 +22,14 @@ interface CourseScreenProps {
   onOpenLesson: (lessonId: string) => void;
 }
 
-/** «Курс пройден» или сколько уроков остались без отметки. */
-function getFinishedText(total: number, read: number) {
-  if (read >= total) return "Курс пройден: прочитаны все уроки.";
-  const left = total - read;
-  return `Это был последний урок. Без отметки «прочитан» ${plural(left, ["остался", "осталось", "осталось"])} ${left} ${plural(left, LESSON_FORMS)} — они в списке ниже.`;
+/** «Курс пройден» — только когда освоены все уроки; иначе — сколько ещё осваивать. */
+function getFinishedText(total: number, mastered: number) {
+  if (mastered >= total) return "Курс пройден: все уроки освоены.";
+  const left = total - mastered;
+  return `Это был последний урок. Не ${plural(left, ["освоен", "освоены", "освоены"])} ещё ${left} ${plural(left, LESSON_FORMS)} — они в списке без отметки: пройди их вопросы без ошибок.`;
 }
 
-/** Оглавление курса: уроки по порядку файла, по разделам, с отметками «прочитан» и местом, где человек остановился. */
+/** Оглавление курса: уроки по порядку файла, по разделам, с отметками «освоен» и местом, где человек остановился. */
 export function CourseScreen({ bank, finished, onBack, onOpenLesson }: CourseScreenProps) {
   const { getCourse, resetCourse } = useLessons();
   const [finishedShown, setFinishedShown] = useState(finished);
@@ -37,7 +37,7 @@ export function CourseScreen({ bank, finished, onBack, onOpenLesson }: CourseScr
   const lessons = bank.lessons ?? [];
   const progress = getCourse(bank.setId);
   const position = getPosition(bank, progress);
-  const read = countRead(lessons, progress);
+  const mastered = countMastered(lessons, progress);
 
   return (
     <Screen>
@@ -47,24 +47,24 @@ export function CourseScreen({ bank, finished, onBack, onOpenLesson }: CourseScr
 
       <ScreenTitle
         title="Оглавление"
-        subtitle={`«${bank.title ?? ""}» · ${lessons.length} ${plural(lessons.length, LESSON_FORMS)} · прочитано ${read}`}
+        subtitle={`«${bank.title ?? ""}» · ${lessons.length} ${plural(lessons.length, LESSON_FORMS)} · освоено ${mastered}`}
       />
 
-      {finishedShown && <Notice kind="ok" text={getFinishedText(lessons.length, read)} onClose={() => setFinishedShown(false)} />}
+      {finishedShown && <Notice kind="ok" text={getFinishedText(lessons.length, mastered)} onClose={() => setFinishedShown(false)} />}
 
       {getLessonGroups(lessons).map((group, groupIndex) => (
         <Fragment key={`${groupIndex}-${group.topic ?? ""}`}>
           {group.topic && <SectionLabel className={styles.groupLabel}>{group.topic}</SectionLabel>}
           <ul className={styles.lessonList}>
             {group.lessons.map(({ lesson, number }) => {
-              const isRead = !!progress?.read[lesson.id];
+              const done = isMastered(progress, lesson.id);
               const here = position?.lessonId === lesson.id ? position : null;
               const count = getLessonQuestionIds(bank, lesson).length;
               return (
                 <li key={lesson.id}>
                   <button
                     type="button"
-                    className={clsx(styles.lessonRow, glass.glass, isRead && styles.read, here && styles.here)}
+                    className={clsx(styles.lessonRow, glass.glass, done && styles.mastered, here && styles.here)}
                     aria-current={here ? "step" : undefined}
                     onClick={() => onOpenLesson(lesson.id)}
                   >
@@ -72,7 +72,7 @@ export function CourseScreen({ bank, finished, onBack, onOpenLesson }: CourseScr
                     <span className={styles.rowText}>
                       <span className={styles.rowTitle}>{lesson.title}</span>
                       <span className={styles.rowMeta}>
-                        {isRead && <span className={styles.readText}>прочитан · </span>}
+                        {done && <span className={styles.masteredText}>освоен · </span>}
                         {count ? countQuestions(count) : "без вопросов"}
                         {here && (
                           <span className={styles.hereText}>
@@ -91,7 +91,7 @@ export function CourseScreen({ bank, finished, onBack, onOpenLesson }: CourseScr
         </Fragment>
       ))}
 
-      {(read > 0 || progress?.position) && (
+      {(mastered > 0 || progress?.position) && (
         <Button variant="secondary" icon="refresh" className={styles.reset} onClick={() => setConfirmOpen(true)}>
           Сбросить прогресс курса
         </Button>
@@ -100,7 +100,7 @@ export function CourseScreen({ bank, finished, onBack, onOpenLesson }: CourseScr
       <Sheet open={confirmOpen} title="Сбросить прогресс курса?" onClose={() => setConfirmOpen(false)}>
         <div className={styles.confirm}>
           <p>
-            У всех уроков этого набора снимутся отметки «прочитан», и приложение забудет, где ты остановился: курс
+            У всех уроков этого набора снимутся отметки «освоен», и приложение забудет, где ты остановился: курс
             начнётся с первого урока. Заметки, закладки и статистика останутся. Отменить сброс нельзя.
           </p>
           <div className={styles.confirmButtons}>
