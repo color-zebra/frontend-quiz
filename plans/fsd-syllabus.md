@@ -13,8 +13,8 @@
 | 3. Доставка и качество | `custom-sets/system-design-delivery.yaml` | `sdr-…` | Написан, три круга ревью, в каталоге после пуша; план — [fsd-course-3.md](fsd-course-3.md) |
 | 4. Реальное время и большие списки | `custom-sets/system-design-live.yaml` | `sdl-…` | Написан, три круга ревью, в каталоге; план — [fsd-course-4.md](fsd-course-4.md) |
 | 5. Синхронизация и офлайн | `custom-sets/system-design-sync.yaml` | `sds-…` | Написан, три круга ревью, в каталоге после пуша; план — [fsd-course-5.md](fsd-course-5.md) |
-| 6. Большие приложения | `custom-sets/system-design-scale.yaml` | `sda-…` | Написан, три круга ревью, в каталоге после пуша; план — [fsd-course-6.md](fsd-course-6.md) |
-| 7. Практика: интервью и кейсы | `custom-sets/system-design-practice.yaml` и `…-practice-speech.yaml` | `sdp-…` | План согласован, не начат; план — [fsd-course-7.md](fsd-course-7.md) |
+| 6. Большие приложения | `custom-sets/system-design-scale.yaml` | `sda-…` | Написан, три круга ревью, в каталоге; план — [fsd-course-6.md](fsd-course-6.md) |
+| 7. Практика: интервью и кейсы | `custom-sets/system-design-practice.yaml` и `…-practice-speech.yaml` | `sdp-…` | Написан, три круга ревью, в каталоге после пуша; план — [fsd-course-7.md](fsd-course-7.md) |
 
 Картинки курсов лежат в `custom-sets/images/` с префиксом номеров курса (`sdb-…png`, `sdd-…png`).
 

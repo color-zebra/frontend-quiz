@@ -43,3 +43,9 @@
 
 - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-scale.yaml
   description: Курс 6 из 7, с уроками. Границы между командами, модульный монолит и микрофронтенды, контракты, постепенная миграция, эволюция API, технический долг, спорящие требования, отказы и деградация, поиск узкого места.
+
+- url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-practice.yaml
+  description: Курс 7 из 7, с уроками. Как вести архитектурное интервью и защищать решение, семь разборов кейсов — от выбора даты до растущего продукта.
+
+- url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-practice-speech.yaml
+  description: Устная тренировка к курсу 7. Задачи для самостоятельного решения с эталонным планом ответа и тезисами для самопроверки.
