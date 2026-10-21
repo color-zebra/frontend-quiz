@@ -359,6 +359,73 @@ export default async function lessons(t) {
 
   await context.close();
   await offline(t, files, image);
+  await scroll(t);
+}
+
+/**
+ * Прокрутка на длинных уроках: «Следующий урок» из итога вопросов открывает новый урок с начала, а системная
+ * «Назад» из вопросов возвращает туда, где человек дочитал урок.
+ */
+async function scroll(t) {
+  const { check } = t;
+  const filler = Array.from({ length: 60 }, (_, i) => `      Абзац ${i + 1}: длинный текст, чтобы урок прокручивался.\n`).join("\n");
+  const yaml = `title: Длинные уроки
+lessons:
+  - id: a
+    subtopic: S
+    title: Длинный урок А
+    body: |
+${filler}
+  - id: b
+    title: Длинный урок Б
+    body: |
+${filler}
+questions:
+  - id: q
+    subtopic: S
+    level: junior
+    question: Вопрос о прокрутке
+    options:
+      - text: 'Правильный'
+        correct: true
+      - text: 'Мимо'
+`;
+  const context = await t.newContext({ serviceWorkers: "block" });
+  await context.route(`${BASE}**`, (route) => route.fulfill({ status: 200, contentType: "text/plain; charset=utf-8", body: yaml }));
+  try {
+    const page = await context.newPage();
+    const scrollY = () => page.evaluate(() => Math.round(window.scrollY));
+    const toBottom = async () => {
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+      await page.waitForTimeout(200);
+    };
+    await page.goto(t.url);
+    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("button", { name: /Мои наборы/ }).click();
+    await page.getByRole("textbox", { name: "Ссылка на YAML-файл" }).fill(`${BASE}long.yaml`);
+    await page.getByRole("button", { name: "Добавить", exact: true }).click();
+    await page.getByRole("button", { name: /^Длинные уроки/ }).first().click();
+    await page.getByRole("button", { name: /^Учиться/ }).click();
+    await page.getByRole("heading", { level: 1, name: "Длинный урок А" }).waitFor();
+    await toBottom();
+    const readTo = await scrollY();
+    await page.getByRole("button", { name: /К вопросам/ }).click();
+    await page.getByText("1 / 1").waitFor();
+    await page.goBack();
+    await page.getByRole("heading", { level: 1, name: "Длинный урок А" }).waitFor();
+    await page.waitForTimeout(500);
+    check("«Назад» из вопросов — туда, где дочитал урок", readTo > 1000 && Math.abs((await scrollY()) - readTo) < 50, `${await scrollY()} из ${readTo}`);
+    await page.getByRole("button", { name: /К вопросам/ }).click();
+    await page.getByText("1 / 1").waitFor();
+    await page.getByRole("button", { name: /Правильный/ }).first().click();
+    await page.getByRole("button", { name: "Завершить" }).click();
+    await page.getByRole("button", { name: "Следующий урок" }).click();
+    await page.getByRole("heading", { level: 1, name: "Длинный урок Б" }).waitFor();
+    await page.waitForTimeout(500);
+    check("«Следующий урок» из итога вопросов — с начала урока", (await scrollY()) === 0, `scrollY ${await scrollY()}`);
+  } finally {
+    await context.close();
+  }
 }
 
 /** Без сети: экраны уроков — из кэша приложения, увиденная картинка урока — из кэша картинок. */

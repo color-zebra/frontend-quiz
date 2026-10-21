@@ -27,6 +27,20 @@ interface HistoryState {
 }
 
 /**
+ * Экран, подменённый после отката истории (rewind), открывается с начала. Иначе браузер вернул бы прокрутку
+ * записи, на которую откатились: из вопросов урока «Следующий урок» открывался бы в самом низу — там, где
+ * в прошлом уроке нажали «К вопросам». Восстановление выключаем только на этот переход: обычная «Назад»
+ * по-прежнему возвращает туда, где человек остановился.
+ */
+function keepScrollAtTop() {
+  history.scrollRestoration = "manual";
+  requestAnimationFrame(() => {
+    window.scrollTo(0, 0);
+    history.scrollRestoration = "auto";
+  });
+}
+
+/**
  * Стек экранов, связанный с историей браузера: каждый push добавляет запись в историю,
  * поэтому системная кнопка «Назад» на Android возвращает на предыдущий экран, а не закрывает приложение.
  * Адрес страницы при этом не меняется — экраны не открываются по прямой ссылке, и это не нужно.
@@ -69,6 +83,7 @@ export function useScreenStack<S>(initialStack: S[], onPop: (popped: S[]) => voi
       if (depth >= current.length) return;
       const replacement = pendingReplace.current;
       pendingReplace.current = null;
+      if (replacement) keepScrollAtTop();
       commit(replacement ? [...current.slice(0, depth - 1), replacement] : current.slice(0, depth));
       onPopRef.current(current.slice(depth));
     }
