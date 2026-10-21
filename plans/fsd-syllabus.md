@@ -11,8 +11,8 @@
 | 1. Основы | `custom-sets/system-design-basics.yaml` | `sdb-…` | Написан, три круга ревью, в каталоге; план — [fsd-course-1.md](fsd-course-1.md) |
 | 2. Данные и надёжность | `custom-sets/system-design-data.yaml` | `sdd-…` | Написан, три круга ревью, в каталоге; план — [fsd-course-2.md](fsd-course-2.md) |
 | 3. Доставка и качество | `custom-sets/system-design-delivery.yaml` | `sdr-…` | Написан, три круга ревью, в каталоге после пуша; план — [fsd-course-3.md](fsd-course-3.md) |
-| 4. Реальное время и большие списки | `custom-sets/system-design-live.yaml` | `sdl-…` | Написан, три круга ревью, в каталоге после пуша; план — [fsd-course-4.md](fsd-course-4.md) |
-| 5. Синхронизация и офлайн | — | — | Не начат |
+| 4. Реальное время и большие списки | `custom-sets/system-design-live.yaml` | `sdl-…` | Написан, три круга ревью, в каталоге; план — [fsd-course-4.md](fsd-course-4.md) |
+| 5. Синхронизация и офлайн | `custom-sets/system-design-sync.yaml` | `sds-…` | Написан, три круга ревью, в каталоге после пуша; план — [fsd-course-5.md](fsd-course-5.md) |
 | 6. Большие приложения | — | — | Не начат |
 | 7. Практика: интервью и кейсы | — | — | Не начат |
 

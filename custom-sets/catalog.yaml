@@ -37,3 +37,6 @@
 
 - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-live.yaml
   description: Курс 4 из 7, с уроками. Большие списки и виртуализация, тяжёлая работа без зависаний, выбор по фильтру, SSE и WebSocket, обрывы, дубли событий, снимок и догоняющие события, чат, уведомления.
+
+- url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-sync.yaml
+  description: Курс 5 из 7, с уроками. Несколько вкладок и устройств, связанные изменения, совместная работа, блокировки, OT и CRDT, офлайн, журнал операций, синхронизация.
