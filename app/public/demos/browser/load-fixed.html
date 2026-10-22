@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Пульс — загрузка, исправлено</title>
+    <link rel="stylesheet" href="demo.css" />
+    <!-- Исправлено: оба файла стилей объявлены прямо в HTML и грузятся параллельно, без цепочки @import. -->
+    <link rel="stylesheet" href="fonts.css" />
+    <link rel="stylesheet" href="styles-fixed.css" />
+    <!-- Скрипты с defer: качаются параллельно и выполняются после разбора страницы, ничего не блокируя. -->
+    <script src="vendor.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <header class="demo">
+      <h1 class="hero-title">Пульс: загрузка, исправлено</h1>
+      <p>Демо к курсу «Браузер изнутри», урок «Загрузка страницы». Версия с проблемами — <a href="load.html">load.html</a>.</p>
+    </header>
+    <main>
+      <section class="panel">
+        <p class="status">Выручка за 30 дней <canvas id="spark" width="160" height="32"></canvas></p>
+        <!-- Главная картинка — прямо в HTML: браузер находит её сразу и грузит с высоким приоритетом. -->
+        <div id="hero"><img src="sales.png" alt="Выручка по дням за квартал" class="hero" fetchpriority="high" /></div>
+      </section>
+    </main>
+  </body>
+</html>

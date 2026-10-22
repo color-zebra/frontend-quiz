@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Пульс — вкладки</title>
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <header class="demo">
+      <h1>Пульс: вкладки</h1>
+      <p>Демо к курсу «Браузер изнутри», уроки «Как браузер управляет памятью» и «Охота на утечку».</p>
+    </header>
+    <main>
+      <section class="panel task">
+        <h2>Попробуй сам</h2>
+        <ol>
+          <li>Открой DevTools → Memory и сделай снимок кучи (Heap snapshot).</li>
+          <li>Нажми «Переключить 20 раз» — вкладку «Заказы» откроют и закроют двадцать раз — и сделай второй снимок.</li>
+          <li>Сравни снимки (Comparison) или введи в фильтр Detached: найди, сколько таблиц осталось в памяти и кто их держит.</li>
+          <li>Переключи на «Исправлено», обнови страницу и повтори.</li>
+        </ol>
+      </section>
+      <section class="panel">
+        <div class="controls">
+          <button id="stress">Переключить 20 раз</button>
+          <label class="toggle"><input type="radio" name="mode" value="leak" checked /> Как было</label>
+          <label class="toggle"><input type="radio" name="mode" value="fixed" /> Исправлено</label>
+          <span id="status" class="status"></span>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="tabs" role="tablist">
+          <button role="tab" data-tab="overview" aria-selected="true">Обзор</button>
+          <button role="tab" data-tab="orders" aria-selected="false">Заказы</button>
+          <button role="tab" data-tab="clients" aria-selected="false">Клиенты</button>
+        </div>
+        <div id="tab"></div>
+      </section>
+    </main>
+    <script src="data.js"></script>
+    <script src="tabs.js"></script>
+  </body>
+</html>

@@ -43,6 +43,11 @@ export default async function pwa(t) {
     await page.reload();
     await page.getByText("Что тренируем?").waitFor();
     check("после перезагрузки страницей управляет Service Worker", await page.evaluate(() => !!navigator.serviceWorker.controller));
+    // Демо-страницы курсов — отдельные страницы: SW не должен подменять их приложением.
+    await page.goto(new URL("demos/browser/index.html", t.url).href);
+    check("демо-страница курса открывается сама, а не приложением", await visible(page.getByRole("heading", { name: "Демо к курсу «Браузер изнутри»" })));
+    await page.goto(t.url);
+    await page.getByText("Что тренируем?").waitFor();
     await context.setOffline(true);
     await page.reload();
     check("без сети приложение открывается", await visible(page.getByText("Что тренируем?")));

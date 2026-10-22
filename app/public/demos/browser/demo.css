@@ -1,0 +1,167 @@
+/* Общий вид демо-страниц курса «Браузер изнутри». Ничего хитрого: страницы должны быть понятны в DevTools. */
+:root {
+  color-scheme: light;
+  --bg: #f5f4f0;
+  --card: #ffffff;
+  --line: #d9d7d0;
+  --text: #1d1d21;
+  --muted: #5b5b63;
+  --accent: #2f6fd0;
+  --bad: #c0392b;
+  --good: #1f7a45;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 16px;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.45 "Segoe UI", Arial, sans-serif;
+}
+
+header.demo {
+  max-width: 980px;
+  margin: 0 auto 16px;
+}
+
+header.demo h1 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+header.demo p {
+  margin: 4px 0;
+  color: var(--muted);
+}
+
+main {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.panel {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+}
+
+.task {
+  border-color: #c98a12;
+  background: #fdf6e7;
+}
+
+.task h2 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.task ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+button,
+select,
+input[type="text"] {
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+label.toggle {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.status {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+table.orders {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+table.orders th,
+table.orders td {
+  padding: 4px 8px;
+  border-bottom: 1px solid #eceae4;
+  text-align: left;
+  white-space: nowrap;
+}
+
+table.orders th {
+  position: sticky;
+  top: 0;
+  background: #f0eee8;
+}
+
+.scroll {
+  max-height: 420px;
+  overflow: auto;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.tabs button[aria-selected="true"] {
+  border-color: var(--accent);
+  background: #e3ecfb;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.card {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.card .label {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: #ecebe6;
+  font-size: 13px;
+}

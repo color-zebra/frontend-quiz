@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Пульс — таблица заказов</title>
+    <link rel="stylesheet" href="demo.css" />
+    <style>
+      .split {
+        display: flex;
+        max-height: 420px;
+        overflow: auto;
+        align-items: flex-start;
+      }
+      .split table.orders td.note {
+        max-width: 260px;
+        white-space: normal;
+      }
+      .split .left {
+        position: sticky;
+        left: 0;
+        z-index: 1;
+        width: auto;
+        background: #fff;
+        box-shadow: 2px 0 0 #eceae4;
+      }
+      table.one td:first-child,
+      table.one th:first-child {
+        position: sticky;
+        left: 0;
+        background: #fff;
+      }
+      table.one th:first-child {
+        z-index: 2;
+        background: #f0eee8;
+      }
+      table.one td.note {
+        max-width: 260px;
+        white-space: normal;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="demo">
+      <h1>Пульс: таблица заказов</h1>
+      <p>Демо к курсу «Браузер изнутри», урок «Принудительная раскладка».</p>
+    </header>
+    <main>
+      <section class="panel task">
+        <h2>Попробуй сам</h2>
+        <ol>
+          <li>Слева закреплена колонка с номером заказа. Это отдельная таблица, и скрипт подгоняет высоту её строк под строки основной.</li>
+          <li>Нажми «Обновить данные» в режиме «Как было» и запиши профиль в DevTools → Performance.</li>
+          <li>Найди в профиле частокол фиолетовых блоков Layout и предупреждение Forced reflow.</li>
+          <li>Сравни с режимами «Сначала чтения, потом записи» и «Без скрипта: sticky».</li>
+        </ol>
+      </section>
+
+      <section class="panel">
+        <div class="controls">
+          <button id="refresh" class="primary">Обновить данные</button>
+          <label class="toggle"><input type="radio" name="mode" value="thrash" checked /> Как было</label>
+          <label class="toggle"><input type="radio" name="mode" value="batched" /> Сначала чтения, потом записи</label>
+          <label class="toggle"><input type="radio" name="mode" value="sticky" /> Без скрипта: sticky</label>
+          <span id="status" class="status"></span>
+        </div>
+      </section>
+
+      <section class="panel" id="holder"></section>
+    </main>
+    <script src="data.js"></script>
+    <script src="table.js"></script>
+  </body>
+</html>

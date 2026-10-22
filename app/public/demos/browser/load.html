@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Пульс — загрузка, как было</title>
+    <link rel="stylesheet" href="demo.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <!-- Как было: библиотека графиков без defer — разбор страницы ждёт, пока она скачается и выполнится. -->
+    <script src="vendor.js"></script>
+    <script src="app.js"></script>
+  </head>
+  <body>
+    <header class="demo">
+      <h1 class="hero-title">Пульс: загрузка, как было</h1>
+      <p>Демо к курсу «Браузер изнутри», урок «Загрузка страницы». Исправленная версия — <a href="load-fixed.html">load-fixed.html</a>.</p>
+    </header>
+    <main>
+      <section class="panel task">
+        <h2>Попробуй сам</h2>
+        <ol>
+          <li>Открой DevTools → Network, включи замедление сети (Fast 4G или Slow 4G) и обнови страницу.</li>
+          <li>Посмотри на колонку Initiator: кто вызвал fonts.css и sales.png и почему картинка начинает грузиться так поздно.</li>
+          <li>В Performance нажми «Record and reload» и найди, из каких частей сложился LCP.</li>
+          <li>Открой Coverage (⋮ → More tools → Coverage) и посмотри, какая доля vendor.js выполнилась.</li>
+          <li>Сравни с load-fixed.html.</li>
+        </ol>
+      </section>
+      <section class="panel">
+        <p class="status">Выручка за 30 дней <canvas id="spark" width="160" height="32"></canvas></p>
+        <div id="hero"></div>
+      </section>
+    </main>
+  </body>
+</html>

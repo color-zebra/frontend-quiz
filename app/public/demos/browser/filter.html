@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Пульс — фильтр по региону</title>
+    <link rel="stylesheet" href="demo.css" />
+    <style>
+      #metrics {
+        font-variant-numeric: tabular-nums;
+      }
+      #metrics dt {
+        float: left;
+        clear: left;
+        width: 230px;
+        color: var(--muted);
+      }
+      #metrics dd {
+        margin: 0 0 2px 230px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="demo">
+      <h1>Пульс: фильтр по региону</h1>
+      <p>Демо к курсу «Браузер изнутри», уроки «Медленные взаимодействия» и «Скорость у реальных людей».</p>
+    </header>
+    <main>
+      <section class="panel task">
+        <h2>Попробуй сам</h2>
+        <ol>
+          <li>Выбери другой регион в режиме «Как было»: таблица обновится с заметной задержкой.</li>
+          <li>Запиши профиль в DevTools → Performance, найди нажатие на дорожке Interactions и посмотри, из каких трёх частей сложилась задержка.</li>
+          <li>Ниже — то, что увидела бы аналитика у реального человека: Event Timing и Long Animation Frames.</li>
+          <li>Переключи на «Исправлено» и сравни.</li>
+        </ol>
+      </section>
+
+      <section class="panel">
+        <div class="controls">
+          <label>Регион <select id="region"></select></label>
+          <label class="toggle"><input type="radio" name="mode" value="slow" checked /> Как было</label>
+          <label class="toggle"><input type="radio" name="mode" value="fast" /> Исправлено</label>
+          <span id="status" class="status"></span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 style="margin: 0 0 6px; font-size: 16px">Что увидела бы аналитика</h2>
+        <dl id="metrics"><dt>Последнее взаимодействие</dt><dd>ещё не было</dd></dl>
+      </section>
+
+      <section class="panel scroll">
+        <table class="orders" id="orders"></table>
+        <p id="more" hidden><button id="showMore">Показать ещё</button></p>
+      </section>
+    </main>
+    <script src="data.js"></script>
+    <script src="filters.js"></script>
+    <script src="vitals.js"></script>
+  </body>
+</html>

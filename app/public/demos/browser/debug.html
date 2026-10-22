@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Пульс — три загадки</title>
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <header class="demo">
+      <h1>Пульс: три загадки для отладчика</h1>
+      <p>Демо к курсу «Браузер изнутри», урок «Логи или точки останова».</p>
+    </header>
+    <main>
+      <section class="panel task">
+        <h2>Попробуй сам</h2>
+        <ol>
+          <li><b>Кто удаляет новость?</b> Через три секунды после загрузки новость об акции исчезает. Поставь в Elements на список новостей Break on → Subtree modifications и обнови страницу.</li>
+          <li><b>Кто грузит заказы дважды?</b> По кнопке «Обновить» в Network два запроса orders.json. Добавь в Sources → XHR/fetch Breakpoints строку orders.json и посмотри стек вызовов у каждой остановки.</li>
+          <li><b>Почему экспорт молчит?</b> «Экспорт в CSV» ничего не скачивает и ничего не пишет в консоль. Включи в Sources «Pause on caught exceptions» и нажми ещё раз.</li>
+        </ol>
+      </section>
+      <section class="panel">
+        <h2 style="margin: 0 0 6px; font-size: 16px">Новости</h2>
+        <ul id="news">
+          <li>Отчёт за июль готов</li>
+          <li class="promo">Акция: скидка 10 % на пледы до конца недели</li>
+          <li>Новый регион: Калининград</li>
+        </ul>
+      </section>
+      <section class="panel">
+        <div class="controls">
+          <button id="refresh" class="primary">Обновить</button>
+          <button id="export">Экспорт в CSV</button>
+          <span id="status" class="status"></span>
+        </div>
+      </section>
+    </main>
+    <script src="orders.js"></script>
+    <script src="export.js"></script>
+    <script src="widget.js"></script>
+  </body>
+</html>

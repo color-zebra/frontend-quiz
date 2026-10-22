@@ -26,6 +26,9 @@
 - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/module-federation.yaml
   description: С уроками. Зачем нужны микрофронтенды, iframe, сборка на сервере, веб-компоненты, single-spa и import maps, Module Federation изнутри, адрес, общение, выкатка и тесты.
 
+- url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/browser-internals.yaml
+  description: С уроками и демо-страницами для DevTools. Event loop и кадр, конвейер отрисовки, принудительная раскладка, вкладка Performance, медленные взаимодействия, загрузка, утечки памяти, движок V8, отладка, данные пользователей.
+
 - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-basics.yaml
   description: Курс 1 из 7, с уроками. Требования, деление на модули, состояние и владелец данных, контракт API, сравнение решений.
 

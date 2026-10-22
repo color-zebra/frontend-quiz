@@ -198,7 +198,10 @@ const pwa = VitePWA({
     // База в этот кэш не попадает: она лежит в IndexedDB и обновляется кнопкой «Обновить».
     // Шрифты — только латиница и кириллица; остальные наборы символов докэшируются при первом использовании.
     globPatterns: ["**/*.{js,css,html,svg,png}", "assets/*-{latin,cyrillic}-wght-normal-*.woff2"],
-    globIgnores: ["questions.json"],
+    // Демо-страницы курсов (public/demos) — отдельные сайты для DevTools, а не часть приложения: SW их не кэширует
+    // и не подменяет на index.html, иначе у того, кто установил приложение, по ссылке открылось бы приложение.
+    globIgnores: ["questions.json", "demos/**"],
+    navigateFallbackDenylist: [/\/demos\//],
     cleanupOutdatedCaches: true,
     runtimeCaching: [
       {

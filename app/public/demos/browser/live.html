@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Пульс — к обеду тормозит</title>
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <header class="demo">
+      <h1>Пульс: «к обеду тормозит»</h1>
+      <p>Демо к курсу «Браузер изнутри», урок «Разбор: дашборд от жалобы до исправления».</p>
+    </header>
+    <main>
+      <section class="panel task">
+        <h2>Попробуй сам</h2>
+        <ol>
+          <li>Сразу после загрузки печатай в поле ниже — всё быстро.</li>
+          <li>Нажми «Поработать полдня»: вкладки переключатся так, как за полдня у менеджера. Снова попечатай.</li>
+          <li>Расследуй сам: запись Performance на 8 секунд без действий, потом снимки в Memory.</li>
+          <li>Ход расследования и ответ — в уроке. Режим «Исправлено» — после перезагрузки страницы.</li>
+        </ol>
+      </section>
+      <section class="panel">
+        <div class="controls">
+          <button id="halfday">Поработать полдня</button>
+          <label class="toggle"><input type="radio" name="mode" value="bug" checked /> Как было</label>
+          <label class="toggle"><input type="radio" name="mode" value="fixed" /> Исправлено</label>
+        </div>
+        <p><input type="text" placeholder="Поиск по заказам" style="width: 100%" /></p>
+      </section>
+      <section class="panel">
+        <div class="tabs" role="tablist">
+          <button role="tab" data-tab="overview" aria-selected="true">Обзор</button>
+          <button role="tab" data-tab="orders" aria-selected="false">Заказы</button>
+        </div>
+        <div id="tab"></div>
+      </section>
+    </main>
+    <script src="data.js"></script>
+    <script src="live.js"></script>
+  </body>
+</html>

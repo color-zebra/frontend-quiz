@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Пульс — карточки с числами</title>
+    <link rel="stylesheet" href="demo.css" />
+    <style>
+      .value {
+        position: relative;
+        height: 34px;
+        overflow: hidden;
+        font-size: 26px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+      .strip {
+        position: absolute;
+        left: 0;
+        top: 0;
+      }
+      .strip div {
+        height: 34px;
+        line-height: 34px;
+      }
+      .bar {
+        height: 6px;
+        margin-top: 8px;
+        border-radius: 3px;
+        background: #e3ecfb;
+        overflow: hidden;
+      }
+      .bar div {
+        height: 100%;
+        background: var(--accent);
+        transform-origin: 0 0;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="demo">
+      <h1>Пульс: карточки с числами</h1>
+      <p>Демо к курсу «Браузер изнутри», урок «Конвейер отрисовки».</p>
+    </header>
+    <main>
+      <section class="panel task">
+        <h2>Попробуй сам</h2>
+        <ol>
+          <li>Открой DevTools → «⋮» → More tools → Rendering и включи Paint flashing и Layer borders.</li>
+          <li>Нажми «Обновить числа» в режиме «Как было»: каждый кадр карточки вспыхивают зелёным — браузер перерисовывает их.</li>
+          <li>Переключи на «transform» и сравни: вспышек почти нет, анимацию двигает компоновщик.</li>
+          <li>Включи «Нагрузить основной поток» и посмотри, какая из анимаций продолжает идти плавно.</li>
+        </ol>
+      </section>
+
+      <section class="panel">
+        <div class="controls">
+          <button id="update" class="primary">Обновить числа</button>
+          <label class="toggle"><input type="radio" name="mode" value="top" checked /> Как было: top и width</label>
+          <label class="toggle"><input type="radio" name="mode" value="transform" /> transform</label>
+          <label class="toggle"><input type="checkbox" id="busy" /> Нагрузить основной поток</label>
+        </div>
+      </section>
+
+      <section class="cards" id="cards"></section>
+    </main>
+    <script src="cards.js"></script>
+  </body>
+</html>

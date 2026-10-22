@@ -1,0 +1,5 @@
+/* Шрифты дашборда. Подключаются из styles.css через @import — браузер узнаёт о них, только скачав styles.css. */
+.hero-title {
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: 0.01em;
+}

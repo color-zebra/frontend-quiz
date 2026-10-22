@@ -1,0 +1,11 @@
+/* Стили страницы загрузки без цепочки: fonts.css подключён прямо в HTML. */
+
+.hero {
+  display: block;
+  width: 100%;
+  max-width: 980px;
+  aspect-ratio: 1200 / 500;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
