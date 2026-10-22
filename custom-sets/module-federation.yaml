@@ -3037,9 +3037,9 @@ questions:
     links:
       - https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap
 
-  # ===================== Основы =====================
+  # ===================== Основы Module Federation =====================
   - id: mf-001
-    topic: Основы
+    topic: Основы Module Federation
     level: junior
     question: |
       Что такое Module Federation?
@@ -3063,7 +3063,7 @@ questions:
       - https://module-federation.io/guide/start/quick-start
 
   - id: mf-002
-    topic: Основы
+    topic: Основы Module Federation
     level: junior
     question: |
       Какие утверждения о хосте и remote верны?
@@ -3088,7 +3088,7 @@ questions:
       - https://module-federation.io/guide/start/quick-start
 
   - id: mf-061
-    topic: Основы
+    topic: Основы Module Federation
     level: junior
     question: |
       В конфиге remote заданы `name: 'shop'`, `filename: 'remoteEntry.js'` и `exposes`. За что отвечает каждое поле?
@@ -3110,7 +3110,7 @@ questions:
       - https://webpack.js.org/plugins/module-federation-plugin
 
   - id: mf-003
-    topic: Основы
+    topic: Основы Module Federation
     level: junior
     question: |
       Что такое `remoteEntry.js`?
@@ -3133,7 +3133,7 @@ questions:
       - https://module-federation.io/configure/remotes
 
   - id: mf-004
-    topic: Основы
+    topic: Основы Module Federation
     level: junior
     question: |
       Remote объявил `exposes: { './Product': './src/Product.tsx' }`. Хост вызывает `loadRemote('shop/Cart')`. Что
@@ -3155,7 +3155,7 @@ questions:
       - https://module-federation.io/guide/troubleshooting/runtime
 
   - id: mf-005
-    topic: Основы
+    topic: Основы Module Federation
     level: junior
     question: |
       Зачем нужен раздел `shared`?
@@ -3177,7 +3177,7 @@ questions:
       - https://module-federation.io/configure/shared
 
   - id: mf-006
-    topic: Основы
+    topic: Основы Module Federation
     level: junior
     question: |
       Что означает строка `remotes: { shop: 'shop@https://cdn.example.com/shop/remoteEntry.js' }` в конфиге хоста?
@@ -3199,7 +3199,7 @@ questions:
       - https://module-federation.io/configure/remotes
 
   - id: mf-007
-    topic: Основы
+    topic: Основы Module Federation
     level: junior
     question: |
       Как в коде хоста подключить компонент из remote?
@@ -3221,7 +3221,7 @@ questions:
       - https://module-federation.io/guide/runtime/runtime-api
 
   - id: mf-062
-    topic: Основы
+    topic: Основы Module Federation
     level: junior
     question: |
       В хосте на TypeScript написано `import('shop/Product')`, а remote не публикует типы. Что скажет компилятор и
@@ -3243,7 +3243,7 @@ questions:
       - https://module-federation.io/configure/dts
 
   - id: mf-008
-    topic: Основы
+    topic: Основы Module Federation
     level: junior
     question: |
       Когда браузер скачивает код модуля, который remote отдаёт через `exposes`?
@@ -3268,7 +3268,7 @@ questions:
       - https://module-federation.io/configure/shareStrategy.html
 
   - id: mf-063
-    topic: Основы
+    topic: Основы Module Federation
     level: middle
     multiple: true
     question: |
@@ -3291,7 +3291,7 @@ questions:
       - https://module-federation.io/guide/runtime/runtime-api
 
   - id: mf-009
-    topic: Основы
+    topic: Основы Module Federation
     level: junior
     question: |
       Команда remote починила баг и выкатила новую версию. Что нужно сделать хосту, чтобы пользователи её получили?
@@ -3313,7 +3313,7 @@ questions:
       - https://webpack.js.org/concepts/module-federation/
 
   - id: mf-010
-    topic: Основы
+    topic: Основы Module Federation
     level: middle
     question: |
       Какие изменения в remote сломают хост в рантайме, хотя сборка хоста пройдёт без ошибок?
@@ -3339,7 +3339,7 @@ questions:
       - https://module-federation.io/configure/dts
 
   - id: mf-011
-    topic: Основы
+    topic: Основы Module Federation
     level: junior
     question: |
       В каких сборщиках есть Module Federation?
@@ -3365,7 +3365,7 @@ questions:
       - https://webpack.js.org/plugins/module-federation-plugin
 
   - id: mf-012
-    topic: Основы
+    topic: Основы Module Federation
     level: junior
     question: |
       Хост написан на React. Можно ли подключить через Module Federation remote на Vue?
