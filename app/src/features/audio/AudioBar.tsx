@@ -30,7 +30,9 @@ export function AudioBar({ onOpenLesson }: AudioBarProps) {
     const bar = barRef.current;
     const root = document.documentElement;
     if (!bar) return;
-    const observer = new ResizeObserver(() => root.style.setProperty("--audio-bar", `${bar.offsetHeight + 8}px`));
+    // Высота плеера плюс его отступ от низа окна (--lift в CSS: больше в полноэкранном приложении).
+    const lift = Number.parseFloat(getComputedStyle(bar).getPropertyValue("--lift")) || 8;
+    const observer = new ResizeObserver(() => root.style.setProperty("--audio-bar", `${bar.offsetHeight + lift}px`));
     observer.observe(bar);
     return () => {
       observer.disconnect();

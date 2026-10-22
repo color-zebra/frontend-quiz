@@ -107,6 +107,19 @@ export default async function audioSuite(t) {
   // Слушать урок.
   check("у урока с аудио — «Слушать урок»", await visible(page.getByRole("button", { name: "Слушать урок" })));
   check("мини-плеера до нажатия нет", !(await player.isVisible()));
+  // Как в установленном приложении во весь экран: плеер поднят над системной полоской Android. Chrome не умеет
+  // эмулировать display-mode, поэтому подставляем то же значение --lift, что даёт правило @media (display-mode: fullscreen).
+  const lifted = await page.evaluate(() => {
+    for (const sheet of document.styleSheets) {
+      for (const rule of sheet.cssRules) {
+        if (rule.style?.getPropertyValue("--lift").trim() === "8px") {
+          sheet.insertRule(`${rule.selectorText} { --lift: 48px; }`, sheet.cssRules.length);
+          return true;
+        }
+      }
+    }
+    return false;
+  });
   await page.getByRole("button", { name: "Слушать урок" }).click();
   await waitPlaying();
   check("звук пошёл, на уроке — «Пауза»", await visible(page.locator("main").getByRole("button", { name: "Пауза", exact: true })));
@@ -126,6 +139,8 @@ export default async function audioSuite(t) {
   const lastButton = await page.getByRole("button", { name: /К вопросам/ }).boundingBox();
   const barBox = await player.boundingBox();
   check("мини-плеер не закрывает кнопки в конце урока", lastButton.y + lastButton.height <= barBox.y, `${lastButton.y + lastButton.height} / ${barBox.y}`);
+  const gap = (await page.evaluate(() => window.innerHeight)) - (barBox.y + barBox.height);
+  check("во весь экран плеер поднят над системной полоской Android", lifted && Math.abs(gap - 48) <= 1, `отступ снизу ${gap}`);
   await t.shot(page, "lesson-playing");
 
   // Ушли с урока — звук продолжается.
