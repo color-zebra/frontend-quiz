@@ -161,6 +161,7 @@ lessons:
     topic: Постановка задачи
     subtopic: Выяснение требований
     title: Как выяснять требования
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-basics/sdb-requirements.mp3
     body: |
       ## Какую проблему решаем
 
@@ -377,6 +378,7 @@ lessons:
     topic: Постановка задачи
     subtopic: Атрибуты качества и ограничения
     title: Как превратить „быстро“ в цифры
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-basics/sdb-quality.mp3
     body: |
       ## Какую проблему решаем
 
@@ -711,6 +713,7 @@ lessons:
     topic: Постановка задачи
     subtopic: Границы, допущения, приоритеты
     title: Что войдёт в первую версию
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-basics/sdb-scope.mp3
     body: |
       ## Какую проблему решаем
 
@@ -981,6 +984,7 @@ lessons:
     topic: Декомпозиция системы
     subtopic: Ответственность и границы
     title: Как делить систему на части
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-basics/sdb-responsibility.mp3
     body: |
       ## Какую проблему решаем
 
@@ -1257,6 +1261,7 @@ lessons:
     topic: Декомпозиция системы
     subtopic: Зависимости и контракты
     title: Зависимости и публичный интерфейс модуля
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-basics/sdb-contracts.mp3
     body: |
       ## Какую проблему решаем
 
@@ -1552,6 +1557,7 @@ lessons:
     topic: Декомпозиция системы
     subtopic: Компонент как контракт
     title: Компонент как контракт
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-basics/sdb-component.mp3
     body: |
       ## Какую проблему решаем
 
@@ -1835,6 +1841,7 @@ lessons:
     topic: Декомпозиция системы
     subtopic: Карта потоков данных
     title: Куда текут данные
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-basics/sdb-dataflow.mp3
     body: |
       ## Какую проблему решаем
 
@@ -2104,6 +2111,7 @@ lessons:
     topic: Декомпозиция системы
     subtopic: Архитектурные схемы и развитие
     title: Как рисовать архитектуру
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-basics/sdb-diagrams.mp3
     body: |
       ## Какую проблему решаем
 
@@ -2418,6 +2426,7 @@ lessons:
     topic: Архитектура состояния
     subtopic: Виды состояния
     title: Какое бывает состояние
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-basics/sdb-state-kinds.mp3
     body: |
       ## Какую проблему решаем
 
@@ -2721,6 +2730,7 @@ lessons:
     topic: Архитектура состояния
     subtopic: Владелец и единый источник истины
     title: Кто главный по данным
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-basics/sdb-ownership.mp3
     body: |
       ## Какую проблему решаем
 
@@ -2933,6 +2943,7 @@ lessons:
     topic: Архитектура состояния
     subtopic: Производное состояние и идентичность
     title: Вычислять или хранить
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-basics/sdb-derived.mp3
     body: |
       ## Какую проблему решаем
 
@@ -3176,6 +3187,7 @@ lessons:
     topic: Архитектура состояния
     subtopic: Время жизни состояния и навигация
     title: Что переживает перезагрузку
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-basics/sdb-lifetime.mp3
     body: |
       ## Какую проблему решаем
 
@@ -3542,6 +3554,7 @@ lessons:
     topic: Архитектура состояния
     subtopic: Моделирование процессов
     title: Процесс как набор состояний
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-basics/sdb-workflow.mp3
     body: |
       ## Какую проблему решаем
 
@@ -3865,6 +3878,7 @@ lessons:
     topic: Потоки данных и проектирование API
     subtopic: Чтение и запись
     title: Чтение, запись и реакция интерфейса
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-basics/sdb-read-write.mp3
     body: |
       ## Какую проблему решаем
 
@@ -4147,6 +4161,7 @@ lessons:
     topic: Потоки данных и проектирование API
     subtopic: Проектирование контракта API
     title: Контракт API глазами фронтенда
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-basics/sdb-api.mp3
     body: |
       ## Какую проблему решаем
 
@@ -4490,6 +4505,7 @@ lessons:
     topic: Потоки данных и проектирование API
     subtopic: Жизненный цикл данных и исходы в UI
     title: Загрузка, пустота, ошибка и всё между ними
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-basics/sdb-outcomes.mp3
     body: |
       ## Какую проблему решаем
 
@@ -4757,6 +4773,7 @@ lessons:
     topic: Архитектурные решения
     subtopic: Альтернативы и компромиссы
     title: Как сравнивать решения
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-basics/sdb-tradeoffs.mp3
     body: |
       ## Какую проблему решаем
 
@@ -5064,6 +5081,7 @@ lessons:
     topic: Архитектурные решения
     subtopic: Риски, итерации и обоснование
     title: Риски и развитие решения
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-basics/sdb-risks.mp3
     body: |
       ## Какую проблему решаем
 
