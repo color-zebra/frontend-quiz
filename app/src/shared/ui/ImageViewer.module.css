@@ -1,0 +1,77 @@
+/* Просмотр картинки на весь экран. Фон тёмный в любой теме: картинке нужен нейтральный фон, а не стекло. */
+.viewer {
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: #0b0b10;
+  color: #f2f2f5;
+}
+
+.viewer::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+/* Поле, на котором картинку двигают и увеличивают. Жесты браузера выключены: щипок и прокрутку обрабатываем сами. */
+.stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.stage:active {
+  cursor: grabbing;
+}
+
+.image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: none;
+  transform-origin: 0 0;
+  -webkit-user-drag: none;
+}
+
+.toolbar {
+  position: absolute;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  left: 50%;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  /* Своя подложка: на светлой увеличенной картинке белые цифры масштаба иначе не прочитать. */
+  background: rgba(12, 12, 16, 0.82);
+  transform: translateX(-50%);
+}
+
+.zoom {
+  min-width: 3.5em;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.caption {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  right: 16px;
+  left: 16px;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #e6e6ea;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+  pointer-events: none;
+}

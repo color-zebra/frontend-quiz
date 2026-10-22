@@ -254,6 +254,7 @@ questions:
       (await picture.getAttribute("loading")) === "lazy" &&
       (await visible(page.getByText("Подпись к схеме"))),
   );
+  await imageViewer(t, page);
   await page.getByText("Картинка: Пропавшая схема").waitFor({ timeout: 5000 }).catch(() => undefined);
   check("не загрузилась — заглушка с alt", await visible(page.getByText("Картинка: Пропавшая схема")));
   check("таблица в прокручиваемой рамке", (await page.locator('[role="region"][aria-label="Таблица"] table').count()) === 1);
@@ -496,6 +497,52 @@ questions:
   } finally {
     await context.close();
   }
+}
+
+/** Картинка урока на весь экран: увеличение, двойной клик, закрытие по Esc и системной «Назад» — урок на месте. */
+async function imageViewer(t, page) {
+  const { check, visible } = t;
+  const viewer = page.getByRole("dialog", { name: "Картинка: Схема кэша" });
+  const zoom = viewer.locator("[aria-live]");
+  const zoomIs = async (text) => (await zoom.textContent())?.trim() === text;
+
+  await page.getByRole("button", { name: "Открыть на весь экран: Схема кэша" }).click();
+  await viewer.waitFor();
+  await page.waitForFunction(() => {
+    const img = document.querySelector("dialog[open] img");
+    return img && img.complete && img.getBoundingClientRect().width > 0;
+  });
+  check("кнопка под картинкой открывает её на весь экран, с подписью", (await zoomIs("100%")) && (await visible(viewer.getByText("Подпись к схеме"))));
+  check("на весь экран: страница не вылезает вбок", (await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)) === 0);
+  await viewer.getByRole("button", { name: "Увеличить" }).click();
+  check("кнопка «Увеличить» — 150%", await zoomIs("150%"));
+  const box = await viewer.locator("img").boundingBox();
+  await page.mouse.move(195, 420);
+  await page.mouse.wheel(0, -300);
+  await page.waitForTimeout(200);
+  const zoomed = await viewer.locator("img").boundingBox();
+  check("колесо мыши увеличивает дальше", Number.parseInt((await zoom.textContent()) ?? "0") > 150 && zoomed.width > box.width);
+  await page.mouse.dblclick(195, 420);
+  await page.waitForTimeout(200);
+  check("двойной клик по увеличенной — вписать обратно", await zoomIs("100%"));
+  await page.mouse.dblclick(195, 420);
+  await page.waitForTimeout(200);
+  check("двойной клик по вписанной — увеличить в 2,5 раза", await zoomIs("250%"));
+  await t.shot(page, "image-viewer");
+  await page.keyboard.press("Escape");
+  await viewer.waitFor({ state: "hidden" });
+  check(
+    "Esc закрывает просмотр, лишней записи в истории нет",
+    (await visible(page.getByRole("heading", { level: 1, name: "Первый урок" }))) &&
+      !(await page.evaluate(() => history.state?.imageViewer)),
+  );
+
+  await page.getByRole("img", { name: "Схема кэша" }).click();
+  await viewer.waitFor();
+  check("нажатие по самой картинке тоже открывает просмотр", await visible(viewer));
+  await page.goBack();
+  await viewer.waitFor({ state: "hidden" });
+  check("системная «Назад» закрывает просмотр, а не уводит из урока", await visible(page.getByRole("heading", { level: 1, name: "Первый урок" })));
 }
 
 /** Без сети: экраны уроков — из кэша приложения, увиденная картинка урока — из кэша картинок. */

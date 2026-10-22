@@ -2,8 +2,10 @@ import { useState, type MouseEvent } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { CodeLang } from "../../data/types";
+import { IconButton } from "../../shared/ui/Button";
 import { CodeBlock } from "../../shared/ui/code/CodeBlock";
 import { Icon } from "../../shared/ui/Icon";
+import { ImageViewer } from "../../shared/ui/ImageViewer";
 import styles from "./LessonMarkdown.module.css";
 
 /*
@@ -88,9 +90,14 @@ function resolveImage(src: string | undefined, baseUrl: string | undefined): Ima
 /**
  * Картинка урока. Сначала грузим с crossOrigin: такой ответ Service Worker сохранит для офлайна. Сайт без CORS
  * такую картинку не отдаст — тогда вторая попытка без него: картинка покажется, но только с интернетом.
+ * Загрузившуюся картинку можно открыть на весь экран: нажатием по ней или кнопкой под ней — для клавиатуры
+ * и чтобы было видно, что так можно. Кнопка не в углу картинки: на схемах там тоже бывает текст. Саму картинку в кнопку не заворачиваем: внутри кнопки она перестала бы
+ * быть картинкой для программ чтения с экрана.
  */
 function LessonImage({ src, alt, title, baseUrl }: { src?: string; alt?: string; title?: string; baseUrl?: string }) {
   const [attempt, setAttempt] = useState<"cors" | "plain" | "failed">("cors");
+  const [loaded, setLoaded] = useState(false);
+  const [viewing, setViewing] = useState(false);
   const source = resolveImage(src, baseUrl);
   const problem = "problem" in source ? source.problem : attempt === "failed" ? "не загрузилась — нет связи или неверный адрес" : null;
 
@@ -106,19 +113,46 @@ function LessonImage({ src, alt, title, baseUrl }: { src?: string; alt?: string;
     );
   }
 
+  const crossOrigin = attempt === "cors" ? "anonymous" : undefined;
   return (
     <span className={styles.figure}>
-      <img
-        key={attempt}
+      <span className={styles.frame}>
+        <img
+          key={attempt}
+          src={source.url}
+          alt={alt ?? ""}
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          crossOrigin={crossOrigin}
+          className={loaded ? styles.zoomable : undefined}
+          onLoad={() => setLoaded(true)}
+          onError={() => setAttempt((prev) => (prev === "cors" ? "plain" : "failed"))}
+          onClick={() => loaded && setViewing(true)}
+        />
+      </span>
+      {(title || loaded) && (
+        <span className={styles.figureFooter}>
+          {title && <span className={styles.caption}>{title}</span>}
+          {loaded && (
+            <IconButton
+              icon="fit"
+              bare
+              label={alt ? `Открыть на весь экран: ${alt}` : "Открыть картинку на весь экран"}
+              className={styles.expand}
+              onClick={() => setViewing(true)}
+            />
+          )}
+        </span>
+      )}
+      <ImageViewer
+        open={viewing}
         src={source.url}
         alt={alt ?? ""}
-        loading="lazy"
-        decoding="async"
-        referrerPolicy="no-referrer"
-        crossOrigin={attempt === "cors" ? "anonymous" : undefined}
-        onError={() => setAttempt((prev) => (prev === "cors" ? "plain" : "failed"))}
+        caption={title}
+        crossOrigin={crossOrigin}
+        onClose={() => setViewing(false)}
       />
-      {title && <span className={styles.caption}>{title}</span>}
     </span>
   );
 }

@@ -175,8 +175,39 @@
   display: block;
   max-width: 100%;
   height: auto;
-  margin: 0 auto;
   border-radius: 10px;
+}
+
+.frame {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.zoomable {
+  cursor: zoom-in;
+}
+
+/* Под картинкой: подпись по центру, справа кнопка «на весь экран». */
+.figureFooter {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.figureFooter .caption {
+  flex: 1;
+}
+
+/* Подпись по центру картинки, а не по центру того, что осталось слева от кнопки: слева — тот же отступ. */
+.figureFooter:has(.expand) .caption {
+  padding-left: 44px;
+}
+
+.expand {
+  flex: none;
+  margin-left: auto;
 }
 
 .caption {
