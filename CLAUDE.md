@@ -27,6 +27,7 @@
 | [plans/fsd-course-6.md](plans/fsd-course-6.md) | План уроков курса 6 «Системный дизайн: большие приложения» | Написание и ревью курса 6 |
 | [plans/fsd-course-7.md](plans/fsd-course-7.md) | План курса 7 «Системный дизайн: практика»: разборы кейсов и устная тренировка | Написание и ревью курса 7 |
 | [plans/ws-course.md](plans/ws-course.md) | Уроки к набору «WebSocket»: какие уроки, какие вопросы к ним, что не трогаем | Работа над набором WebSocket |
+| [plans/mfe-course.md](plans/mfe-course.md) | Набор «Микрофронтенды» (бывший «Module Federation»): уроки, новые вопросы, что не трогаем | Работа над набором микрофронтендов |
 | [plans/theory-core.md](plans/theory-core.md) | План теоретических вопросов в основную базу (JS, TS, React) и промпт | Пополнение базы теорией |
 | [plans/private-repo.md](plans/private-repo.md) | Переезд в приватный репозиторий без смены адреса сайта | Изменения хостинга, деплоя и ссылок на наборы |
 | [.github/workflows/deploy.yml](.github/workflows/deploy.yml) | Деплой на GitHub Pages | Правки, которые должны или не должны пересобирать сайт |
