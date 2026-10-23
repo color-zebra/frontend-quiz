@@ -31,9 +31,14 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
+.rowHead > span {
+  white-space: nowrap;
+}
+
 .rowHead {
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 4px 16px;
   align-items: baseline;
   justify-content: space-between;
 }
@@ -458,6 +463,15 @@
 
   .continueRing {
     display: none;
+  }
+
+  .continueTitle {
+    font-size: var(--font-size-heading);
+  }
+
+  .mistakes {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .series {

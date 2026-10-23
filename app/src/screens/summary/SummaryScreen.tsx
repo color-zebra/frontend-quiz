@@ -6,6 +6,7 @@ import { AchievementBadge } from "../../features/achievements/AchievementBadge";
 import type { Achievement } from "../../features/achievements/achievements";
 import { getMistakeIds, type SessionAnswer } from "../../features/session/session";
 import { countQuestions } from "../../shared/lib/plural";
+import { useIsDesktop } from "../../shared/ui/useIsDesktop";
 import { Brand } from "../../shared/ui/Brand";
 import { Button } from "../../shared/ui/Button";
 import { Card, SectionLabel } from "../../shared/ui/Card";
@@ -66,12 +67,16 @@ export function SummaryScreen({
   const percent = answers.length ? Math.round((correct / answers.length) * 100) : 0;
   const mistakeIds = getMistakeIds(answers);
   const topicStats = getTopicStats(bank, answers);
+  const desktop = useIsDesktop();
 
   return (
     <Screen>
-      <TopBar>
-        <Brand />
-      </TopBar>
+      {/* На десктопе логотип уже в боковом меню. */}
+      {!desktop && (
+        <TopBar>
+          <Brand />
+        </TopBar>
+      )}
 
       <ScreenTitle title="Сессия завершена" subtitle={getSubtitle(answers)} />
 

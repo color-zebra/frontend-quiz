@@ -38,9 +38,12 @@ export function LessonDesktop({ bank, lesson, children, questionCount, forwardLa
   const headings = useHeadings(textRef, lesson.id);
   const tocRef = useRef<HTMLDivElement>(null);
 
-  // Текущий урок в оглавлении — на виду, даже если он в конце длинного курса.
+  // Текущий урок в оглавлении — на виду, даже если он в конце длинного курса. Прокручиваем только оглавление:
+  // scrollIntoView сдвинул бы и саму страницу, и урок открылся бы не с начала.
   useEffect(() => {
-    tocRef.current?.querySelector("[aria-current]")?.scrollIntoView({ block: "center" });
+    const toc = tocRef.current;
+    const item = toc?.querySelector<HTMLElement>("[aria-current]");
+    if (toc && item) toc.scrollTop = item.offsetTop - toc.offsetTop - toc.clientHeight / 2 + item.offsetHeight / 2;
   }, [lesson.id]);
 
   return (

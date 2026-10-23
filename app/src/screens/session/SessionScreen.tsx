@@ -116,6 +116,8 @@ export function SessionScreen({
   const correctCount = session.answers.filter((a) => a.correct).length;
   const number = session.index + 1;
   const hasNote = !!getNote(bank.setId, question.id);
+  // Клавиши вариантов — по их числу: «1–4», «1–5».
+  const keyRange = `1–${session.optionOrder.length}`;
   // Пояснение внизу легко не заметить — после ответа над панелью кнопка «Почему?», пока само пояснение не на экране.
   const showWhy = !speech && session.answered && getHasExplanation(question) && !explanationOnScreen;
 
@@ -228,7 +230,7 @@ export function SessionScreen({
       return (
         <>
           <AnswerVerdict question={question!} session={session} large={desktop} />
-          {desktop && <KeyHints keys={[["1–4", "вариант"], ["Enter", "дальше"], ["Esc", "завершить"]]} />}
+          {desktop && <KeyHints keys={[[keyRange, "вариант"], ["Enter", "дальше"], ["Esc", "завершить"]]} />}
           <Button iconAfter={isLast ? undefined : "arrowRight"} onClick={onNext}>
             {isLast ? "Завершить" : "Дальше"}
           </Button>
@@ -244,7 +246,7 @@ export function SessionScreen({
       return (
         <>
           <span className={styles.placeholder}>Выбери вариант</span>
-          {desktop && <KeyHints keys={[["1–4", "вариант"], ["0", "не знаю"], ["Esc", "завершить"]]} />}
+          {desktop && <KeyHints keys={[[keyRange, "вариант"], ["0", "не знаю"], ["Esc", "завершить"]]} />}
           {giveUp}
         </>
       );
@@ -252,6 +254,7 @@ export function SessionScreen({
     return (
       <>
         {giveUp}
+        {desktop && <KeyHints keys={[[keyRange, "отметить"], ["Enter", "ответить"], ["0", "не знаю"]]} />}
         <Button icon="check" disabled={session.selected.length === 0} onClick={() => onSubmit(question!)}>
           Ответить
         </Button>
