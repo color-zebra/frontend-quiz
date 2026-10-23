@@ -3,9 +3,15 @@ import type { ReactNode } from "react";
 import { setDockSlot } from "./dockSlot";
 import styles from "./Screen.module.css";
 
-/** Колонка экрана: на телефоне во всю ширину, на ноутбуке — по центру. */
-export function Screen({ children }: { children: ReactNode }) {
-  return <main className={styles.screen}>{children}</main>;
+/**
+ * Ширина экрана на десктопе: normal — колонка до 960 px (настройки, справка, списки), wide — до 1600 px (курсы,
+ * каталог, страница курса), full — без предела: экран раскладывает колонки сам (урок, тест).
+ */
+export type ScreenWidth = "normal" | "wide" | "full";
+
+/** Колонка экрана: на телефоне во всю ширину, на десктопе — по центру, шириной по width. */
+export function Screen({ width = "normal", className, children }: { width?: ScreenWidth; className?: string; children: ReactNode }) {
+  return <main className={clsx(styles.screen, styles[width], className)}>{children}</main>;
 }
 
 /** Строка вверху экрана: слева кнопка или логотип, по центру подпись, справа действие. */

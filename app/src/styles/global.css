@@ -4,6 +4,25 @@
   box-sizing: border-box;
 }
 
+/*
+ * Высота окна для раскладки. На большом мониторе (от 2200 px, обычно 27″ с 2560 px) весь интерфейс крупнее
+ * на четверть: иначе текст и кнопки мелкие, а раскладка занимает половину экрана. zoom растягивает и единицы
+ * высоты окна, поэтому высота делится обратно.
+ */
+:root {
+  --app-height: 100dvh;
+}
+
+@media (min-width: 2200px) {
+  :root {
+    --app-height: calc(100dvh / 1.25);
+  }
+
+  html {
+    zoom: 1.25;
+  }
+}
+
 html {
   color-scheme: dark;
   -webkit-text-size-adjust: 100%;
@@ -23,7 +42,7 @@ html:has(dialog[open]) {
 
 body {
   margin: 0;
-  min-height: 100dvh;
+  min-height: var(--app-height);
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);

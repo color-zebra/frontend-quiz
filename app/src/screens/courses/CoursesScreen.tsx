@@ -1,23 +1,20 @@
 import clsx from "clsx";
 import { useState } from "react";
-import type { QuestionBank } from "../../data/types";
 import { useAudio } from "../../features/audio/AudioProvider";
 import {
   CATALOG_COURSES,
   findCatalogEntry,
-  getCourseState,
   getEntryProgress,
   getEntrySetId,
   getFeatures,
   getQuestionMastery,
-  type CourseState,
 } from "../../features/courses/courses";
+import { useMyCourses, type MyCourse } from "../../features/courses/useMyCourses";
 import { useLessons } from "../../features/lessons/LessonsProvider";
 import { useProgress } from "../../features/progress/ProgressProvider";
 import { UpdateBanner } from "../../features/pwa/AppUpdate";
 import { findAddedSet, type CatalogEntry } from "../../features/sets/catalog";
 import { useSets } from "../../features/sets/SetsProvider";
-import type { SetRecord } from "../../features/sets/setsStore";
 import { plural } from "../../shared/lib/plural";
 import { readStorage, writeStorage } from "../../shared/lib/storage";
 import { Button, IconButton } from "../../shared/ui/Button";
@@ -44,13 +41,6 @@ interface CoursesScreenProps {
   onOpenLessonQuiz: (setId: string, lessonId: string) => void;
 }
 
-interface MyCourse {
-  record: SetRecord;
-  bank: QuestionBank;
-  state: CourseState;
-  updatedAt: number;
-}
-
 /**
  * «Курсы» — первый экран приложения. Новичку — подсказка и курсы каталога; дальше — «Продолжить» (урок, на котором
  * остановился, читать или слушать), «Мои курсы» с прогрессом и вход во «Все курсы».
@@ -64,23 +54,13 @@ export function CoursesScreen({
   onOpenLesson,
   onOpenLessonQuiz,
 }: CoursesScreenProps) {
-  const { sets, getSetBank } = useSets();
+  const { sets } = useSets();
   const { getCourse } = useLessons();
+  const { mine, current } = useMyCourses();
   const { getProgress } = useProgress();
   const audio = useAudio();
   const [showHint, setShowHint] = useState(() => readStorage(HELP_HINT_KEY) === null);
 
-  // Мои курсы — добавленные наборы с уроками: из каталога и свои по ссылке («есть уроки — значит курс»).
-  const mine: MyCourse[] = sets
-    .map((record) => {
-      const bank = getSetBank(record.id);
-      const state = bank && getCourseState(bank, getCourse(record.id));
-      return bank && state ? { record, bank, state, updatedAt: getCourse(record.id)?.updatedAt ?? record.addedAt } : null;
-    })
-    .filter((c): c is MyCourse => c !== null)
-    .sort((a, b) => b.updatedAt - a.updatedAt);
-  // Продолжить — самый свежий начатый и не пройденный курс.
-  const current = mine.find((c) => c.state.started && !c.state.finished);
   const others = mine.filter((c) => c !== current);
   const notAdded = CATALOG_COURSES.filter((entry) => !findAddedSet(entry, sets));
 

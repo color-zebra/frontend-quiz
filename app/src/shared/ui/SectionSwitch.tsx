@@ -4,6 +4,7 @@ import { readStorage, writeStorage } from "../lib/storage";
 import { IconButton } from "./Button";
 import { Icon, type IconName } from "./Icon";
 import { ScreenTitle } from "./ScreenTitle";
+import { useIsDesktop } from "./useIsDesktop";
 import styles from "./SectionSwitch.module.css";
 
 /** Три раздела приложения: курсы, тренажёр вопросов и кабинет. */
@@ -32,6 +33,8 @@ export function writeSection(section: Section) {
  * не отнимать место у текста. Внутри курса, урока и вопроса его нет.
  */
 export function SectionSwitch({ current, onSelect }: { current: Section; onSelect: (section: Section) => void }) {
+  // На десктопе разделы — в боковом меню.
+  if (useIsDesktop()) return null;
   return (
     <nav className={styles.switch} aria-label="Разделы">
       {SECTIONS.map((s) => (
@@ -62,11 +65,13 @@ interface SectionHeaderProps {
 
 /** Шапка главного экрана раздела: заголовок и «Помощь», под ними — переключатель разделов. */
 export function SectionHeader({ section, title, subtitle, onSelect, onOpenHelp, children }: SectionHeaderProps) {
+  // На десктопе «Справка» — внизу бокового меню.
+  const desktop = useIsDesktop();
   return (
     <>
       <header className={styles.head}>
         <ScreenTitle title={title} subtitle={subtitle} />
-        <IconButton icon="help" label="Помощь" onClick={onOpenHelp} />
+        {!desktop && <IconButton icon="help" label="Помощь" onClick={onOpenHelp} />}
       </header>
       <SectionSwitch current={section} onSelect={onSelect} />
       {children}

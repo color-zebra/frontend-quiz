@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } fr
 import { createPortal } from "react-dom";
 import { Button, IconButton } from "../../shared/ui/Button";
 import { useDockSlot } from "../../shared/ui/dockSlot";
+import { closePlayerSheet, openPlayerSheet, usePlayerSheetOpen } from "./playerSheet";
 import { Icon } from "../../shared/ui/Icon";
 import { useAudioDownloads } from "./AudioDownloadsProvider";
 import { AUDIO_RATES, formatAudioTime, SKIP_SECONDS, useAudio, type AudioTrack } from "./AudioProvider";
@@ -53,7 +54,7 @@ export function AudioPlayer({ lesson, onOpenLesson, onOpenQuestions, onPlayNext 
   const audio = useAudio();
   const { isStored } = useAudioDownloads();
   const slot = useDockSlot();
-  const [open, setOpen] = useState(false);
+  const open = usePlayerSheetOpen();
   const { track } = audio;
 
   // Запас под значком внизу экрана, чтобы последний абзац урока не прятался под ним.
@@ -68,7 +69,7 @@ export function AudioPlayer({ lesson, onOpenLesson, onOpenQuestions, onPlayNext 
 
   // Плеер выключили (или удалили набор) — шторку тоже.
   useEffect(() => {
-    if (!track) setOpen(false);
+    if (!track) closePlayerSheet();
   }, [track]);
 
   if (!track) return null;
@@ -82,7 +83,7 @@ export function AudioPlayer({ lesson, onOpenLesson, onOpenQuestions, onPlayNext 
       style={{ "--progress": `${progress * 360}deg` } as CSSProperties}
       aria-label={`Плеер урока «${track.title}»: ${audio.error ? "ошибка" : audio.playing ? "играет" : "пауза"}`}
       aria-haspopup="dialog"
-      onClick={() => setOpen(true)}
+      onClick={openPlayerSheet}
     >
       <span className={styles.miniInner}>
         {/* Значок всегда один: играет — полоски прыгают цветом ссылок, пауза — застыли и приглушены. */}
@@ -103,13 +104,13 @@ export function AudioPlayer({ lesson, onOpenLesson, onOpenQuestions, onPlayNext 
         open={open}
         lesson={lesson}
         offlineMissing={audio.error && !navigator.onLine && !isStored(track.src)}
-        onCollapse={() => setOpen(false)}
+        onCollapse={closePlayerSheet}
         onOpenLesson={() => {
-          setOpen(false);
+          closePlayerSheet();
           onOpenLesson(track.setId, track.lessonId);
         }}
         onOpenQuestions={() => {
-          setOpen(false);
+          closePlayerSheet();
           onOpenQuestions(track.setId, track.lessonId);
         }}
         onPlayNext={onPlayNext}

@@ -1,0 +1,237 @@
+/*
+ * Меню стоит на месте, прокручивается страница справа от него: прокрутка одна — у окна. Меню прилипает к верху
+ * и занимает высоту окна; если «Моих курсов» много, прокручивается само меню.
+ */
+.shell {
+  --side-width: 264px;
+  display: grid;
+  grid-template-columns: var(--side-width) minmax(0, 1fr);
+  align-items: start;
+  min-height: var(--app-height);
+}
+
+.withRail {
+  --side-width: 84px;
+}
+
+.main {
+  min-width: 0;
+}
+
+.side,
+.rail {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  height: var(--app-height);
+  overflow-y: auto;
+  border-right: 1px solid var(--glass-border);
+  background: var(--bar-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+}
+
+.side {
+  gap: 4px;
+  padding: 26px 16px 18px;
+}
+
+.brand {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 0 10px 22px;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-heading);
+  font-weight: 800;
+}
+
+.logo {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: calc(var(--radius) / 2);
+  background: var(--primary-bg);
+  color: var(--primary-text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-hint);
+  font-weight: 800;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.navItem {
+  display: flex;
+  flex: none;
+  gap: 12px;
+  align-items: center;
+  height: 46px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: calc(var(--radius) - 6px);
+  background: none;
+  color: var(--text-2);
+  font-weight: 700;
+  text-align: left;
+}
+
+.navItem svg,
+.railItem svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.navItem:hover,
+.railItem:hover {
+  background: var(--chip-bg);
+  color: var(--text);
+}
+
+.navItem.current,
+.railItem.current {
+  background: var(--chip-on-bg);
+  box-shadow: inset 0 0 0 1px var(--chip-on-border);
+  color: var(--chip-on-text);
+}
+
+.mine {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.label {
+  margin: 0;
+  padding: 22px 14px 8px;
+  color: var(--muted);
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.course {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: calc(var(--radius) - 6px);
+  background: none;
+  text-align: left;
+}
+
+.course:hover,
+.courseOn {
+  background: var(--chip-bg);
+}
+
+.courseTitle {
+  font-size: var(--font-size-small);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.courseLine {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.bar {
+  flex: 1;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--track);
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary-bg);
+}
+
+.fillOk {
+  background: var(--ok);
+}
+
+.courseNote {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  align-items: center;
+  color: var(--muted);
+  font-size: var(--font-size-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.courseNote svg {
+  width: 12px;
+  height: 12px;
+}
+
+.ok {
+  color: var(--ok);
+}
+
+.grow {
+  flex: 1;
+  min-height: 16px;
+}
+
+/* ---- Полоса значков ---- */
+.rail {
+  gap: 8px;
+  align-items: center;
+  padding: 22px 0 18px;
+}
+
+.rail .logo {
+  margin-bottom: 18px;
+}
+
+.railItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  width: 68px;
+  padding: 10px 0 8px;
+  border: 0;
+  border-radius: calc(var(--radius) - 6px);
+  background: none;
+  color: var(--muted);
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+}
+
+.focus {
+  min-height: var(--app-height);
+}
+
+@media (max-width: 1279px) {
+  .shell {
+    --side-width: 232px;
+  }
+
+  .withRail {
+    --side-width: 76px;
+  }
+
+  .side {
+    padding-inline: 12px;
+  }
+
+  .railItem {
+    width: 64px;
+  }
+}

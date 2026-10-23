@@ -17,6 +17,14 @@
   --font-size-display: 28px; /* заголовок экрана, счёт в итоге */
 }
 
+/* Десктоп: те же ступени, крупнее только заголовки — экран шире, и заголовок в 28 px на нём теряется. */
+@media (min-width: 1024px) {
+  :root {
+    --font-size-heading: 22px;
+    --font-size-display: 32px;
+  }
+}
+
 [data-theme="aurora"] {
   --bg: #0b0920;
   --blob1: #7c3aed;

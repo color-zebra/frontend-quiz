@@ -46,6 +46,8 @@ import { useCatalogAdd } from "../features/courses/useCatalogAdd";
 import { getEntryProgress, getEntrySetId } from "../features/courses/courses";
 import { CATALOG, findAddedSet, type CatalogEntry } from "../features/sets/catalog";
 import { readSection, writeSection, type Section } from "../shared/ui/SectionSwitch";
+import { useIsDesktop } from "../shared/ui/useIsDesktop";
+import { DesktopShell, type ShellMode } from "./DesktopShell";
 import { AllCoursesScreen } from "../screens/courses/AllCoursesScreen";
 import { CoursePreviewScreen } from "../screens/courses/CoursePreviewScreen";
 import { CoursesScreen } from "../screens/courses/CoursesScreen";
@@ -59,6 +61,22 @@ const LessonQuizScreen = lazy(() => loadLessonScreens().then((m) => ({ default: 
 /** Экран курса этого набора: оглавление, урок или вопросы урока. */
 function isCourseScreen(screen: AppScreen, setId: string) {
   return (screen.name === "course" || screen.name === "lesson" || screen.name === "lessonQuiz") && screen.setId === setId;
+}
+
+/** Раскладка десктопа: урок — с полосой значков вместо меню, тест — без меню, остальное — с боковым меню. */
+function getShellMode(screen: AppScreen): ShellMode {
+  if (screen.name === "lesson") return "rail";
+  if (screen.name === "session" || screen.name === "lessonQuiz") return "focus";
+  return "side";
+}
+
+/** Раздел, который подсвечен в меню: экраны курсов — «Курсы», остальное — раздел, из которого пришли. */
+function getScreenSection(stack: AppScreen[]): Section | null {
+  const screen = stack[stack.length - 1];
+  if (screen.name.startsWith("help")) return null;
+  if (["courses", "allCourses", "coursePreview", "course", "lesson", "lessonQuiz"].includes(screen.name)) return "courses";
+  const root = stack[0].name;
+  return root === "courses" ? "courses" : root === "cabinet" ? "cabinet" : "trainer";
 }
 
 /** Корневой экран раздела. */
@@ -120,6 +138,7 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
   }, []);
 
   const nav = useScreenStack(getInitialStack(), handlePop);
+  const desktop = useIsDesktop();
 
   // Набор или урок, который играет, удалили — плеер закрывается: играть больше нечего.
   const playingTrack = audio.track;
@@ -264,10 +283,13 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
     else nav.rewind(stack.length - 1 - first, course);
   }
 
-  /** Переключатель разделов: корень стека подменяется, раздел запоминается до следующего запуска. */
+  /**
+   * Переключатель разделов (на десктопе — боковое меню, оно видно и в глубине раздела): стек откатывается к корню,
+   * корень подменяется, раздел запоминается до следующего запуска.
+   */
   function selectSection(section: Section) {
     writeSection(section);
-    nav.replace(getSectionRoot(section));
+    nav.rewind(nav.getStack().length - 1, getSectionRoot(section));
   }
 
   /** Курс из каталога: добавлен — его страница, нет — страница до скачивания. */
@@ -351,9 +373,26 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
     setTheme(id);
   }
 
+  const screen = nav.screen;
   return (
     <>
-      {renderScreen()}
+      {desktop ? (
+        <DesktopShell
+          mode={getShellMode(screen)}
+          section={getScreenSection(nav.getStack())}
+          courseId={"setId" in screen && ["course", "lesson", "lessonQuiz"].includes(screen.name) ? screen.setId : undefined}
+          onSelectSection={selectSection}
+          onOpenCourse={(setId) => {
+            if (!(screen.name === "course" && screen.setId === setId)) nav.push({ name: "course", setId });
+          }}
+          onOpenHelp={() => screen.name !== "help" && nav.push({ name: "help" })}
+          onOpenLesson={openPlayingLesson}
+        >
+          {renderScreen()}
+        </DesktopShell>
+      ) : (
+        renderScreen()
+      )}
       <AudioPlayer
         lesson={describePlayingLesson(audio.track)}
         onOpenLesson={openPlayingLesson}
