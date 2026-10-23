@@ -46,7 +46,7 @@
   display: block;
   margin-top: 6px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--font-size-hint);
   line-height: 1.4;
   text-align: center;
 }
@@ -60,7 +60,7 @@
   border: 1px dashed var(--glass-border);
   border-radius: 10px;
   color: var(--muted);
-  font-size: 14px;
+  font-size: var(--font-size-small);
   line-height: 1.45;
 }
 
@@ -76,5 +76,5 @@
 
 .stubReason {
   display: block;
-  font-size: 13px;
+  font-size: var(--font-size-hint);
 }

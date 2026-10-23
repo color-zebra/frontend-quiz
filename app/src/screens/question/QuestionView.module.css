@@ -31,7 +31,7 @@
   padding: 6px 11px;
   border-radius: 999px;
   color: var(--text-2);
-  font-size: 12px;
+  font-size: var(--font-size-caption);
 }
 
 /* На совсем узком экране тема уступает место подтеме. */
@@ -43,14 +43,14 @@
 
 .text {
   font-family: var(--font-heading);
-  font-size: 19px;
+  font-size: var(--font-size-heading);
   font-weight: 600;
   line-height: 1.35;
 }
 
 :global([data-theme="terminal"]) .text,
 :global([data-theme="sunset"]) .text {
-  font-size: 17px;
+  font-size: var(--font-size-body);
 }
 
 .options {
@@ -102,20 +102,21 @@
   border: 1px solid var(--glass-border);
   border-radius: calc(var(--radius) / 2.5);
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--font-size-caption);
   font-weight: 700;
 }
 
+/* Варианты — основной текст тренажёра, 16 px ради чтения; лишняя строка в длинном варианте допустима. */
 .optionText {
   flex: 1;
-  font-size: 15px;
+  font-size: var(--font-size-body);
   line-height: 1.4;
 }
 
 .status {
   margin-bottom: -5px;
   padding-left: 38px;
-  font-size: 12px;
+  font-size: var(--font-size-caption);
   font-weight: 700;
 }
 
@@ -123,7 +124,7 @@
   display: block;
   padding-left: 38px;
   color: var(--text-2);
-  font-size: 13.5px;
+  font-size: var(--font-size-hint);
   line-height: 1.5;
 }
 
@@ -196,7 +197,7 @@
 .hint {
   margin: 0;
   color: var(--accent);
-  font-size: 13px;
+  font-size: var(--font-size-hint);
   font-weight: 600;
 }
 
@@ -205,7 +206,7 @@
   padding: 10px 14px;
   border: 1px solid;
   border-radius: calc(var(--radius) - 6px);
-  font-size: 13.5px;
+  font-size: var(--font-size-hint);
   font-weight: 600;
 }
 
@@ -231,7 +232,7 @@
   gap: 8px;
   margin: 0 0 10px;
   font-family: var(--font-heading);
-  font-size: 15px;
+  font-size: var(--font-size-body);
 }
 
 .explainTitle svg {
@@ -247,7 +248,7 @@
 
 .explainText {
   color: var(--text-2);
-  font-size: 14px;
+  font-size: var(--font-size-small);
   line-height: 1.6;
 }
 
@@ -262,14 +263,14 @@
 
 .links a {
   color: var(--link);
-  font-size: 13px;
+  font-size: var(--font-size-hint);
   text-decoration: none;
   overflow-wrap: anywhere;
 }
 
 .linksHint {
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: var(--font-size-caption);
 }
 
 
@@ -282,14 +283,14 @@
   margin: 14px 0 6px;
   color: var(--text);
   font-family: var(--font-heading);
-  font-size: 13.5px;
+  font-size: var(--font-size-small);
 }
 
 .points {
   margin: 0;
   padding-left: 20px;
   color: var(--text-2);
-  font-size: 14px;
+  font-size: var(--font-size-small);
   line-height: 1.55;
 }
 

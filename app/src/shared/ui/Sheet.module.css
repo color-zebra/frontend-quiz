@@ -42,8 +42,14 @@
 .title {
   margin: 0;
   font-family: var(--font-heading);
-  font-size: 18px;
+  font-size: var(--font-size-heading);
   font-weight: 700;
+}
+
+/* Широкие шрифты заголовков: при 20 px «Сбросить статистику?» рядом с крестиком переносится уже на 320–360 px. */
+:global([data-theme="terminal"]) .title,
+:global([data-theme="sunset"]) .title {
+  font-size: var(--font-size-body);
 }
 
 .body {

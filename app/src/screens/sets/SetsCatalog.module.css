@@ -30,7 +30,7 @@
 
 .line {
   color: var(--text-2);
-  font-size: 14px;
+  font-size: var(--font-size-small);
 }
 
 .marker {
@@ -86,14 +86,14 @@
 
 .title {
   font-family: var(--font-heading);
-  font-size: 16px;
+  font-size: var(--font-size-body);
   font-weight: 700;
 }
 
 /* Раскрыта: длинный источник набора по ссылке переносится, а не вылезает за карточку. */
 .meta {
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: var(--font-size-caption);
   overflow-wrap: anywhere;
 }
 
@@ -129,7 +129,7 @@
 .description {
   margin: 0;
   color: var(--text-2);
-  font-size: 13.5px;
+  font-size: var(--font-size-hint);
   line-height: 1.45;
 }
 
@@ -165,7 +165,7 @@
   gap: 6px;
   min-height: 40px;
   padding: 0 14px;
-  font-size: 14px;
+  font-size: var(--font-size-small);
 }
 
 /* «Добавить» — стеклянная с цветом темы: яркая главная кнопка на экране одна, в форме над каталогом. */

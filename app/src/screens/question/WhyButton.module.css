@@ -8,7 +8,7 @@
   border-radius: var(--chip-radius);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   color: var(--text);
-  font-size: 14px;
+  font-size: var(--font-size-small);
   font-weight: 600;
   white-space: nowrap;
   /* Под кнопкой едет текст вопроса — размываем его. -webkit- допишет сборка. */

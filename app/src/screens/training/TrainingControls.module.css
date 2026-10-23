@@ -1,6 +1,6 @@
 .hint {
   margin: -6px 0 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--font-size-hint);
   text-align: center;
 }

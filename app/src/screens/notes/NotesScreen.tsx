@@ -72,7 +72,8 @@ function NoteCard({ note, bank, onOpen, onDelete }: NoteCardProps) {
       {isOwnSet && <span className={styles.setLabel}>Набор «{setTitle}»</span>}
       {note.snapshot.speech && <span className={styles.setLabel}>Устный вопрос</span>}
       <span className={styles.meta}>
-        <LevelBadge level={note.snapshot.level} /> {formatTopicLine(note.snapshot.topicTitle, note.snapshot.subtopicTitle)}
+        <LevelBadge level={note.snapshot.level} />
+        <span className={styles.topic}>{formatTopicLine(note.snapshot.topicTitle, note.snapshot.subtopicTitle)}</span>
       </span>
       <Markdown text={note.snapshot.question} inline className={styles.question} />
       <span className={styles.text}>{note.text}</span>

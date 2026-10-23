@@ -12,6 +12,9 @@ export default async function achievements(t) {
 
   await withBank({ questions }, async () => {
     const context = await t.newContext({ serviceWorkers: "block" });
+    // Часы — на среду, полдень: иначе прогон в пятницу вечером или ночью сам выдаёт «Деплой в пятницу»
+    // и «Ночной деплой», и счёт достижений не сходится.
+    await context.clock.install({ time: new Date(2026, 0, 14, 12, 0) });
     const page = await context.newPage();
     const tile = page.getByRole("button", { name: /^Достижения/ });
     const card = (title) => page.getByRole("button", { name: new RegExp(`^${title}`) });

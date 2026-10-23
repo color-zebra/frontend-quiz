@@ -55,7 +55,7 @@
 
 .zoom {
   min-width: 3.5em;
-  font-size: 14px;
+  font-size: var(--font-size-small);
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
@@ -70,7 +70,7 @@
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.55);
   color: #e6e6ea;
-  font-size: 13px;
+  font-size: var(--font-size-hint);
   line-height: 1.4;
   text-align: center;
   pointer-events: none;

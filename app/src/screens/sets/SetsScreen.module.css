@@ -3,7 +3,7 @@
   padding: 12px 14px;
   border-color: var(--bad);
   color: var(--text-2);
-  font-size: 13.5px;
+  font-size: var(--font-size-hint);
 }
 
 .form {
@@ -20,7 +20,7 @@
   border-radius: calc(var(--radius) - 6px);
   background: var(--seg-bg);
   color: var(--text);
-  font-size: 16px; /* меньше 16 px — Safari на iPhone увеличивает страницу при вводе */
+  font-size: var(--font-size-body); /* меньше 16 px — Safari на iPhone увеличивает страницу при вводе */
 }
 
 .input::placeholder {
@@ -40,7 +40,7 @@
 .help {
   margin: 12px 0 0;
   color: var(--text-2);
-  font-size: 13px;
+  font-size: var(--font-size-hint);
   line-height: 1.5;
 }
 
@@ -59,7 +59,7 @@
   border: 0;
   background: none;
   color: var(--accent);
-  font-size: 13px;
+  font-size: var(--font-size-hint);
   font-weight: 600;
 }
 
@@ -114,19 +114,19 @@
 
 .title {
   font-family: var(--font-heading);
-  font-size: 16px;
+  font-size: var(--font-size-body);
   font-weight: 700;
 }
 
 .meta {
   color: var(--text-2);
-  font-size: 12.5px;
+  font-size: var(--font-size-caption);
 }
 
 .source {
   overflow: hidden;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--font-size-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -145,7 +145,7 @@
 .confirm p {
   margin: 0 0 16px;
   color: var(--text-2);
-  font-size: 14.5px;
+  font-size: var(--font-size-small);
   line-height: 1.5;
 }
 

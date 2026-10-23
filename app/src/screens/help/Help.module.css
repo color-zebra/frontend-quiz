@@ -9,7 +9,7 @@
   gap: 12px;
   padding: 16px;
   font-family: var(--font-heading);
-  font-size: 16px;
+  font-size: var(--font-size-body);
   font-weight: 700;
   cursor: pointer;
   list-style: none;
@@ -32,7 +32,7 @@
 .body {
   padding: 0 16px 16px;
   color: var(--text-2);
-  font-size: 14.5px;
+  font-size: var(--font-size-small);
   line-height: 1.6;
 }
 
@@ -63,7 +63,7 @@
   margin: 18px 0 8px;
   color: var(--text);
   font-family: var(--font-heading);
-  font-size: 14.5px;
+  font-size: var(--font-size-small);
 }
 
 .body b {
@@ -130,12 +130,12 @@
 }
 
 .hubTitle {
-  font-size: 17px;
+  font-size: var(--font-size-body);
   font-weight: 600;
 }
 
 .hubSub {
   color: var(--muted);
-  font-size: 13.5px;
+  font-size: var(--font-size-hint);
   line-height: 1.4;
 }

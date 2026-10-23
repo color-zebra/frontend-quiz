@@ -3,7 +3,7 @@
   /* Первый заголовок урока не липнет к строке «раздел · урок 3 из 12» над ним. */
   margin-top: 8px;
   color: var(--text-2);
-  font-size: 16px;
+  font-size: var(--font-size-body);
   line-height: 1.6;
   overflow-wrap: break-word;
 }
@@ -30,15 +30,15 @@
 }
 
 .lesson h2 {
-  font-size: 20px;
+  font-size: var(--font-size-heading);
 }
 
 .lesson h3 {
-  font-size: 17px;
+  font-size: var(--font-size-body);
 }
 
 .lesson h4 {
-  font-size: 15px;
+  font-size: var(--font-size-body);
 }
 
 /* Заголовок ближе к своему тексту, чем к предыдущему. */
@@ -137,7 +137,7 @@
 .tableWrap table {
   min-width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: var(--font-size-small);
   line-height: 1.45;
 }
 
@@ -170,7 +170,7 @@
 .lesson :global(.footnotes) {
   padding-top: 14px;
   border-top: 1px solid var(--glass-border);
-  font-size: 14px;
+  font-size: var(--font-size-small);
 }
 
 .lesson :global(.footnotes) h4 {

@@ -5,7 +5,7 @@
   gap: 12px;
   margin-bottom: 12px;
   color: var(--text-2);
-  font-size: 13px;
+  font-size: var(--font-size-hint);
 }
 
 .head b {
@@ -17,6 +17,6 @@
   border: 0;
   background: none;
   color: var(--accent);
-  font-size: 13px;
+  font-size: var(--font-size-hint);
   font-weight: 600;
 }

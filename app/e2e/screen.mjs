@@ -112,7 +112,7 @@ export default async function screen(t) {
         check("пояснение уже на экране — кнопки «Почему?» нет", !(await why.isVisible()));
       } else if (text.includes("WRONG")) {
         const placeholder = p.locator('[class*="_placeholder_"]');
-        check("до ответа слева — пустая серая заглушка", (await visible(placeholder)) && (await placeholder.innerText()) === "");
+        check("до ответа слева — подсказка «Выбери вариант»", (await visible(placeholder)) && (await placeholder.innerText()) === "Выбери вариант");
         const giveUpBox = await p.getByRole("button", { name: "Не знаю" }).boundingBox();
         check("до ответа кнопки «Почему?» нет", !(await why.isVisible()));
         await t.shot(p, "before-answer");

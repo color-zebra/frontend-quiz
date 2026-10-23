@@ -1,6 +1,6 @@
 .title {
   color: var(--text-2);
-  font-size: 14px;
+  font-size: var(--font-size-small);
   font-weight: 600;
 }
 

@@ -37,13 +37,13 @@
 }
 
 .action {
-  font-size: 16px;
+  font-size: var(--font-size-body);
   font-weight: 600;
 }
 
 .details {
   color: var(--text-2);
-  font-size: 13px;
+  font-size: var(--font-size-hint);
   line-height: 1.35;
 }
 
@@ -61,7 +61,7 @@
   background: none;
   color: var(--accent);
   font: inherit;
-  font-size: 13.5px;
+  font-size: var(--font-size-hint);
   font-weight: 600;
 }
 

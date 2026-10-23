@@ -27,7 +27,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 16px;
+  font-size: var(--font-size-body);
   line-height: 1.45;
   transition: background-color 0.3s;
 }

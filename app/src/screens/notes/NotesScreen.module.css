@@ -3,7 +3,7 @@
   padding: 12px 14px;
   border-color: var(--bad);
   color: var(--text-2);
-  font-size: 13.5px;
+  font-size: var(--font-size-hint);
 }
 
 .empty {
@@ -32,20 +32,29 @@
   text-align: left;
 }
 
+/* Уровень — своей строкой, тема — под ним в одну строку: длинная подтема обрезается многоточием (решение автора 2026-10-23). */
 .meta {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  align-items: center;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  min-width: 0;
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: var(--font-size-caption);
+}
+
+.topic {
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .question {
   display: -webkit-box;
   overflow: hidden;
   color: var(--text-2);
-  font-size: 13px;
+  font-size: var(--font-size-hint);
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
@@ -53,7 +62,7 @@
 .text {
   display: -webkit-box;
   overflow: hidden;
-  font-size: 15px;
+  font-size: var(--font-size-body);
   line-height: 1.45;
   white-space: pre-wrap;
   -webkit-box-orient: vertical;
@@ -62,7 +71,7 @@
 
 .date {
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: var(--font-size-caption);
 }
 
 .chevron {
@@ -79,12 +88,12 @@
 
 .orphanLabel {
   color: var(--bad);
-  font-size: 11.5px;
+  font-size: var(--font-size-caption);
   font-weight: 600;
 }
 
 .setLabel {
   color: var(--accent);
-  font-size: 11.5px;
+  font-size: var(--font-size-caption);
   font-weight: 700;
 }

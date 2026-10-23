@@ -1,6 +1,6 @@
 .intro {
   margin: -4px 0 0;
   color: var(--text-2);
-  font-size: 14px;
+  font-size: var(--font-size-small);
   line-height: 1.5;
 }

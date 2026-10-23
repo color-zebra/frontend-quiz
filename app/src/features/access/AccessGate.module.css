@@ -16,7 +16,7 @@
 .text {
   margin: 0;
   color: var(--text-2);
-  font-size: 14.5px;
+  font-size: var(--font-size-small);
   line-height: 1.5;
 }
 
@@ -27,7 +27,7 @@
   border-radius: calc(var(--radius) - 6px);
   background: var(--seg-bg);
   color: var(--text);
-  font-size: 16px;
+  font-size: var(--font-size-body);
 }
 
 .input::placeholder {
@@ -46,14 +46,14 @@
 .error {
   margin: -6px 0 0;
   color: var(--bad);
-  font-size: 13.5px;
+  font-size: var(--font-size-hint);
   font-weight: 600;
 }
 
 .note {
   margin: 0;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: var(--font-size-caption);
   text-align: center;
 }
 
@@ -64,6 +64,6 @@
   border: 0;
   background: none;
   color: var(--link);
-  font-size: 14px;
+  font-size: var(--font-size-small);
   text-decoration: underline;
 }

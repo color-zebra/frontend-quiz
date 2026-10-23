@@ -1,19 +1,19 @@
 .empty {
   margin: 0;
   color: var(--text-2);
-  font-size: 15px;
+  font-size: var(--font-size-body);
   line-height: 1.5;
 }
 
 .seen {
   margin: 0 0 6px;
-  font-size: 17px;
+  font-size: var(--font-size-body);
 }
 
 .accuracy {
   margin: 0;
   color: var(--text-2);
-  font-size: 14px;
+  font-size: var(--font-size-small);
   line-height: 1.5;
 }
 
@@ -64,7 +64,7 @@
 
 .setLine {
   color: var(--text-2);
-  font-size: 14px;
+  font-size: var(--font-size-small);
 }
 
 .setMarker {
@@ -89,7 +89,7 @@
 .setWeakLabel {
   margin: 18px 0 10px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--font-size-caption);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -101,7 +101,7 @@
   gap: 6px;
   overflow: hidden;
   color: var(--link);
-  font-size: 11px;
+  font-size: var(--font-size-caption);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -124,7 +124,7 @@
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 6px;
-  font-size: 14px;
+  font-size: var(--font-size-small);
 }
 
 .topicShare {
@@ -162,7 +162,7 @@
   gap: 4px 8px;
   margin: 14px 0 0;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: var(--font-size-caption);
 }
 
 /* На узких экранах — ровно две строки по два пункта, а не случайный перенос. */
@@ -230,12 +230,12 @@
   flex-direction: column;
   gap: 2px;
   min-width: 0;
-  font-size: 14px;
+  font-size: var(--font-size-small);
 }
 
 .weakTopic {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--font-size-caption);
 }
 
 /* Название подтемы — в одну строку, длинное обрезается многоточием. */
@@ -247,7 +247,7 @@
 
 .weakCount {
   color: var(--bad);
-  font-size: 12.5px;
+  font-size: var(--font-size-caption);
   font-weight: 600;
 }
 

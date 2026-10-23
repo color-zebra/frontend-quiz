@@ -24,19 +24,19 @@
 }
 
 .tileTitle {
-  font-size: 14px;
+  font-size: var(--font-size-small);
   font-weight: 600;
 }
 
 .tileSub {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--font-size-caption);
 }
 
 .hint {
   margin: 0 0 12px;
   color: var(--text-2);
-  font-size: 13.5px;
+  font-size: var(--font-size-hint);
   line-height: 1.5;
 }
 
@@ -49,7 +49,7 @@
 .message {
   margin: 12px 0 0;
   color: var(--ok);
-  font-size: 13.5px;
+  font-size: var(--font-size-hint);
   line-height: 1.45;
 }
 
@@ -60,7 +60,7 @@
 .confirm p {
   margin: 0 0 16px;
   color: var(--text-2);
-  font-size: 14.5px;
+  font-size: var(--font-size-small);
   line-height: 1.5;
 }
 

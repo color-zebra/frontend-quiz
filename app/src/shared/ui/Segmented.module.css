@@ -13,7 +13,7 @@
   border-radius: calc(var(--radius) - 8px);
   background: transparent;
   color: var(--muted);
-  font-size: 14px;
+  font-size: var(--font-size-small);
   font-weight: 600;
   transition:
     background 0.15s,
@@ -30,17 +30,18 @@
   opacity: 0.4;
 }
 
+/* Подогнано: три сегмента со словом и счётчиком в ряд на 320 px — больше small не поднимать. */
 .twoLines {
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 6px 0;
-  font-size: 15px;
+  font-size: var(--font-size-small);
   line-height: 1.25;
 }
 
 .count {
-  font-size: 11.5px;
+  font-size: var(--font-size-caption);
   font-weight: 500;
   opacity: 0.85;
 }

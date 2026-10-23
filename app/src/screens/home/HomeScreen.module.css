@@ -14,7 +14,7 @@
 .helpHint p {
   margin: 0;
   color: var(--text-2);
-  font-size: 14px;
+  font-size: var(--font-size-small);
   line-height: 1.5;
 }
 
@@ -58,11 +58,11 @@
 }
 
 .tileTitle {
-  font-size: 14px;
+  font-size: var(--font-size-small);
   font-weight: 600;
 }
 
 .tileSub {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--font-size-caption);
 }

@@ -9,7 +9,7 @@
   border-radius: var(--code-radius);
   background: var(--code-bg);
   color: var(--tok-plain);
-  font-size: 13px;
+  font-size: var(--font-size-hint);
   line-height: 1.6;
   tab-size: 2;
   white-space: pre;
