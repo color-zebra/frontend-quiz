@@ -216,7 +216,7 @@ export function CabinetScreen({
       </Card>
 
       {records.length > 0 && (
-        <Button variant="secondary" icon="trash" onClick={() => setConfirmOpen(true)}>
+        <Button variant="secondary" icon="trash" className={styles.resetStats} onClick={() => setConfirmOpen(true)}>
           Сбросить статистику
         </Button>
       )}

@@ -144,6 +144,24 @@
   text-align: center;
 }
 
+/* Десктоп: кнопки в ряд по ширине надписи, подпись — рядом. */
+@media (min-width: 1024px) {
+  .buttons {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .buttons > button {
+    padding-inline: 28px;
+  }
+
+  .saved {
+    flex-basis: 100%;
+    text-align: left;
+  }
+}
+
 .achievements {
   display: flex;
   flex-direction: column;

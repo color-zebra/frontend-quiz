@@ -39,7 +39,7 @@ interface CoursesDesktopProps {
 
 /**
  * «Курсы» на десктопе: «Продолжить» с кольцом прогресса и «Сегодня» рядом, дальше разделы по одному ряду —
- * «Мои курсы», дорожка серии, остальные курсы. Ни один раздел не выталкивает следующие за край экрана.
+ * дорожка серии, «Мои курсы», остальные курсы. Ни один раздел не выталкивает следующие за край экрана.
  */
 export function CoursesDesktop({
   bank,
@@ -162,17 +162,6 @@ export function CoursesDesktop({
         </div>
       )}
 
-      {mine.length > 0 && (
-        <RowSection
-          id="courses-mine"
-          title="Мои курсы"
-          count={mine.length}
-          items={mine.map((course) => (
-            <MyCourseTile key={course.record.id} course={course} onOpen={() => onOpenCourse(course.record.id)} />
-          ))}
-        />
-      )}
-
       {seriesName && (
         <SeriesTrack
           name={seriesName}
@@ -181,6 +170,17 @@ export function CoursesDesktop({
             return { entry, features: entry.features, progress: entryProgress(entry), downloaded: !!record };
           })}
           onOpen={openEntry}
+        />
+      )}
+
+      {mine.length > 0 && (
+        <RowSection
+          id="courses-mine"
+          title="Мои курсы"
+          count={mine.length}
+          items={mine.map((course) => (
+            <MyCourseTile key={course.record.id} course={course} onOpen={() => onOpenCourse(course.record.id)} />
+          ))}
         />
       )}
 

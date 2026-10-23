@@ -108,6 +108,7 @@ export function LessonDesktop({ bank, lesson, children, questionCount, forwardLa
               ))}
             </nav>
           )}
+          <div className={styles.bottom}>
           <section className={styles.card} aria-label="Вопросы урока">
             <b>{questionCount ? "Вопросы урока" : next ? "Следующий урок" : "Конец курса"}</b>
             <span className={styles.muted}>
@@ -141,6 +142,7 @@ export function LessonDesktop({ bank, lesson, children, questionCount, forwardLa
                 </span>
               </button>
             )}
+          </div>
           </div>
         </aside>
       </div>

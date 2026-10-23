@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { LEVELS, type QuestionBank, type Topic } from "../../data/types";
 import {
   SESSION_LENGTHS,
@@ -73,12 +73,33 @@ export function TrainingSettingsScreen({ bank, kind, subtitle, onBack, onStart }
  * Темы, уровень, длина и устные вперемешку — без режима и кнопки «Начать». На телефоне это экран настройки,
  * на десктопе — левая колонка «Тренажёра»: настройка прямо на месте, без перехода.
  */
-export function TrainingSettingsPanel({ bank, training }: { bank: QuestionBank; training: TrainingFiltersState }) {
+export function TrainingSettingsPanel({
+  bank,
+  training,
+  extra,
+  action,
+}: {
+  bank: QuestionBank;
+  training: TrainingFiltersState;
+  /** После «Сколько вопросов» — на десктопе «Какие вопросы». */
+  extra?: ReactNode;
+  /** Справа в строке с галкой «Добавлять устные вопросы» — на десктопе «Начать». */
+  action?: ReactNode;
+}) {
   const { filters, update, canMixSpeech } = training;
   const [sheetTopicId, setSheetTopicId] = useState<string | null>(null);
   // Одна тема без подтем (маленький свой набор) — выбирать нечего, карточку тем не показываем.
   const hasTopicChoice = bank.topics.length > 1 || bank.topics.some((t) => t.subtopics.length > 1);
   const allTopicsOn = bank.topics.every((t) => filters.topics.includes(t.id));
+  const speechToggle = (
+    <label className={styles.toggle}>
+      <input type="checkbox" checked={filters.withSpeech} onChange={(e) => update({ withSpeech: e.target.checked })} />
+      <span>
+        <b>Добавлять устные вопросы</b>
+        <span className={styles.toggleHint}>Из тех же тем и уровней — для разнообразия</span>
+      </span>
+    </label>
+  );
 
   return (
     <>
@@ -122,14 +143,15 @@ export function TrainingSettingsPanel({ bank, training }: { bank: QuestionBank; 
         />
       </Card>
 
-      {canMixSpeech && (
-        <label className={styles.toggle}>
-          <input type="checkbox" checked={filters.withSpeech} onChange={(e) => update({ withSpeech: e.target.checked })} />
-          <span>
-            <b>Добавлять устные вопросы</b>
-            <span className={styles.toggleHint}>Из тех же тем и уровней — для разнообразия</span>
-          </span>
-        </label>
+      {extra}
+
+      {action ? (
+        <div className={styles.actionRow}>
+          {canMixSpeech ? speechToggle : <span />}
+          <div className={styles.action}>{action}</div>
+        </div>
+      ) : (
+        canMixSpeech && speechToggle
       )}
 
       <SubtopicsSheet

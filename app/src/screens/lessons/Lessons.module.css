@@ -104,6 +104,8 @@
 
 .reset {
   margin-top: 8px;
+  border-color: color-mix(in srgb, var(--bad) 55%, transparent);
+  color: var(--bad);
 }
 
 .confirm p {

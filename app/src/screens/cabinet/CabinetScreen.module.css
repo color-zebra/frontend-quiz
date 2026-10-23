@@ -136,8 +136,23 @@
   font-size: var(--font-size-hint);
 }
 
-/* Десктоп: пять плиток одним рядом — все разделы кабинета на виду без прокрутки. */
+/* Десктоп: пять плиток одним рядом — все разделы кабинета на виду без прокрутки. Кнопки — по ширине надписи
+   и в ряд: на всю карточку в 900 px они превращаются в полосы. */
 @media (min-width: 1024px) {
+  .fileButtons {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .fileButtons > *,
+  .resetStats {
+    padding-inline: 24px;
+  }
+
+  .resetStats {
+    align-self: flex-start;
+  }
+
   .tiles {
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 12px;

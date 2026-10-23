@@ -87,3 +87,101 @@
   position: sticky;
   top: 24px;
 }
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+
+.panelTitle {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.week {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.week span {
+  display: flex;
+  flex-direction: column;
+  color: var(--muted);
+  font-size: var(--font-size-caption);
+}
+
+.week b {
+  color: var(--text);
+  font-size: var(--font-size-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+.topic {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 8px;
+  margin: 0 -8px;
+  border: 0;
+  border-radius: calc(var(--radius) - 8px);
+  background: none;
+  text-align: left;
+}
+
+.topic:hover {
+  background: var(--chip-bg);
+}
+
+.topicHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--font-size-small);
+  font-weight: 600;
+}
+
+.topicCount {
+  color: var(--muted);
+  font-size: var(--font-size-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.topicBar {
+  display: flex;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--track);
+}
+
+.barOk {
+  background: var(--ok);
+}
+
+.barBad {
+  background: var(--bad);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  align-items: center;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: var(--font-size-caption);
+}
+
+.legend i {
+  display: inline-block;
+  width: 10px;
+  height: 6px;
+  border-radius: 3px;
+}

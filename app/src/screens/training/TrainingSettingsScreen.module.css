@@ -130,11 +130,56 @@
   cursor: pointer;
 }
 
+/* Галка — того же вида, что у тем: системный флажок браузер красит по-своему (в Chrome он бывал зелёным). */
 .toggle input {
-  width: 20px;
-  height: 20px;
-  margin: 1px 0 0;
-  accent-color: var(--accent);
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  border: 1.5px solid var(--chip-border);
+  border-radius: 8px;
+  background: var(--chip-bg);
+  cursor: pointer;
+  appearance: none;
+}
+
+.toggle input:checked {
+  border-color: var(--chip-on-border);
+  background: var(--chip-on-bg);
+  box-shadow: var(--chip-on-glow);
+}
+
+.toggle input:checked::after {
+  width: 6px;
+  height: 11px;
+  margin-top: -3px;
+  border: solid var(--chip-on-text);
+  border-width: 0 2px 2px 0;
+  content: "";
+  transform: rotate(45deg);
+}
+
+/* Десктоп: галка слева, «Начать» справа одной строкой. */
+.actionRow {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.action {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  min-width: 300px;
+}
+
+.action > button {
+  width: 100%;
 }
 
 .toggle > span {
