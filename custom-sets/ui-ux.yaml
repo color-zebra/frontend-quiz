@@ -10,6 +10,7 @@ lessons:
     topic: Введение
     subtopic: UI, UX и доказательность
     title: Красиво и удобно — не дело вкуса
+    audio: https://color-zebra.github.io/frontend-quiz-audio/ui-ux/uix-intro.mp3
     questions: [uix-001, uix-002, uix-003, uix-004, uix-106]
     body: |
       ## Какую проблему решаем
@@ -186,6 +187,7 @@ lessons:
     topic: Как человек видит
     subtopic: Внимание и просмотр экрана
     title: Как человек видит экран
+    audio: https://color-zebra.github.io/frontend-quiz-audio/ui-ux/uix-perception.mp3
     questions: [uix-005, uix-006, uix-007, uix-008, uix-009, uix-010]
     body: |
       ## Какую проблему решаем
@@ -363,6 +365,7 @@ lessons:
     topic: Как человек видит
     subtopic: Иерархия и группировка
     title: Иерархия и группировка
+    audio: https://color-zebra.github.io/frontend-quiz-audio/ui-ux/uix-hierarchy.mp3
     questions: [uix-011, uix-012, uix-013, uix-014, uix-015, uix-016]
     body: |
       ## Какую проблему решаем
@@ -544,6 +547,7 @@ lessons:
     topic: Основа визуала
     subtopic: Отступы, сетка и плотность
     title: Отступы, сетка и плотность
+    audio: https://color-zebra.github.io/frontend-quiz-audio/ui-ux/uix-spacing.mp3
     questions: [uix-017, uix-018, uix-019, uix-020, uix-021, uix-022]
     body: |
       ## Какую проблему решаем
@@ -737,6 +741,7 @@ lessons:
     topic: Основа визуала
     subtopic: Типографика
     title: Типографика
+    audio: https://color-zebra.github.io/frontend-quiz-audio/ui-ux/uix-type.mp3
     questions: [uix-023, uix-024, uix-025, uix-026, uix-027, uix-028]
     body: |
       ## Какую проблему решаем
@@ -903,6 +908,7 @@ lessons:
     topic: Основа визуала
     subtopic: Цвет и контраст
     title: Цвет и контраст
+    audio: https://color-zebra.github.io/frontend-quiz-audio/ui-ux/uix-color.mp3
     questions: [uix-029, uix-030, uix-031, uix-032, uix-033, uix-034]
     body: |
       ## Какую проблему решаем
@@ -1051,6 +1057,7 @@ lessons:
     topic: Телефон и экраны
     subtopic: Палец, а не курсор
     title: Палец, а не курсор
+    audio: https://color-zebra.github.io/frontend-quiz-audio/ui-ux/uix-touch.mp3
     questions: [uix-035, uix-036, uix-037, uix-038, uix-039, uix-040]
     body: |
       ## Какую проблему решаем
@@ -1224,6 +1231,7 @@ lessons:
     topic: Телефон и экраны
     subtopic: Экраны разной ширины
     title: Экраны разной ширины
+    audio: https://color-zebra.github.io/frontend-quiz-audio/ui-ux/uix-adaptive.mp3
     questions: [uix-041, uix-042, uix-043, uix-044, uix-045, uix-046]
     body: |
       ## Какую проблему решаем
@@ -1367,6 +1375,7 @@ lessons:
     topic: Поведение
     subtopic: Состояния и подсказки
     title: Состояния и подсказки к действию
+    audio: https://color-zebra.github.io/frontend-quiz-audio/ui-ux/uix-states.mp3
     questions: [uix-047, uix-048, uix-049, uix-050, uix-051, uix-052]
     body: |
       ## Какую проблему решаем
@@ -1534,6 +1543,7 @@ lessons:
     topic: Поведение
     subtopic: Окна, шторки и сообщения
     title: Окно, шторка, сообщение или страница
+    audio: https://color-zebra.github.io/frontend-quiz-audio/ui-ux/uix-overlays.mp3
     questions: [uix-053, uix-054, uix-055, uix-056, uix-057, uix-058]
     body: |
       ## Какую проблему решаем
@@ -1681,6 +1691,7 @@ lessons:
     topic: Поведение
     subtopic: Сценарий раньше экрана
     title: Сценарий раньше экрана
+    audio: https://color-zebra.github.io/frontend-quiz-audio/ui-ux/uix-flow.mp3
     questions: [uix-059, uix-060, uix-061, uix-062, uix-063, uix-064]
     body: |
       ## Какую проблему решаем
@@ -1834,6 +1845,7 @@ lessons:
     topic: Поведение
     subtopic: Формы
     title: Формы
+    audio: https://color-zebra.github.io/frontend-quiz-audio/ui-ux/uix-forms.mp3
     questions: [uix-065, uix-066, uix-067, uix-068, uix-069, uix-070]
     body: |
       ## Какую проблему решаем
@@ -1991,6 +2003,7 @@ lessons:
     topic: Поведение
     subtopic: Память, привычки и навигация
     title: Память, привычки и навигация
+    audio: https://color-zebra.github.io/frontend-quiz-audio/ui-ux/uix-navigation.mp3
     questions: [uix-071, uix-072, uix-073, uix-074, uix-075, uix-076]
     body: |
       ## Какую проблему решаем
@@ -2150,6 +2163,7 @@ lessons:
     topic: Поведение
     subtopic: Анимация со смыслом
     title: Анимация со смыслом
+    audio: https://color-zebra.github.io/frontend-quiz-audio/ui-ux/uix-motion.mp3
     questions: [uix-077, uix-078, uix-079, uix-080, uix-081, uix-082]
     body: |
       ## Какую проблему решаем
@@ -2281,6 +2295,7 @@ lessons:
     topic: Слова и система
     subtopic: Тексты в интерфейсе
     title: Тексты в интерфейсе
+    audio: https://color-zebra.github.io/frontend-quiz-audio/ui-ux/uix-words.mp3
     questions: [uix-083, uix-084, uix-085, uix-086, uix-087, uix-088]
     body: |
       ## Какую проблему решаем
@@ -2400,6 +2415,7 @@ lessons:
     topic: Слова и система
     subtopic: Своя дизайн-система
     title: Своя маленькая дизайн-система
+    audio: https://color-zebra.github.io/frontend-quiz-audio/ui-ux/uix-system.mp3
     questions: [uix-089, uix-090, uix-091, uix-092, uix-093, uix-094]
     body: |
       ## Какую проблему решаем
@@ -2541,6 +2557,7 @@ lessons:
     topic: Проверка и итог
     subtopic: Проверить без дизайнера
     title: Проверить без дизайнера
+    audio: https://color-zebra.github.io/frontend-quiz-audio/ui-ux/uix-evaluation.mp3
     questions: [uix-095, uix-096, uix-097, uix-098, uix-099, uix-100]
     body: |
       ## Какую проблему решаем
@@ -2687,6 +2704,7 @@ lessons:
     topic: Проверка и итог
     subtopic: Разбор экрана
     title: 'Разбор: переделываем экран'
+    audio: https://color-zebra.github.io/frontend-quiz-audio/ui-ux/uix-case.mp3
     questions: [uix-101, uix-102, uix-103, uix-104, uix-105]
     body: |
       ## Какой экран разбираем
