@@ -29,6 +29,9 @@
 - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/browser-internals.yaml
   description: С уроками и демо-страницами для DevTools. Event loop и кадр, конвейер отрисовки, принудительная раскладка, вкладка Performance, медленные взаимодействия, загрузка, утечки памяти, движок V8, отладка, данные пользователей.
 
+- url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/ui-ux.yaml
+  description: С уроками, макетами «как было / как стало» и картинками в вопросах. Как человек видит экран, иерархия, отступы, шрифт и цвет, палец и узкий экран, состояния, окна и шторки, формы, навигация, анимация, тексты, своя дизайн-система, проверка без дизайнера и разбор одного экрана.
+
 - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-basics.yaml
   description: Курс 1 из 7, с уроками. Требования, деление на модули, состояние и владелец данных, контракт API, сравнение решений.
 

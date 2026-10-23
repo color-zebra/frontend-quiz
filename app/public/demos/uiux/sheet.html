@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Абонемент — шторка занятия</title>
+    <style>
+      /* Демо к уроку «Анимация со смыслом» курса «UI и UX дизайн»: одна шторка, две анимации. */
+      :root {
+        --bg: #f4f5f7;
+        --surface: #fff;
+        --text: #16181d;
+        --text-2: #5a6170;
+        --accent: #0f766e;
+        --accent-soft: #e3f3f1;
+        --warn: #b45309;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      main {
+        max-width: 420px;
+        margin: 0 auto;
+        padding: 16px 16px 120px;
+      }
+      h1 {
+        margin: 8px 0 4px;
+        font-size: 24px;
+      }
+      .lead {
+        margin: 0 0 16px;
+        color: var(--text-2);
+        font-size: 14px;
+      }
+      .card {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-bottom: 10px;
+        padding: 14px 16px;
+        border: 0;
+        border-radius: 12px;
+        background: var(--surface);
+        box-shadow: 0 1px 2px rgba(20, 24, 31, 0.08);
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+      .card b {
+        font-size: 17px;
+      }
+      .meta {
+        color: var(--text-2);
+        font-size: 14px;
+      }
+      .modes {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin: 18px 0 8px;
+        padding: 14px 16px;
+        border-radius: 12px;
+        background: var(--surface);
+      }
+      .modes label {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        font-size: 15px;
+      }
+      .note {
+        color: var(--text-2);
+        font-size: 13px;
+      }
+      .dim {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 18, 24, 0.35);
+        opacity: 0;
+        pointer-events: none;
+      }
+      .sheet {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        max-width: 420px;
+        margin: 0 auto;
+        padding: 10px 16px calc(20px + env(safe-area-inset-bottom));
+        border-radius: 18px 18px 0 0;
+        background: var(--surface);
+        box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.2);
+        transform: translateY(110%);
+      }
+      .grab {
+        width: 40px;
+        height: 4px;
+        margin: 0 auto 12px;
+        border-radius: 2px;
+        background: #cfd3da;
+      }
+      .sheet h2 {
+        margin: 0 0 6px;
+        font-size: 20px;
+      }
+      .seats {
+        color: var(--warn);
+        font-weight: 600;
+      }
+      .btn {
+        width: 100%;
+        min-height: 46px;
+        margin-top: 14px;
+        border: 0;
+        border-radius: 10px;
+        background: var(--accent);
+        color: #fff;
+        font: 600 16px system-ui, sans-serif;
+      }
+      .close {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      .open .dim {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .open .sheet {
+        transform: translateY(0);
+      }
+      /* «Как было»: почти секунда и отскок в конце. */
+      .slow .sheet {
+        transition: transform 800ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .slow .dim {
+        transition: opacity 800ms linear;
+      }
+      /* «Как стало»: появление — 250 мс с замедлением, уход — 200 мс с разгоном. */
+      .fast .sheet {
+        transition: transform 200ms cubic-bezier(0.4, 0, 1, 1);
+      }
+      .fast.open .sheet {
+        transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+      }
+      .fast .dim {
+        transition: opacity 200ms ease;
+      }
+      /* Человек просит меньше движения: шторка не выезжает, а проявляется. */
+      .reduce .sheet {
+        transform: none;
+        opacity: 0;
+        transition: opacity 150ms ease;
+        pointer-events: none;
+      }
+      .reduce.open .sheet {
+        opacity: 1;
+        transition: opacity 150ms ease;
+        pointer-events: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="app" class="fast">
+      <h1>Расписание</h1>
+      <p class="lead">Нажмите на занятие — откроется шторка с подробностями. Сравните два способа анимации.</p>
+
+      <button class="card" type="button" data-desc="Укрепляем мышцы спины и пресса. Нужна удобная одежда без молний." data-seats="осталось 5 мест"><b>Пилатес · 08:00</b><span class="meta">Студия 1 · Мария Петрова</span></button>
+      <button class="card" type="button" data-desc="Мягкая практика для тех, кто только начинает. Коврики есть в зале." data-seats="осталось 3 места"><b>Йога для начинающих · 19:00</b><span class="meta">Студия 2 · Анна Ковалёва</span></button>
+      <button class="card" type="button" data-desc="Спокойная растяжка в конце дня. Подходит для любого уровня." data-seats="осталось 8 мест"><b>Стретчинг · 21:30</b><span class="meta">Студия 2 · Анна Ковалёва</span></button>
+
+      <div class="modes">
+        <label><input type="radio" name="mode" value="slow" /> <span><b>Как было:</b> 800 мс, с отскоком в конце</span></label>
+        <label><input type="radio" name="mode" value="fast" checked /> <span><b>Как стало:</b> появление 250 мс с замедлением, уход 200 мс</span></label>
+        <span class="note" id="reduce-note"></span>
+      </div>
+      <p class="note">Откройте и закройте шторку пять раз подряд в каждом режиме: на пятый раз медленная анимация уже раздражает.</p>
+
+      <div class="dim" id="dim"></div>
+      <section class="sheet" aria-label="Подробности занятия">
+        <div class="grab"></div>
+        <h2 id="sheet-title">Йога для начинающих</h2>
+        <div class="meta" id="sheet-desc">Мягкая практика для тех, кто только начинает. Коврики есть в зале.</div>
+        <div class="meta"><span id="sheet-place">Студия 2 · Анна Ковалёва</span> · <span class="seats" id="sheet-seats">осталось 3 места</span></div>
+        <button class="btn" type="button">Записаться</button>
+        <button class="btn close" type="button" id="close">Закрыть</button>
+      </section>
+    </main>
+    <script>
+      const app = document.getElementById("app");
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const note = document.getElementById("reduce-note");
+
+      function applyReduce() {
+        app.classList.toggle("reduce", reduce.matches);
+        note.textContent = reduce.matches
+          ? "В системе включено «уменьшить движение»: шторка не выезжает, а просто проявляется."
+          : "Если включить в системе «уменьшить движение», шторка будет не выезжать, а проявляться.";
+      }
+      applyReduce();
+      reduce.addEventListener("change", applyReduce);
+
+      for (const input of document.querySelectorAll("input[name=mode]")) {
+        input.addEventListener("change", () => {
+          app.classList.remove("slow", "fast");
+          app.classList.add(input.value);
+        });
+      }
+      for (const card of document.querySelectorAll(".card")) {
+        card.addEventListener("click", () => {
+          document.getElementById("sheet-title").textContent = card.querySelector("b").textContent.split(" · ")[0];
+          document.getElementById("sheet-desc").textContent = card.dataset.desc;
+          document.getElementById("sheet-place").textContent = card.querySelector(".meta").textContent;
+          document.getElementById("sheet-seats").textContent = card.dataset.seats;
+          app.classList.add("open");
+        });
+      }
+      const close = () => app.classList.remove("open");
+      document.getElementById("close").addEventListener("click", close);
+      document.getElementById("dim").addEventListener("click", close);
+    </script>
+  </body>
+</html>
