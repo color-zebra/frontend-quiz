@@ -36,11 +36,7 @@ const SUBTOPIC_FORMS = ["подтема", "подтемы", "подтем"] as c
 /** Выбор тем, подтем, уровней и длины сессии. Выбор запоминается отдельно для каждой базы и раздела. */
 export function TrainingSettingsScreen({ bank, kind, subtitle, onBack, onStart }: TrainingSettingsScreenProps) {
   const training = useTrainingFilters(bank, kind);
-  const { filters, update, pool, canMixSpeech } = training;
-  const [sheetTopicId, setSheetTopicId] = useState<string | null>(null);
-  // Одна тема без подтем (маленький свой набор) — выбирать нечего, карточку тем не показываем.
-  const hasTopicChoice = bank.topics.length > 1 || bank.topics.some((t) => t.subtopics.length > 1);
-  const allTopicsOn = bank.topics.every((t) => filters.topics.includes(t.id));
+  const { filters, pool } = training;
 
   return (
     <Screen>
@@ -51,6 +47,41 @@ export function TrainingSettingsScreen({ bank, kind, subtitle, onBack, onStart }
 
       <ModeCard training={training} />
 
+      <TrainingSettingsPanel bank={bank} training={training} />
+
+      <PoolHint size={pool.length} />
+
+      <ActionBar>
+        <Button
+          iconAfter="arrowRight"
+          disabled={pool.length === 0}
+          onClick={() =>
+            onStart(
+              pool.map((q) => q.id),
+              filters.length,
+            )
+          }
+        >
+          {getStartLabel(filters.length, pool.length)}
+        </Button>
+      </ActionBar>
+    </Screen>
+  );
+}
+
+/**
+ * Темы, уровень, длина и устные вперемешку — без режима и кнопки «Начать». На телефоне это экран настройки,
+ * на десктопе — левая колонка «Тренажёра»: настройка прямо на месте, без перехода.
+ */
+export function TrainingSettingsPanel({ bank, training }: { bank: QuestionBank; training: TrainingFiltersState }) {
+  const { filters, update, canMixSpeech } = training;
+  const [sheetTopicId, setSheetTopicId] = useState<string | null>(null);
+  // Одна тема без подтем (маленький свой набор) — выбирать нечего, карточку тем не показываем.
+  const hasTopicChoice = bank.topics.length > 1 || bank.topics.some((t) => t.subtopics.length > 1);
+  const allTopicsOn = bank.topics.every((t) => filters.topics.includes(t.id));
+
+  return (
+    <>
       {hasTopicChoice && (
         <Card>
           <div className={styles.cardHead}>
@@ -101,29 +132,12 @@ export function TrainingSettingsScreen({ bank, kind, subtitle, onBack, onStart }
         </label>
       )}
 
-      <PoolHint size={pool.length} />
-
-      <ActionBar>
-        <Button
-          iconAfter="arrowRight"
-          disabled={pool.length === 0}
-          onClick={() =>
-            onStart(
-              pool.map((q) => q.id),
-              filters.length,
-            )
-          }
-        >
-          {getStartLabel(filters.length, pool.length)}
-        </Button>
-      </ActionBar>
-
       <SubtopicsSheet
         topic={bank.topics.find((t) => t.id === sheetTopicId) ?? null}
         training={training}
         onClose={() => setSheetTopicId(null)}
       />
-    </Screen>
+    </>
   );
 }
 

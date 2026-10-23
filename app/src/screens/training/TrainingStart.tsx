@@ -6,7 +6,7 @@ import glass from "../../shared/ui/glass.module.css";
 import { Icon } from "../../shared/ui/Icon";
 import { ModeCard, PoolHint, getStartLabel } from "./TrainingControls";
 import styles from "./TrainingStart.module.css";
-import { useTrainingFilters } from "./useTrainingFilters";
+import { useTrainingFilters, type TrainingFiltersState } from "./useTrainingFilters";
 
 interface TrainingStartProps {
   bank: QuestionBank;
@@ -49,7 +49,7 @@ function describeDetails(bank: QuestionBank, filters: Filters, withSpeech: boole
 /** Запуск тренировки: что выбрано, «Все / Новые / Ошибки» и «Начать». Сам выбор — на экране настройки. */
 export function TrainingStart({ bank, kind, onStart, onOpenSettings }: TrainingStartProps) {
   const training = useTrainingFilters(bank, kind);
-  const { filters, pool, canMixSpeech } = training;
+  const { filters, canMixSpeech } = training;
 
   return (
     <>
@@ -65,6 +65,16 @@ export function TrainingStart({ bank, kind, onStart, onOpenSettings }: TrainingS
         <span className={styles.details}>{describeDetails(bank, filters, canMixSpeech && filters.withSpeech)}</span>
       </button>
 
+      <StartControls training={training} onStart={onStart} />
+    </>
+  );
+}
+
+/** «Все / Новые / Ошибки», «Начать · 20 вопросов» и сколько подходит под фильтр. */
+export function StartControls({ training, onStart }: { training: TrainingFiltersState; onStart: TrainingStartProps["onStart"] }) {
+  const { filters, pool } = training;
+  return (
+    <>
       <ModeCard training={training} />
 
       <Button

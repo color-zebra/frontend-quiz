@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import type { Lesson, QuestionBank } from "../../data/types";
 import { formatAudioTime, useAudio } from "../../features/audio/AudioProvider";
-import { getLessonQuestionIds } from "../../features/lessons/course";
+import { getLessonQuestionIds, getReadingMinutes } from "../../features/lessons/course";
 import { useLessons } from "../../features/lessons/LessonsProvider";
 import { useSetUrl } from "../../features/sets/SetsProvider";
 import { Button, IconButton } from "../../shared/ui/Button";
@@ -9,6 +9,8 @@ import { Screen, TopBar } from "../../shared/ui/Screen";
 import { ScreenTitle } from "../../shared/ui/ScreenTitle";
 import { LessonMarkdown } from "./LessonMarkdown";
 import styles from "./Lessons.module.css";
+import { LessonDesktop } from "./LessonDesktop";
+import { useIsDesktop } from "../../shared/ui/useIsDesktop";
 
 interface LessonScreenProps {
   bank: QuestionBank;
@@ -35,6 +37,7 @@ export function LessonScreen({ bank, lessonId, onBack, onOpenCourse, onOpenLesso
   const position = getCourse(bank.setId)?.position;
   // Ушёл из вопросов перечитать урок — номер вопроса не теряем: кнопка внизу продолжит с него.
   const quizPosition = position?.lessonId === lessonId && position.step === "quiz" ? position : null;
+  const desktop = useIsDesktop();
 
   // Открытый урок — новое место в курсе, «Продолжить обучение» вернёт сюда.
   useEffect(() => {
@@ -86,16 +89,13 @@ export function LessonScreen({ bank, lessonId, onBack, onOpenCourse, onOpenLesso
         ? "Следующий урок"
         : "Завершить курс";
 
-  return (
-    <Screen>
-      <TopBar>
-        <IconButton icon="arrowLeft" label="Назад" onClick={onBack} />
-        <IconButton icon="list" label="Оглавление" onClick={onOpenCourse} />
-      </TopBar>
-
+  const content = (
+    <>
       <ScreenTitle
         title={lesson.title}
-        subtitle={`${lesson.topic ? `${lesson.topic} · ` : ""}урок ${index + 1} из ${lessons.length}`}
+        subtitle={[lesson.topic, `урок ${index + 1} из ${lessons.length}`, desktop && `${getReadingMinutes(lesson.body)} мин чтения`]
+          .filter(Boolean)
+          .join(" · ")}
       />
 
       {lesson.audio && <ListenButton bank={bank} lesson={lesson} audio={lesson.audio} />}
@@ -112,6 +112,32 @@ export function LessonScreen({ bank, lessonId, onBack, onOpenCourse, onOpenLesso
           </Button>
         )}
       </div>
+    </>
+  );
+
+  if (desktop) {
+    return (
+      <LessonDesktop
+        bank={bank}
+        lesson={lesson}
+        questionCount={count}
+        forwardLabel={forwardLabel}
+        onForward={goForward}
+        onOpenCourse={onOpenCourse}
+        onOpenLesson={onOpenLesson}
+      >
+        {content}
+      </LessonDesktop>
+    );
+  }
+
+  return (
+    <Screen>
+      <TopBar>
+        <IconButton icon="arrowLeft" label="Назад" onClick={onBack} />
+        <IconButton icon="list" label="Оглавление" onClick={onOpenCourse} />
+      </TopBar>
+      {content}
     </Screen>
   );
 }

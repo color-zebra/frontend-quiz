@@ -135,3 +135,19 @@
   color: var(--muted);
   font-size: var(--font-size-hint);
 }
+
+/* Десктоп: пять плиток одним рядом — все разделы кабинета на виду без прокрутки. */
+@media (min-width: 1024px) {
+  .tiles {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .tiles .wide {
+    grid-column: auto;
+  }
+
+  .tile {
+    min-height: 120px;
+  }
+}

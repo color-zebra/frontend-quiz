@@ -66,3 +66,24 @@
   color: var(--muted);
   font-size: var(--font-size-caption);
 }
+
+/* ---- Десктоп: настройка слева, запуск справа ---- */
+.desk {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(320px, 26vw, 420px);
+  gap: 24px;
+  align-items: start;
+}
+
+.deskMain,
+.deskSide {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.deskSide {
+  position: sticky;
+  top: 24px;
+}

@@ -24,19 +24,22 @@ interface ActionBarProps {
   even?: boolean;
   /** Кнопка над панелью справа — например, «Почему?» после ответа. */
   aside?: ReactNode;
+  className?: string;
+  /** Класс обёртки панели — например, чтобы на десктопе она стояла под содержимым, а не у низа окна. */
+  dockClassName?: string;
   children: ReactNode;
 }
 
 /** Панель кнопок, прилипающая к низу экрана. Плотнее обычного стекла, чтобы текст под ней не просвечивал. */
-export function ActionBar({ even = false, aside, children }: ActionBarProps) {
+export function ActionBar({ even = false, aside, className, dockClassName, children }: ActionBarProps) {
   return (
-    <div className={styles.dock}>
+    <div className={clsx(styles.dock, dockClassName)}>
       {/* Сверху — место для плавающих кнопок приложения (свёрнутый плеер), под ним — своя кнопка панели. */}
       <div className={styles.aside}>
         <div ref={setDockSlot} className={styles.slot} />
         {aside}
       </div>
-      <div className={clsx(styles.actionBar, even && styles.even)}>{children}</div>
+      <div className={clsx(styles.actionBar, even && styles.even, className)}>{children}</div>
     </div>
   );
 }

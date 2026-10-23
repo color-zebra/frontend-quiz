@@ -1,0 +1,325 @@
+/* Урок на десктопе: три колонки, боковые прилипают к верху и занимают высоту окна. */
+
+.screen {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: clamp(240px, 16vw, 300px) minmax(0, 720px) clamp(240px, 16vw, 300px);
+  gap: 32px;
+  justify-content: space-evenly;
+  align-items: start;
+}
+
+.left,
+.right {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: var(--app-height);
+  padding: 32px 0 24px;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 32px 0 64px;
+}
+
+/* ---- Слева: оглавление курса ---- */
+.back {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font-size: var(--font-size-small);
+  font-weight: 700;
+  text-align: left;
+}
+
+.back svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.back:hover {
+  color: var(--text);
+}
+
+.courseProgress {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: -8px;
+  color: var(--muted);
+  font-size: var(--font-size-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.bar {
+  flex: 1;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--track);
+}
+
+.bar span {
+  display: block;
+  height: 100%;
+  background: var(--primary-bg);
+}
+
+/* Оглавление прокручивается само, если не влезает: плеер под ним остаётся на месте. */
+.toc {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  margin: 0 -8px;
+  padding: 0 8px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.group {
+  margin: 12px 0 4px;
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.group:first-child {
+  margin-top: 0;
+}
+
+.tocItem {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: calc(var(--radius) - 8px);
+  background: none;
+  color: var(--text-2);
+  font-size: var(--font-size-small);
+  line-height: 1.4;
+  text-align: left;
+}
+
+.tocItem:hover {
+  background: var(--chip-bg);
+}
+
+.mark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: var(--font-size-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.mark svg {
+  width: 12px;
+  height: 12px;
+}
+
+.done {
+  color: var(--muted);
+}
+
+.done .mark {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.current {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.current .mark {
+  border-color: transparent;
+  background: var(--primary-bg);
+  color: var(--primary-text);
+}
+
+/* ---- Справа: план урока, вопросы, соседние уроки ---- */
+.plan {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.planTitle {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.planItem {
+  padding: 6px 12px;
+  border: 0;
+  border-left: 2px solid var(--track);
+  background: none;
+  color: var(--muted);
+  font-size: var(--font-size-small);
+  line-height: 1.4;
+  text-align: left;
+}
+
+.planItem:hover {
+  color: var(--text);
+}
+
+.planActive {
+  border-left-color: var(--accent);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.card {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  background: var(--glass-bg);
+}
+
+.muted {
+  color: var(--muted);
+  font-size: var(--font-size-hint);
+}
+
+.cardButton {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  margin-top: 4px;
+  padding: 0 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--btn-radius);
+  background: var(--chip-bg);
+  font-size: var(--font-size-small);
+  font-weight: 700;
+}
+
+.cardButton:hover {
+  border-color: var(--accent);
+}
+
+.cardButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Соседние уроки — внизу колонки, карточками: следующий заметнее, это естественный шаг после чтения. */
+.neighbours {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.neighbour {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  background: var(--glass-bg);
+  text-align: left;
+}
+
+.neighbour:hover {
+  border-color: var(--accent);
+}
+
+.arrow {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--chip-bg);
+}
+
+.arrow svg {
+  width: 18px;
+  height: 18px;
+}
+
+.neighbourText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.neighbourText b {
+  font-size: var(--font-size-small);
+  line-height: 1.3;
+}
+
+.neighbourLabel {
+  color: var(--muted);
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.nextLesson {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.nextLesson .arrow {
+  background: var(--primary-bg);
+  color: var(--primary-text);
+}
+
+/* Узкий десктоп: правой колонки нет — план урока теряется, переходы есть внизу текста. */
+@media (max-width: 1279px) {
+  .columns {
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 28px;
+  }
+
+  .right {
+    display: none;
+  }
+}

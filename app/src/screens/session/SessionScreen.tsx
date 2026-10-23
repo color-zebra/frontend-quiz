@@ -9,11 +9,13 @@ import { useSetUrl } from "../../features/sets/SetsProvider";
 import { getCurrentQuestion, getIsLastQuestion, type Session, type SpeechGrade } from "../../features/session/session";
 import { Button, IconButton } from "../../shared/ui/Button";
 import { Icon } from "../../shared/ui/Icon";
+import { Markdown } from "../../shared/ui/Markdown";
 import { ActionBar, Screen, TopBar } from "../../shared/ui/Screen";
 import { BookmarkButton, ToolsCapsule } from "../question/QuestionTools";
 import { QuestionView } from "../question/QuestionView";
 import { useIsOnScreen, WhyButton } from "../question/WhyButton";
 import styles from "./SessionScreen.module.css";
+import { useIsDesktop } from "../../shared/ui/useIsDesktop";
 
 interface SessionScreenProps {
   bank: QuestionBank;
@@ -59,6 +61,7 @@ export function SessionScreen({
   const multiple = !!question && !speech && getIsMultiple(question);
   const isLast = getIsLastQuestion(session);
   const [explanationRef, explanationOnScreen] = useIsOnScreen();
+  const desktop = useIsDesktop();
 
   // Клавиатура на ноутбуке.
   // Тестовый вопрос: цифры — выбрать (отметить) вариант, 0 — «Не знаю», Enter или → — ответить или дальше.
@@ -68,6 +71,13 @@ export function SessionScreen({
       if (!question || e.ctrlKey || e.metaKey || e.altKey) return;
       if (document.querySelector("dialog[open]")) return;
       if (e.target instanceof HTMLElement && e.target.closest("input, textarea")) return;
+
+      // Esc — завершить сессию (на десктопе меню нет, выход — эта клавиша или кнопка «Завершить»).
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onExit();
+        return;
+      }
 
       const isProceed = e.key === "Enter" || e.key === "ArrowRight";
       if (speech) {
@@ -99,7 +109,7 @@ export function SessionScreen({
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [question, speech, revealed, multiple, session.index, session.answered, session.optionOrder, onSelect, onSubmit, onGiveUp, onGrade, onNext]);
+  }, [question, speech, revealed, multiple, session.index, session.answered, session.optionOrder, onSelect, onSubmit, onGiveUp, onGrade, onNext, onExit]);
 
   if (!question) return null;
 
@@ -110,9 +120,15 @@ export function SessionScreen({
   const showWhy = !speech && session.answered && getHasExplanation(question) && !explanationOnScreen;
 
   return (
-    <Screen>
+    <Screen width="wide" className={styles.screen}>
       <TopBar>
-        <IconButton icon="close" label={learning ? "Вернуться к уроку" : "Выйти из сессии"} onClick={onExit} />
+        {desktop ? (
+          <Button variant="secondary" icon="close" className={styles.exit} onClick={onExit}>
+            {learning ? "К уроку" : "Завершить"}
+          </Button>
+        ) : (
+          <IconButton icon="close" label={learning ? "Вернуться к уроку" : "Выйти из сессии"} onClick={onExit} />
+        )}
         <div className={styles.progressBox}>
           {session.infinite ? (
             // Две строки всегда: в одну «Вопрос 1000 · верно 799» рядом с капсулой не влезает.
@@ -125,11 +141,25 @@ export function SessionScreen({
               {number} / {session.queue.length}
             </span>
           )}
-          {!session.infinite && (
-            <div className={styles.track}>
-              <span style={{ width: `${(session.answers.length / session.queue.length) * 100}%` }} />
-            </div>
-          )}
+          {!session.infinite &&
+            (desktop ? (
+              // Дорожка сессии: отрезок на каждый вопрос — верно, ошибка, текущий, впереди.
+              <div className={styles.strip} aria-hidden="true">
+                {session.queue.map((id, i) => {
+                  const answer = session.answers[i];
+                  return (
+                    <i
+                      key={`${i}-${id}`}
+                      className={clsx(answer && (answer.correct ? styles.stripOk : styles.stripBad), i === session.index && styles.stripNow)}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <div className={styles.track}>
+                <span style={{ width: `${(session.answers.length / session.queue.length) * 100}%` }} />
+              </div>
+            ))}
         </div>
         <ToolsCapsule>
           <ComplaintButton bare onClick={() => setComplaintOpen(true)} />
@@ -158,7 +188,12 @@ export function SessionScreen({
         onSelect={(optionIndex) => onSelect(question, optionIndex)}
       />
 
-      <ActionBar even={!speech} aside={showWhy && <WhyButton question={question} baseUrl={baseUrl} />}>
+      <ActionBar
+        even={!speech}
+        className={clsx(desktop && !speech && styles.deskBar)}
+        dockClassName={styles.dock}
+        aside={showWhy && <WhyButton question={question} baseUrl={baseUrl} />}
+      >
         {speech ? renderSpeechActions() : renderTestActions()}
       </ActionBar>
 
@@ -192,7 +227,8 @@ export function SessionScreen({
     if (session.answered) {
       return (
         <>
-          <AnswerVerdict question={question!} session={session} />
+          <AnswerVerdict question={question!} session={session} large={desktop} />
+          {desktop && <KeyHints keys={[["1–4", "вариант"], ["Enter", "дальше"], ["Esc", "завершить"]]} />}
           <Button iconAfter={isLast ? undefined : "arrowRight"} onClick={onNext}>
             {isLast ? "Завершить" : "Дальше"}
           </Button>
@@ -208,6 +244,7 @@ export function SessionScreen({
       return (
         <>
           <span className={styles.placeholder}>Выбери вариант</span>
+          {desktop && <KeyHints keys={[["1–4", "вариант"], ["0", "не знаю"], ["Esc", "завершить"]]} />}
           {giveUp}
         </>
       );
@@ -227,12 +264,50 @@ export function SessionScreen({
  * Итог ответа в нижней панели, слева от «Дальше». Пояснения под вариантами раздвигают список, и выбранный вариант
  * может уехать из виду, — а панель видна всегда. При ошибке сразу говорит номер правильного варианта.
  */
-function AnswerVerdict({ question, session }: { question: Question; session: Session }) {
+/** Подсказка клавиш в панели на десктопе: «1–4 вариант · Enter дальше». */
+function KeyHints({ keys }: { keys: [string, string][] }) {
+  return (
+    <span className={styles.keys}>
+      {keys.map(([key, label]) => (
+        <span key={key}>
+          <kbd>{key}</kbd>
+          {label}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function AnswerVerdict({ question, session, large = false }: { question: Question; session: Session; large?: boolean }) {
   const ok = !session.gaveUp && getIsAnswerCorrect(question, session.selected);
   // Номера правильных вариантов — в том порядке, в каком варианты стоят на экране.
   const numbers = session.optionOrder.flatMap((optionIndex, position) =>
     question.options[optionIndex].correct ? [position + 1] : [],
   );
+
+  // Десктоп: вердикт крупно — кружок, слово и правильный ответ прямо в панели.
+  if (large) {
+    const correctText = session.optionOrder
+      .map((optionIndex) => question.options[optionIndex])
+      .filter((o) => o.correct)
+      .map((o) => o.text)
+      .join("; ");
+    return (
+      <div className={clsx(styles.bigVerdict, ok ? styles.verdictOk : styles.verdictBad)} role="status">
+        <span className={styles.bigIcon}>
+          <Icon name={ok ? "check" : "close"} />
+        </span>
+        <span className={styles.bigText}>
+          <b>{getVerdictText(ok, session.gaveUp)}</b>
+          {!ok && (
+            <span>
+              {numbers.length > 1 ? "Верные" : "Правильный ответ"} — {numbers.join(", ")}: <Markdown text={correctText} inline />
+            </span>
+          )}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className={clsx(styles.verdict, ok ? styles.verdictOk : styles.verdictBad)} role="status">

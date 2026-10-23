@@ -32,6 +32,10 @@ interface QuestionViewProps {
   onSelect?: (optionIndex: number) => void;
 }
 
+/** Вариант не длиннее этого — короткий: варианты встают в два столбца. Длиннее — столбец в 600 px превратил бы его
+    в узкую колонку слов. */
+const SHORT_OPTION = 70;
+
 export function QuestionView({
   bank,
   question,
@@ -85,7 +89,12 @@ export function QuestionView({
       {speech && !showResult && <p className={styles.hint}>Ответь про себя или вслух, потом открой эталон</p>}
       {speech && showResult && <SpeechAnswer question={question} baseUrl={baseUrl} />}
 
-      <ol ref={optionsRef} className={styles.options} hidden={speech}>
+      {/* Короткие варианты на десктопе — в два столбца: глазу ближе, вопрос с кодом помещается без прокрутки. */}
+      <ol
+        ref={optionsRef}
+        className={clsx(styles.options, question.options.every((o) => o.text.length <= SHORT_OPTION) && styles.twoColumns)}
+        hidden={speech}
+      >
         {optionOrder.map((optionIndex, position) => (
           <li key={optionIndex}>
             <OptionCard
