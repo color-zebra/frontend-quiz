@@ -4,6 +4,7 @@ lessons:
     topic: Введение
     subtopic: Ненадёжная сеть
     title: Почему сеть всё усложняет
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-intro.mp3
     body: |
       ## Какую проблему решаем
 
@@ -288,6 +289,7 @@ lessons:
     topic: Получение и кэширование данных
     subtopic: Стратегия загрузки
     title: Когда и что загружать
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-fetching.mp3
     body: |
       ## Какую проблему решаем
 
@@ -565,6 +567,7 @@ lessons:
     topic: Получение и кэширование данных
     subtopic: Устройство кэша
     title: Как устроен клиентский кэш
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-cache.mp3
     body: |
       ## Какую проблему решаем
 
@@ -877,6 +880,7 @@ lessons:
     topic: Получение и кэширование данных
     subtopic: Свежесть и инвалидация
     title: Когда данные устаревают
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-freshness.mp3
     body: |
       ## Какую проблему решаем
 
@@ -1173,6 +1177,7 @@ lessons:
     topic: Получение и кэширование данных
     subtopic: Координация запросов и предзагрузка
     title: Лишние и одинаковые запросы
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-coordination.mp3
     body: |
       ## Какую проблему решаем
 
@@ -1444,6 +1449,7 @@ lessons:
     topic: Получение и кэширование данных
     subtopic: Пагинация изменчивых списков
     title: Пагинация живых списков
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-pagination.mp3
     body: |
       ## Какую проблему решаем
 
@@ -1727,6 +1733,7 @@ lessons:
     topic: Изменения и согласованность
     subtopic: Гонки и порядок
     title: Гонки запросов
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-races.mp3
     body: |
       ## Какую проблему решаем
 
@@ -2023,6 +2030,7 @@ lessons:
     topic: Изменения и согласованность
     subtopic: Оптимистичные изменения
     title: Оптимистичные обновления
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-optimistic.mp3
     body: |
       ## Какую проблему решаем
 
@@ -2329,6 +2337,7 @@ lessons:
     topic: Изменения и согласованность
     subtopic: Идемпотентность и повторы
     title: Повторы без двойных списаний
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-idempotency.mp3
     body: |
       ## Какую проблему решаем
 
@@ -2643,6 +2652,7 @@ lessons:
     topic: Изменения и согласованность
     subtopic: Версии и конфликты
     title: Версии и конфликты
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-conflicts.mp3
     body: |
       ## Какую проблему решаем
 
@@ -2923,6 +2933,7 @@ lessons:
     topic: Изменения и согласованность
     subtopic: Сверка кэша после изменений
     title: Кэш после изменения
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-reconcile.mp3
     body: |
       ## Какую проблему решаем
 
@@ -3158,6 +3169,7 @@ lessons:
     topic: Изменения и согласованность
     subtopic: Формы и валидация
     title: Формы и валидация
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-forms.mp3
     body: |
       ## Какую проблему решаем
 
@@ -3442,6 +3454,7 @@ lessons:
     topic: Надёжность и восстановление
     subtopic: Виды отказов
     title: Какие бывают сбои
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-failures.mp3
     body: |
       ## Какую проблему решаем
 
@@ -3761,6 +3774,7 @@ lessons:
     topic: Надёжность и восстановление
     subtopic: Политика повторов
     title: Когда и как повторять
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-retry.mp3
     body: |
       ## Какую проблему решаем
 
@@ -4085,6 +4099,7 @@ lessons:
     topic: Надёжность и восстановление
     subtopic: Автосохранение
     title: Автосохранение
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-autosave.mp3
     body: |
       ## Какую проблему решаем
 
@@ -4400,6 +4415,7 @@ lessons:
     topic: Надёжность и восстановление
     subtopic: Локальное хранение и офлайн-очередь
     title: Работа без сети и очередь действий
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-offline-queue.mp3
     body: |
       ## Какую проблему решаем
 
@@ -4782,6 +4798,7 @@ lessons:
     topic: Надёжность и восстановление
     subtopic: Восстановление глазами пользователя
     title: Как не потерять работу пользователя
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-recovery-ux.mp3
     body: |
       ## Какую проблему решаем
 
@@ -5051,6 +5068,7 @@ lessons:
     topic: Надёжность и восстановление
     subtopic: Загрузка файлов
     title: Загрузка файлов
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-uploads.mp3
     body: |
       ## Какую проблему решаем
 
@@ -5342,6 +5360,7 @@ lessons:
     topic: Надёжность и восстановление
     subtopic: Сессия и обновление токена
     title: Сессия и обновление токена
+    audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-session.mp3
     body: |
       ## Какую проблему решаем
 
