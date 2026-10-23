@@ -37,3 +37,9 @@
 .block li::marker {
   color: var(--accent);
 }
+
+/* Картинка в однострочном тексте (заметки, закладки, ошибки итога) — её описание вместо неё. */
+.imageNote {
+  color: var(--muted);
+  font-style: italic;
+}

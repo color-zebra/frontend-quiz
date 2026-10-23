@@ -4,6 +4,7 @@ import type { QuestionBank } from "../../data/types";
 import { ComplaintButton, ComplaintSheet } from "../../features/complaint/ComplaintSheet";
 import { NoteSheet } from "../../features/notes/NoteSheet";
 import { useNotes } from "../../features/notes/NotesProvider";
+import { useSetUrl } from "../../features/sets/SetsProvider";
 import { Button, IconButton } from "../../shared/ui/Button";
 import { ActionBar, Screen, TopBar } from "../../shared/ui/Screen";
 import { BookmarkButton, ToolsCapsule } from "../question/QuestionTools";
@@ -24,6 +25,7 @@ export function ReviewScreen({ bank, questionId, onBack }: ReviewScreenProps) {
   const [complaintOpen, setComplaintOpen] = useState(false);
   const question = bank?.byId.get(questionId);
   const { getNote } = useNotes();
+  const baseUrl = useSetUrl(bank?.setId);
   const hasNote = !!bank && !!question && !!getNote(bank.setId, question.id);
   const [explanationRef, explanationOnScreen] = useIsOnScreen();
   const showWhy = !!question && getHasExplanation(question) && !explanationOnScreen;
@@ -54,7 +56,7 @@ export function ReviewScreen({ bank, questionId, onBack }: ReviewScreenProps) {
             reveal
             explanationRef={explanationRef}
           />
-          <ActionBar aside={showWhy && <WhyButton question={question} />}>
+          <ActionBar aside={showWhy && <WhyButton question={question} baseUrl={baseUrl} />}>
             <Button variant="secondary" icon="pencil" marked={hasNote} onClick={() => setNoteOpen(true)}>
               Заметка
             </Button>

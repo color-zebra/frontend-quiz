@@ -147,3 +147,8 @@ export function useSets() {
   if (!value) throw new Error("useSets вызван вне SetsProvider");
   return value;
 }
+
+/** Ссылка набора: от неё разрешаются относительные пути картинок. У основной базы и у набора из файла её нет. */
+export function useSetUrl(setId: string | undefined) {
+  return useSets().sets.find((s) => s.id === setId)?.url;
+}

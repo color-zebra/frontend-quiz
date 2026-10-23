@@ -3,6 +3,7 @@ import { useLayoutEffect, useRef, type Ref, type RefObject } from "react";
 import { getHasExplanation, getIsAnswerCorrect, getIsMultiple, getIsSpeech } from "../../data/answers";
 import { formatTopicLine, getTopicTitles } from "../../data/titles";
 import { UNGROUPED, type Question, type QuestionBank } from "../../data/types";
+import { useSetUrl } from "../../features/sets/SetsProvider";
 import { formatLink } from "../../shared/lib/formatLink";
 import glass from "../../shared/ui/glass.module.css";
 import { Icon } from "../../shared/ui/Icon";
@@ -48,6 +49,7 @@ export function QuestionView({
   const showResult = reveal || answered;
   const hasExplanation = getHasExplanation(question);
   const { topicTitle, subtopicTitle } = getTopicTitles(bank, question);
+  const baseUrl = useSetUrl(bank.setId);
   const optionsRef = useRef<HTMLOListElement>(null);
   useKeepAnswerInPlace(optionsRef, showResult, selected[0]);
 
@@ -68,7 +70,7 @@ export function QuestionView({
         <LevelBadge level={question.level} />
       </div>
 
-      <Markdown text={question.question} className={styles.text} />
+      <Markdown text={question.question} baseUrl={baseUrl} className={styles.text} />
 
       {question.code && <CodeBlock code={question.code} lang={question.codeLang} />}
 
@@ -81,7 +83,7 @@ export function QuestionView({
       {multiple && answered && !reveal && <MultipleVerdict correct={getIsAnswerCorrect(question, selected)} />}
 
       {speech && !showResult && <p className={styles.hint}>Ответь про себя или вслух, потом открой эталон</p>}
-      {speech && showResult && <SpeechAnswer question={question} />}
+      {speech && showResult && <SpeechAnswer question={question} baseUrl={baseUrl} />}
 
       <ol ref={optionsRef} className={styles.options} hidden={speech}>
         {optionOrder.map((optionIndex, position) => (
@@ -106,7 +108,7 @@ export function QuestionView({
             <Icon name="bulb" className={styles.bulb} />
             Как это устроено
           </h2>
-          <ExplanationBody question={question} />
+          <ExplanationBody question={question} baseUrl={baseUrl} />
         </section>
       )}
 
@@ -147,11 +149,11 @@ function useKeepAnswerInPlace(
   });
 }
 
-/** Текст разбора «Как это устроено» и ссылки — под вопросом и в шторке «Почему?». */
-export function ExplanationBody({ question }: { question: Question }) {
+/** Текст разбора «Как это устроено» и ссылки — под вопросом и в шторке «Почему?». baseUrl — ссылка набора, для картинок. */
+export function ExplanationBody({ question, baseUrl }: { question: Question; baseUrl?: string }) {
   return (
     <>
-      <Markdown text={question.explanation} className={styles.explainText} />
+      <Markdown text={question.explanation} baseUrl={baseUrl} className={styles.explainText} />
       {question.links && question.links.length > 0 && (
         <div className={styles.links}>
           {question.links.map((url) => (
@@ -167,14 +169,14 @@ export function ExplanationBody({ question }: { question: Question }) {
 }
 
 /** Эталонный ответ устного вопроса и тезисы, с которыми стоит сверить свой ответ. */
-function SpeechAnswer({ question }: { question: Question }) {
+function SpeechAnswer({ question, baseUrl }: { question: Question; baseUrl?: string }) {
   return (
     <section className={clsx(styles.explain, styles.answer, glass.glass)}>
       <h2 className={styles.explainTitle}>
         <Icon name="check" />
         Эталонный ответ
       </h2>
-      {question.answer && <Markdown text={question.answer} className={styles.explainText} />}
+      {question.answer && <Markdown text={question.answer} baseUrl={baseUrl} className={styles.explainText} />}
       {question.points && question.points.length > 0 && (
         <>
           <h3 className={styles.pointsTitle}>Что стоит упомянуть</h3>

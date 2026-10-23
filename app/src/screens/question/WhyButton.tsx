@@ -7,8 +7,11 @@ import { Sheet } from "../../shared/ui/Sheet";
 import { ExplanationBody } from "./QuestionView";
 import styles from "./WhyButton.module.css";
 
-/** Кнопка «Почему?» над нижней панелью: открывает разбор «Как это устроено», который внизу легко не заметить. */
-export function WhyButton({ question }: { question: Question }) {
+/**
+ * Кнопка «Почему?» над нижней панелью: открывает разбор «Как это устроено», который внизу легко не заметить.
+ * baseUrl — ссылка набора, от неё разрешаются пути картинок в разборе.
+ */
+export function WhyButton({ question, baseUrl }: { question: Question; baseUrl?: string }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -18,7 +21,7 @@ export function WhyButton({ question }: { question: Question }) {
         Почему?
       </button>
       <Sheet open={open} title="Как это устроено" onClose={() => setOpen(false)}>
-        <ExplanationBody question={question} />
+        <ExplanationBody question={question} baseUrl={baseUrl} />
       </Sheet>
     </>
   );

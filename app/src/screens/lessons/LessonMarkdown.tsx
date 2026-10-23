@@ -1,16 +1,15 @@
-import { useState, type MouseEvent } from "react";
+import type { MouseEvent } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { CodeLang } from "../../data/types";
-import { IconButton } from "../../shared/ui/Button";
 import { CodeBlock } from "../../shared/ui/code/CodeBlock";
-import { Icon } from "../../shared/ui/Icon";
-import { ImageViewer } from "../../shared/ui/ImageViewer";
+import { MarkdownImage } from "../../shared/ui/MarkdownImage";
 import styles from "./LessonMarkdown.module.css";
 
 /*
- * Текст урока — богаче текста вопроса: заголовки, таблицы, картинки, цитаты, блоки кода. Это отдельный компонент:
- * общий Markdown рисует и варианты ответа в одну строку, таблица или список там сломали бы вёрстку.
+ * Текст урока — богаче текста вопроса: заголовки, таблицы, цитаты, блоки кода (картинки — те же, что в вопросах).
+ * Это отдельный компонент: общий Markdown рисует и варианты ответа в одну строку, таблица или список там сломали бы
+ * вёрстку.
  * Уроки приходят по чужим ссылкам, поэтому HTML в тексте не исполняется — react-markdown показывает его как текст,
  * а адреса вроде javascript: вырезает сам.
  */
@@ -67,96 +66,6 @@ function scrollToAnchor(e: MouseEvent<HTMLAnchorElement>, href: string) {
   target?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-type ImageSource = { url: string } | { problem: string };
-
-/**
- * Адрес картинки: полный https:// или путь относительно ссылки набора — так картинки переедут вместе с набором,
- * если папку с ним перенесут на другой сайт. У набора из файла ссылки нет, и относительный путь разрешить не от чего.
- */
-function resolveImage(src: string | undefined, baseUrl: string | undefined): ImageSource {
-  if (!src) return { problem: "у картинки нет адреса" };
-  const absolute = /^[a-z][a-z\d+.-]*:/i.test(src);
-  if (!absolute && !baseUrl) {
-    return { problem: "у набора из файла картинка по относительному пути не показывается — нужна полная ссылка https://" };
-  }
-  try {
-    const url = new URL(src, baseUrl);
-    return url.protocol === "https:" ? { url: url.href } : { problem: "картинки показываются только по ссылкам https://" };
-  } catch {
-    return { problem: "непонятный адрес картинки" };
-  }
-}
-
-/**
- * Картинка урока. Сначала грузим с crossOrigin: такой ответ Service Worker сохранит для офлайна. Сайт без CORS
- * такую картинку не отдаст — тогда вторая попытка без него: картинка покажется, но только с интернетом.
- * Загрузившуюся картинку можно открыть на весь экран: нажатием по ней или кнопкой под ней — для клавиатуры
- * и чтобы было видно, что так можно. Кнопка не в углу картинки: на схемах там тоже бывает текст. Саму картинку в кнопку не заворачиваем: внутри кнопки она перестала бы
- * быть картинкой для программ чтения с экрана.
- */
-function LessonImage({ src, alt, title, baseUrl }: { src?: string; alt?: string; title?: string; baseUrl?: string }) {
-  const [attempt, setAttempt] = useState<"cors" | "plain" | "failed">("cors");
-  const [loaded, setLoaded] = useState(false);
-  const [viewing, setViewing] = useState(false);
-  const source = resolveImage(src, baseUrl);
-  const problem = "problem" in source ? source.problem : attempt === "failed" ? "не загрузилась — нет связи или неверный адрес" : null;
-
-  if (problem || !("url" in source)) {
-    return (
-      <span className={styles.imageStub} role="img" aria-label={alt || "Картинка"}>
-        <Icon name="image" />
-        <span>
-          <span className={styles.stubAlt}>{alt ? `Картинка: ${alt}` : "Картинка без описания"}</span>
-          <span className={styles.stubReason}>{problem}</span>
-        </span>
-      </span>
-    );
-  }
-
-  const crossOrigin = attempt === "cors" ? "anonymous" : undefined;
-  return (
-    <span className={styles.figure}>
-      <span className={styles.frame}>
-        <img
-          key={attempt}
-          src={source.url}
-          alt={alt ?? ""}
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer"
-          crossOrigin={crossOrigin}
-          className={loaded ? styles.zoomable : undefined}
-          onLoad={() => setLoaded(true)}
-          onError={() => setAttempt((prev) => (prev === "cors" ? "plain" : "failed"))}
-          onClick={() => loaded && setViewing(true)}
-        />
-      </span>
-      {(title || loaded) && (
-        <span className={styles.figureFooter}>
-          {title && <span className={styles.caption}>{title}</span>}
-          {loaded && (
-            <IconButton
-              icon="fit"
-              bare
-              label={alt ? `Открыть на весь экран: ${alt}` : "Открыть картинку на весь экран"}
-              className={styles.expand}
-              onClick={() => setViewing(true)}
-            />
-          )}
-        </span>
-      )}
-      <ImageViewer
-        open={viewing}
-        src={source.url}
-        alt={alt ?? ""}
-        caption={title}
-        crossOrigin={crossOrigin}
-        onClose={() => setViewing(false)}
-      />
-    </span>
-  );
-}
-
 function getComponents(baseUrl: string | undefined): Components {
   return {
     // У урока уже есть заголовок экрана, поэтому «#» в тексте — это раздел урока, как «##».
@@ -189,7 +98,7 @@ function getComponents(baseUrl: string | undefined): Components {
       </div>
     ),
     img: ({ src, alt, title }) => (
-      <LessonImage src={typeof src === "string" ? src : undefined} alt={alt} title={title} baseUrl={baseUrl} />
+      <MarkdownImage src={typeof src === "string" ? src : undefined} alt={alt} title={title} baseUrl={baseUrl} />
     ),
   };
 }

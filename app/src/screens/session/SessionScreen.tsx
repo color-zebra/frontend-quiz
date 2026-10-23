@@ -5,6 +5,7 @@ import type { Question, QuestionBank } from "../../data/types";
 import { ComplaintButton, ComplaintSheet } from "../../features/complaint/ComplaintSheet";
 import { NoteSheet } from "../../features/notes/NoteSheet";
 import { useNotes } from "../../features/notes/NotesProvider";
+import { useSetUrl } from "../../features/sets/SetsProvider";
 import { getCurrentQuestion, getIsLastQuestion, type Session, type SpeechGrade } from "../../features/session/session";
 import { Button, IconButton } from "../../shared/ui/Button";
 import { Icon } from "../../shared/ui/Icon";
@@ -47,6 +48,7 @@ export function SessionScreen({
   learning = false,
 }: SessionScreenProps) {
   const { getNote } = useNotes();
+  const baseUrl = useSetUrl(bank.setId);
   const [noteOpen, setNoteOpen] = useState(false);
   const [complaintOpen, setComplaintOpen] = useState(false);
   // У устного вопроса эталон открывают кнопкой; запоминаем, у какого по счёту вопроса он открыт.
@@ -156,7 +158,7 @@ export function SessionScreen({
         onSelect={(optionIndex) => onSelect(question, optionIndex)}
       />
 
-      <ActionBar even={!speech} aside={showWhy && <WhyButton question={question} />}>
+      <ActionBar even={!speech} aside={showWhy && <WhyButton question={question} baseUrl={baseUrl} />}>
         {speech ? renderSpeechActions() : renderTestActions()}
       </ActionBar>
 

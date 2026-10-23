@@ -3,7 +3,7 @@ import type { Lesson, QuestionBank } from "../../data/types";
 import { formatAudioTime, useAudio } from "../../features/audio/AudioProvider";
 import { getLessonQuestionIds } from "../../features/lessons/course";
 import { useLessons } from "../../features/lessons/LessonsProvider";
-import { useSets } from "../../features/sets/SetsProvider";
+import { useSetUrl } from "../../features/sets/SetsProvider";
 import { Button, IconButton } from "../../shared/ui/Button";
 import { Screen, TopBar } from "../../shared/ui/Screen";
 import { ScreenTitle } from "../../shared/ui/ScreenTitle";
@@ -28,7 +28,7 @@ interface LessonScreenProps {
  */
 export function LessonScreen({ bank, lessonId, onBack, onOpenCourse, onOpenLesson, onOpenQuiz, onFinishCourse }: LessonScreenProps) {
   const { getCourse, updateCourse } = useLessons();
-  const { sets } = useSets();
+  const baseUrl = useSetUrl(bank.setId);
   const lessons = bank.lessons ?? [];
   const index = lessons.findIndex((l) => l.id === lessonId);
   const lesson = lessons[index];
@@ -100,7 +100,7 @@ export function LessonScreen({ bank, lessonId, onBack, onOpenCourse, onOpenLesso
 
       {lesson.audio && <ListenButton bank={bank} lesson={lesson} audio={lesson.audio} />}
 
-      <LessonMarkdown text={lesson.body} baseUrl={sets.find((s) => s.id === bank.setId)?.url} />
+      <LessonMarkdown text={lesson.body} baseUrl={baseUrl} />
 
       <div className={styles.lessonNav}>
         <Button iconAfter={count > 0 || next ? "arrowRight" : "check"} onClick={goForward}>

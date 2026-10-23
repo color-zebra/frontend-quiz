@@ -1,5 +1,6 @@
 // Режим обучения: уроки в наборе, оглавление, урок и его разметка, вопросы урока по порядку, «Продолжить обучение»,
 // ничего не пишется в ленту ответов и не трогает незаконченную тренировку, сброс курса, резервная копия, обновление.
+// Здесь же картинки в вопросах: это та же картинка, что в уроке.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ROOT_DIR } from "./lib.mjs";
@@ -431,6 +432,102 @@ questions:
   await context.close();
   await offline(t, files, image);
   await scroll(t);
+  await questionImages(t, image);
+}
+
+/**
+ * Картинки в вопросе и разборе — та же картинка, что в уроке: путь от ссылки набора, увеличение (и оно не выбирает
+ * ответ), описание вместо картинки в строке списка ошибок, плашка у набора из файла с относительным путём.
+ */
+async function questionImages(t, image) {
+  const { check, visible } = t;
+  const yaml = `title: Картинки в вопросах
+questions:
+  - id: q
+    level: junior
+    question: |
+      Какая форма быстрее заполняется?
+
+      ![Две формы входа](images/forms.png "А слева, Б справа")
+    options:
+      - text: 'А — подписи слева'
+        why: 'Нет.'
+      - text: 'Б — подписи над полями'
+        correct: true
+        why: 'Да.'
+    explanation: |
+      Глаз идёт сверху вниз.
+
+      ![Путь взгляда](images/path.png)
+`;
+  const context = await t.newContext({ serviceWorkers: "block" });
+  const requested = [];
+  await context.route(`${BASE}**`, (route) => {
+    const name = new URL(route.request().url()).pathname.split("/main/")[1];
+    if (name.startsWith("images/")) {
+      requested.push(name);
+      return route.fulfill({ status: 200, contentType: "image/png", headers: { "Access-Control-Allow-Origin": "*" }, body: image });
+    }
+    return route.fulfill({ status: 200, contentType: "text/plain; charset=utf-8", body: yaml });
+  });
+  const loaded = (page, alt) =>
+    page
+      .waitForFunction((a) => [...document.images].some((img) => img.alt === a && img.complete && img.naturalWidth > 0), alt, { timeout: 5000 })
+      .then(() => true, () => false);
+  try {
+    const page = await context.newPage();
+    await page.goto(t.url);
+    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("button", { name: /Мои наборы/ }).click();
+    await page.getByRole("textbox", { name: "Ссылка на YAML-файл" }).fill(`${BASE}pictures.yaml`);
+    await page.getByRole("button", { name: "Добавить", exact: true }).click();
+    await page.getByRole("button", { name: /^Картинки в вопросах/ }).first().click();
+    await page.getByRole("button", { name: /^Начать/ }).click();
+    await page.getByText("1 / 1").waitFor();
+
+    check(
+      "картинка в вопросе — по пути от ссылки набора, с подписью",
+      (await loaded(page, "Две формы входа")) && requested.includes("images/forms.png") && (await visible(page.getByText("А слева, Б справа"))),
+    );
+    await page.getByRole("button", { name: "Открыть на весь экран: Две формы входа" }).click();
+    const viewer = page.getByRole("dialog", { name: "Картинка: Две формы входа" });
+    await viewer.waitFor();
+    await page.waitForTimeout(300);
+    await t.shot(page, "question-image-viewer");
+    await page.keyboard.press("Escape");
+    await viewer.waitFor({ state: "hidden" });
+    check(
+      "увеличение картинки не выбирает ответ",
+      !(await visible(page.getByRole("button", { name: "Завершить" }), 500)) &&
+        (await page.getByRole("button", { name: /А — подписи слева/ }).isEnabled()),
+    );
+    await t.shot(page, "question-image");
+
+    await page.getByRole("button", { name: /А — подписи слева/ }).click();
+    check("картинка в разборе «Как это устроено»", await loaded(page, "Путь взгляда"));
+    await page.getByRole("img", { name: "Путь взгляда" }).scrollIntoViewIfNeeded();
+    await t.shot(page, "question-image-explanation");
+    await page.getByRole("button", { name: "Завершить" }).click();
+    check("в списке ошибок вместо картинки — её описание", await visible(page.getByText("картинка: Две формы входа")));
+    await page.getByText("картинка: Две формы входа").scrollIntoViewIfNeeded();
+    await t.shot(page, "question-image-summary");
+
+    // Набор из файла: относительный путь не от чего считать — плашка с описанием, а не битая картинка.
+    await page.goto(t.url);
+    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("button", { name: /Мои наборы/ }).click();
+    await page.locator('input[type="file"]').setInputFiles(fileInput("pictures-file.yaml", yaml.replace("Картинки в вопросах", "Картинки из файла")));
+    await page.getByRole("button", { name: /^Картинки из файла/ }).first().click();
+    await page.getByRole("button", { name: /^Начать/ }).click();
+    await page.getByText("1 / 1").waitFor();
+    check(
+      "набор из файла: вместо картинки по относительному пути — описание и причина",
+      (await visible(page.getByText("Картинка: Две формы входа"))) && (await visible(page.getByText(/нужна полная ссылка https/))),
+    );
+    await t.shot(page, "question-image-file");
+  } finally {
+    await context.close();
+  }
 }
 
 /**
