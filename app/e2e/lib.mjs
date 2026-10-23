@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 
 export const APP_DIR = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const ROOT_DIR = join(APP_DIR, "..");
-export const DIST_DIR = join(APP_DIR, "dist");
+/** Сборка, которую тестируют. У параллельного потока — своя копия (E2E_DIST): наборы правят файлы в ней. */
+export const DIST_DIR = process.env.E2E_DIST ?? join(APP_DIR, "dist");
 export const OUT_DIR = join(APP_DIR, "e2e", ".output");
 
 const CHROME_CANDIDATES = [

@@ -47,6 +47,7 @@ pnpm check        — проверить базу вопросов
 pnpm app:build    — собрать базу и приложение, как при деплое
 pnpm test:e2e     — собрать всё и прогнать сквозные тесты в Chrome
 pnpm -F frontend-quiz-app e2e sets speech   — отдельные наборы тестов без пересборки (список — SUITES в app/e2e/run.mjs)
+pnpm -F frontend-quiz-app e2e -- --jobs 1    — по одному, без параллельных потоков (по умолчанию — половина ядер, до 8)
 pnpm dev          — приложение локально
 ```
 

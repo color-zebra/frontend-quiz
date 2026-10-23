@@ -50,7 +50,9 @@ export default async function base(t) {
     await page.getByRole("button", { name: "Начать · 10 вопросов" }).click();
     for (let i = 1; i <= 10; i++) {
       await page.getByText(`${i} / 10`).waitFor();
-      await page.keyboard.press(String(((i - 1) % 4) + 1));
+      // Варианты по кругу — но не дальше последнего: у вопроса их бывает и три (клавиша «4» ничего бы не выбрала).
+      const optionCount = await page.locator("ol li button").count();
+      await page.keyboard.press(String(((i - 1) % optionCount) + 1));
       if (await page.getByRole("button", { name: "Ответить" }).isVisible()) await page.keyboard.press("Enter");
       if (i === 1) {
         await page.getByRole("button", { name: "Заметка", exact: true }).click();

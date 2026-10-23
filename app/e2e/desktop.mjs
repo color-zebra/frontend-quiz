@@ -74,6 +74,8 @@ export default async function desktop(t) {
   check("тест — без бокового меню", !(await visible(menu, 300)));
   check("кнопка «Завершить» вместо крестика", await visible(button("Завершить")));
   await page.keyboard.press("1");
+  // Вопрос с несколькими верными: «1» только отмечает вариант, ответ — Enter.
+  if (await visible(button("Ответить", { exact: true }), 300)) await page.keyboard.press("Enter");
   check("клавиша 1 отвечает, вердикт крупно", await visible(page.getByRole("status").filter({ hasText: /Верно|Неверно/ })));
   check("подсказка клавиш в панели", await visible(page.locator("kbd", { hasText: "Enter" })));
   await t.shot(page, "desktop-test");
