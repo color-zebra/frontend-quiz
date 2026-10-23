@@ -1,5 +1,6 @@
-// Озвучка уроков: «Слушать урок», мини-плеер на всех экранах, экран блокировки (Media Session), место в аудио
-// после перезагрузки, ±15 секунд, скорость, конец урока, мини-плеер не закрывает кнопки, удаление набора.
+// Озвучка уроков: «Слушать урок», сворачиваемый плеер на всех экранах (значок в углу, при нижней панели — над ней),
+// большой плеер на шторке, экран блокировки (Media Session), место в аудио после перезагрузки, ±15 секунд, меню
+// скоростей, конец урока («К вопросам урока», «Урок N+1»), значок не закрывает кнопки, удаление набора.
 // Звук — тишина в WAV, собранная здесь же: файлов из репозитория с аудио тесты не знают.
 import { openSettings } from "./fixtures.mjs";
 
@@ -34,6 +35,10 @@ lessons:
     audio: audio/a.wav
     body: |
 ${Array.from({ length: 40 }, (_, i) => `      Абзац ${i + 1} урока, чтобы было что прокручивать.\n`).join("\n")}
+  - id: a2
+    title: Второй звуковой урок
+    audio: audio/a2.wav
+    body: Текст второго урока.
   - id: b
     title: Урок без звука
     body: Текст.
@@ -56,7 +61,7 @@ export default async function audioSuite(t) {
   await context.route(`${BASE}**`, (route) => {
     const name = new URL(route.request().url()).pathname.split("/main/")[1];
     if (name === "course.yaml") return route.fulfill({ status: 200, contentType: "text/plain; charset=utf-8", body: COURSE });
-    if (name !== "audio/a.wav") return route.fulfill({ status: 404 });
+    if (name !== "audio/a.wav" && name !== "audio/a2.wav") return route.fulfill({ status: 404 });
     const range = /bytes=(\d+)-(\d*)/.exec(route.request().headers().range ?? "");
     if (!range) return route.fulfill({ status: 200, contentType: "audio/wav", headers: { "Accept-Ranges": "bytes" }, body: wav });
     const start = Number(range[1]);
@@ -69,7 +74,20 @@ export default async function audioSuite(t) {
     });
   });
   const page = await context.newPage();
-  const player = page.getByRole("region", { name: "Плеер урока" });
+  // Свёрнутый плеер — значок; большой — шторка-диалог.
+  const mini = page.getByRole("button", { name: /^Плеер урока «/ });
+  const sheet = page.getByRole("dialog", { name: "Плеер урока" });
+  const expand = async () => {
+    await mini.click();
+    await sheet.waitFor();
+    // Шторка выезжает снизу 0,22 с — мерить и снимать после.
+    await page.waitForTimeout(300);
+  };
+  const collapse = async () => {
+    await sheet.getByRole("button", { name: "Свернуть плеер" }).click();
+    await sheet.waitFor({ state: "hidden" });
+  };
+  const center = (box) => ({ x: box.x + box.width / 2, y: box.y + box.height / 2 });
   const media = () =>
     page.evaluate(() => {
       const a = document.querySelector("audio");
@@ -106,24 +124,14 @@ export default async function audioSuite(t) {
 
   // Слушать урок.
   check("у урока с аудио — «Слушать урок»", await visible(page.getByRole("button", { name: "Слушать урок" })));
-  check("мини-плеера до нажатия нет", !(await player.isVisible()));
+  check("значка плеера до нажатия нет", !(await mini.isVisible()));
   // Как в установленном приложении во весь экран: плеер поднят над системной полоской Android. Chrome не умеет
-  // эмулировать display-mode, поэтому подставляем то же значение --lift, что даёт правило @media (display-mode: fullscreen).
-  const lifted = await page.evaluate(() => {
-    for (const sheet of document.styleSheets) {
-      for (const rule of sheet.cssRules) {
-        if (rule.style?.getPropertyValue("--lift").trim() === "8px") {
-          sheet.insertRule(`${rule.selectorText} { --lift: 48px; }`, sheet.cssRules.length);
-          return true;
-        }
-      }
-    }
-    return false;
-  });
+  // эмулировать display-mode — подставляем то же значение --player-lift, что даёт @media (display-mode: fullscreen).
+  await page.evaluate(() => document.documentElement.style.setProperty("--player-lift", "48px"));
   await page.getByRole("button", { name: "Слушать урок" }).click();
   await waitPlaying();
   check("звук пошёл, на уроке — «Пауза»", await visible(page.locator("main").getByRole("button", { name: "Пауза", exact: true })));
-  check("мини-плеер с названием урока", (await visible(player)) && (await player.innerText()).includes("Урок со звуком"));
+  check("свёрнутый плеер: значок «играет» с названием урока", /«Урок со звуком»: играет/.test((await mini.getAttribute("aria-label")) ?? ""));
   const session = await page.evaluate(() => ({
     title: navigator.mediaSession.metadata?.title,
     artist: navigator.mediaSession.metadata?.artist,
@@ -137,39 +145,59 @@ export default async function audioSuite(t) {
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
   await page.waitForTimeout(200);
   const lastButton = await page.getByRole("button", { name: /К вопросам/ }).boundingBox();
-  const barBox = await player.boundingBox();
-  check("мини-плеер не закрывает кнопки в конце урока", lastButton.y + lastButton.height <= barBox.y, `${lastButton.y + lastButton.height} / ${barBox.y}`);
-  const gap = (await page.evaluate(() => window.innerHeight)) - (barBox.y + barBox.height);
-  check("во весь экран плеер поднят над системной полоской Android", lifted && Math.abs(gap - 48) <= 1, `отступ снизу ${gap}`);
+  const miniBox = await mini.boundingBox();
+  check("значок не закрывает кнопки в конце урока", lastButton.y + lastButton.height <= miniBox.y, `${lastButton.y + lastButton.height} / ${miniBox.y}`);
+  const gap = (await page.evaluate(() => window.innerHeight)) - (miniBox.y + miniBox.height);
+  check("во весь экран значок над системной полоской Android: 48 + 24 px снизу", Math.abs(gap - 72) <= 1, `отступ снизу ${gap}`);
   await t.shot(page, "lesson-playing");
 
-  // Ушли с урока — звук продолжается.
+  // Большой плеер со страницы урока: заголовок — не ссылка, «свернуть» там же, где был значок.
+  await expand();
+  check("развёрнут: название урока и «Урок 1 · курс»", (await visible(sheet.getByRole("heading", { name: "Урок со звуком" }))) && (await visible(sheet.getByText("Урок 1 · Курс со звуком"))));
+  check("на странице урока заголовок плеера — не ссылка", (await sheet.getByRole("button", { name: /Урок 1 · Курс со звуком/ }).count()) === 0);
+  const fold = center(await sheet.getByRole("button", { name: "Свернуть плеер" }).boundingBox());
+  const spot = center(miniBox);
+  check("«свернуть» ровно в точке значка", Math.abs(fold.x - spot.x) <= 2 && Math.abs(fold.y - spot.y) <= 2, `${JSON.stringify(fold)} / ${JSON.stringify(spot)}`);
+  await t.shot(page, "player-open");
+  await sheet.getByRole("button", { name: "Свернуть", exact: true }).click();
+  await sheet.waitFor({ state: "hidden" });
+  check("кнопка «свернуть» в шапке сворачивает, звук играет", !(await media()).paused);
+
+  // Ушли с урока — звук продолжается; заголовок плеера ведёт к уроку.
   await page.getByRole("button", { name: "Назад" }).click();
   await page.getByRole("button", { name: "Назад" }).click();
   await page.getByRole("heading", { level: 1, name: "Курс со звуком" }).waitFor();
   const away = await media();
-  check("ушли на экран набора — звук играет, мини-плеер на месте", !away.paused && (await visible(player)), JSON.stringify(away));
+  check("ушли на экран набора — звук играет, значок на месте", !away.paused && (await visible(mini)), JSON.stringify(away));
   await t.shot(page, "set-home-playing");
+  await expand();
+  check("не на странице урока — заголовок плеера ссылкой", await visible(sheet.getByRole("button", { name: /Урок 1 · Курс со звуком/ })));
+  await t.shot(page, "player-open-away");
 
-  // ±15 секунд и скорость.
+  // ±15 секунд и меню скоростей.
   await page.evaluate(() => (document.querySelector("audio").currentTime = 10));
-  await player.getByRole("button", { name: "+15 секунд" }).click();
+  await sheet.getByRole("button", { name: "+15 секунд" }).click();
   const forward = (await media()).time;
-  await player.getByRole("button", { name: "−15 секунд" }).click();
+  await sheet.getByRole("button", { name: "−15 секунд" }).click();
   const backward = (await media()).time;
   check("+15 и −15 секунд", forward >= 24.5 && forward < 27 && backward >= 9.5 && backward < 12, `${forward} / ${backward}`);
-  await player.getByRole("button", { name: "Скорость" }).click();
-  check("скорость 1,25×", (await player.getByRole("button", { name: "Скорость" }).innerText()) === "1,25×" && (await media()).rate === 1.25);
+  await sheet.getByRole("button", { name: "Скорость 1×" }).click();
+  check("меню скоростей: 0,75× … 2×", (await sheet.getByRole("menuitemradio").allInnerTexts()).map((x) => x.trim()).join(" ") === "0,75× 1× 1,25× 1,5× 2×");
+  await t.shot(page, "rate-menu");
+  await sheet.getByRole("menuitemradio", { name: "1,25×" }).click();
+  check("скорость 1,25×", (await visible(sheet.getByRole("button", { name: "Скорость 1,25×" }))) && (await media()).rate === 1.25);
 
   // Пауза — место записано; после перезагрузки урок предлагает продолжить с него.
-  await player.getByRole("button", { name: "Пауза" }).click();
+  await sheet.getByRole("button", { name: "Пауза" }).click();
   await page.waitForTimeout(300);
   const pausedAt = Math.floor((await media()).time);
   check("пауза: на экране блокировки «на паузе»", (await page.evaluate(() => navigator.mediaSession.playbackState)) === "paused");
   check("пауза: место в аудио записано", (await savedAudio()).a === pausedAt, `${JSON.stringify(await savedAudio())} / ${pausedAt}`);
+  await collapse();
+  check("на паузе значок — «пауза»", /: пауза$/.test((await mini.getAttribute("aria-label")) ?? ""));
   await page.reload();
   await page.getByText("Что тренируем?").waitFor();
-  check("после перезагрузки мини-плеера нет", !(await player.isVisible()));
+  check("после перезагрузки плеера нет", !(await mini.isVisible()));
   await openLessonA();
   const resume = page.getByRole("button", { name: /^Продолжить слушать · с / });
   check("урок предлагает продолжить с того же места", await visible(resume), await page.locator("main").innerText().then((x) => x.slice(0, 200)));
@@ -178,51 +206,77 @@ export default async function audioSuite(t) {
   const resumed = await media();
   check("продолжил с сохранённой секунды, скорость запомнилась", resumed.time >= pausedAt - 0.5 && resumed.rate === 1.25, JSON.stringify(resumed));
 
-  // Вопросы урока с открытым плеером: нижняя панель над мини-плеером.
+  // Вопросы урока с играющим плеером: значок над нижней панелью, а не в углу.
   await page.getByRole("button", { name: /К вопросам/ }).click();
   await page.getByText("1 / 1").waitFor();
   const dock = await page.getByRole("button", { name: "Не знаю" }).boundingBox();
-  check("в вопросах нижняя панель над мини-плеером", dock.y + dock.height <= (await player.boundingBox()).y);
+  check("в вопросах значок над нижней панелью", (await mini.boundingBox()).y + 60 <= dock.y);
   await t.shot(page, "quiz-playing");
   await page.goBack();
   await page.getByRole("heading", { level: 1, name: "Урок со звуком" }).waitFor();
 
-  // Конец урока: тишина, место сброшено.
+  // Конец урока: тишина, место сброшено; в плеере — к вопросам, заново, следующий урок.
   await page.evaluate((s) => (document.querySelector("audio").currentTime = s - 1), SECONDS);
   await page.waitForFunction(() => document.querySelector("audio").ended, null, { timeout: 5000 });
   await page.waitForTimeout(300);
-  check("дослушал — «Урок дослушан», звук остановился", (await visible(player.getByText("Урок дослушан"))) && (await media()).paused);
-  check("дослушал — место сброшено, снова «Слушать урок»", (await savedAudio()).a === undefined && (await visible(page.getByRole("button", { name: "Слушать урок" }))));
+  check("дослушал — звук остановился, место сброшено, снова «Слушать урок»", (await media()).paused && (await savedAudio()).a === undefined && (await visible(page.getByRole("button", { name: "Слушать урок" }))));
+  await expand();
+  check(
+    "дослушал — в плеере «Урок дослушан», «К вопросам урока», «Заново», «Урок 2»",
+    (await visible(sheet.getByText("Урок дослушан"))) &&
+      (await visible(sheet.getByRole("button", { name: "К вопросам урока" }))) &&
+      (await visible(sheet.getByRole("button", { name: "Заново" }))) &&
+      (await visible(sheet.getByRole("button", { name: "Урок 2" }))),
+  );
   await t.shot(page, "ended");
+  await sheet.getByRole("button", { name: "К вопросам урока" }).click();
+  check("«К вопросам урока» открывает вопросы и сворачивает плеер", (await visible(page.getByText("1 / 1"))) && !(await sheet.isVisible()));
+  await page.goBack();
+  await page.getByRole("heading", { level: 1, name: "Урок со звуком" }).waitFor();
+  await expand();
+  await sheet.getByRole("button", { name: "Урок 2" }).click();
+  await waitPlaying();
+  check(
+    "«Урок 2» — играет второй урок, страница урока сменилась на него",
+    (await visible(page.getByRole("heading", { level: 1, name: "Второй звуковой урок" }))) &&
+      /«Второй звуковой урок»: играет/.test((await mini.getAttribute("aria-label")) ?? ""),
+  );
+  await collapse();
 
-  // Урок без аудио — без кнопки; название в мини-плеере ведёт к уроку, который играет.
+  // Урок без аудио — без кнопки; заголовок плеера ведёт к уроку, который играет.
   await page.getByRole("button", { name: "Оглавление" }).click();
   await page.getByRole("button", { name: /Урок без звука/ }).click();
   await page.getByRole("heading", { level: 1, name: "Урок без звука" }).waitFor();
   check("у урока без аудио кнопки нет", !(await page.locator("main").getByRole("button", { name: /Слушать|Продолжить слушать/ }).count()));
-  await player.getByRole("button", { name: /Урок со звуком/ }).click();
-  check("название в мини-плеере открывает урок со звуком", await visible(page.getByRole("heading", { level: 1, name: "Урок со звуком" })));
-
-  // Закрыть плеер — мини-плеер и отступ под него пропадают.
-  await player.getByRole("button", { name: "Закрыть плеер" }).click();
+  await expand();
+  await sheet.getByRole("button", { name: /Урок 2 · Курс со звуком/ }).click();
   check(
-    "«Закрыть плеер» — мини-плеера и отступа под него нет",
-    !(await player.isVisible()) && (await page.evaluate(() => document.documentElement.style.getPropertyValue("--audio-bar"))) === "",
+    "заголовок плеера открывает урок, который играет, и сворачивает плеер",
+    (await visible(page.getByRole("heading", { level: 1, name: "Второй звуковой урок" }))) && !(await sheet.isVisible()),
+  );
+
+  // Выключить плеер — значок и запас под него пропадают.
+  await expand();
+  await sheet.getByRole("button", { name: "Выключить плеер" }).click();
+  check(
+    "«Выключить плеер» — значка и запаса под него нет",
+    !(await mini.isVisible()) && (await page.evaluate(() => document.documentElement.style.getPropertyValue("--audio-bar"))) === "",
   );
 
   // Удалили набор, пока играет урок, — плеер закрывается.
   // Без перезагрузки: перезагрузка и так заглушила бы звук. Назад по экранам до главной, звук всё это время играет.
-  await page.getByRole("button", { name: "Слушать урок" }).click();
+  // Второй урок уже слушали — кнопка предлагает продолжить.
+  await page.getByRole("button", { name: /^(Слушать урок|Продолжить слушать)/ }).click();
   await waitPlaying();
   for (let i = 0; i < 8 && !(await page.getByText("Что тренируем?").isVisible()); i++) {
     await page.goBack();
     await page.waitForTimeout(200);
   }
   await page.getByRole("button", { name: /Мои наборы/ }).click();
-  check("перед удалением звук играет", !(await media()).paused && (await player.isVisible()));
+  check("перед удалением звук играет", !(await media()).paused && (await mini.isVisible()));
   await page.getByRole("button", { name: "Удалить «Курс со звуком»" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Удалить" }).click();
-  check("набор удалён — плеер закрылся", !(await player.isVisible()));
+  check("набор удалён — плеер закрылся", !(await mini.isVisible()));
 
   // Ответы в обучении по-прежнему не трогают тренировку на главной; блок настроек цел.
   await page.goto(t.url);
@@ -294,7 +348,12 @@ questions:
     });
   });
   const page = await context.newPage();
-  const player = page.getByRole("region", { name: "Плеер урока" });
+  const mini = page.getByRole("button", { name: /^Плеер урока «/ });
+  const sheet = page.getByRole("dialog", { name: "Плеер урока" });
+  const turnOff = async () => {
+    if (!(await sheet.isVisible())) await mini.click();
+    await sheet.getByRole("button", { name: "Выключить плеер" }).click();
+  };
   const stored = () =>
     page.evaluate(async () => (await (await caches.open("lesson-audio")).keys()).map((r) => r.url.split("/").pop()).sort());
   const home = async () => {
@@ -353,7 +412,7 @@ questions:
   await page.waitForTimeout(800);
   const afterSeek = await page.evaluate(() => ({ time: document.querySelector("audio").currentTime, paused: document.querySelector("audio").paused }));
   check("без сети перемотка работает", afterSeek.time >= 30 && !afterSeek.paused, JSON.stringify(afterSeek));
-  await player.getByRole("button", { name: "Закрыть плеер" }).click();
+  await turnOff();
   await setNetwork(true);
 
   // «Удалить аудио»: файл, общий со вторым курсом, остаётся.
@@ -369,18 +428,24 @@ questions:
   // Без сети и без скачанного файла — честное сообщение.
   await setNetwork(false);
   await page.getByRole("button", { name: /Урок А/ }).click();
-  // Урок уже слушали до 30-й секунды — кнопка предлагает продолжить.
-  await page.getByRole("button", { name: /^Продолжить слушать · с 0:30/ }).click();
-  check("без сети нескачанный урок: «Нет сети, а аудио этого урока не скачано»", await visible(player.getByText("Нет сети, а аудио этого урока не скачано"), 8000));
+  // Урок уже слушали до 30-й секунды — кнопка предлагает продолжить. Пока открывалась шторка «выключить»,
+  // звук мог доиграть до 0:31.
+  await page.getByRole("button", { name: /^Продолжить слушать · с 0:3\d/ }).click();
+  const offlineDot = await page
+    .waitForFunction(() => /: ошибка$/.test(document.querySelector('[aria-label^="Плеер урока «"]')?.getAttribute("aria-label") ?? ""), null, { timeout: 8000 })
+    .then(() => true, () => false);
+  check("без сети нескачанный урок: на значке — ошибка", offlineDot);
+  await mini.click();
+  check("в плеере — «Нет сети, а аудио этого урока не скачано»", await visible(sheet.getByText("Нет сети, а аудио этого урока не скачано")));
   await t.shot(page, "offline-not-downloaded");
   // Сеть вернулась — «играть» в плеере грузит файл заново и продолжает с 0:30.
   await setNetwork(true);
-  await player.getByRole("button", { name: "Слушать" }).click();
+  await sheet.getByRole("button", { name: "Слушать" }).click();
   const retried = await page
     .waitForFunction(() => document.querySelector("audio").currentTime >= 30.3 && !document.querySelector("audio").paused, null, { timeout: 8000 })
     .then(() => true, () => false);
   check("сеть вернулась — «играть» продолжает с того же места", retried, JSON.stringify(await page.evaluate(() => document.querySelector("audio").currentTime)));
-  await player.getByRole("button", { name: "Закрыть плеер" }).click();
+  await turnOff();
 
   // Обновили курс, у урока А новая озвучка: старый файл уходит.
   await page.getByRole("button", { name: "Оглавление" }).click();

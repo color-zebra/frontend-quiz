@@ -6,8 +6,14 @@
   max-width: 600px;
   min-height: 100dvh;
   margin: 0 auto;
-  /* --audio-bar — высота мини-плеера озвучки, пока он открыт: низ экрана не прячется под ним. */
+  /* --audio-bar — запас под свёрнутым плеером озвучки, пока он есть: последний абзац не прячется под значком. */
   padding: calc(18px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom) + var(--audio-bar, 0px));
+}
+
+/* С нижней панелью значок стоит над ней, а не в углу, — запас не нужен: иначе на коротком вопросе панель
+   висела бы над низом экрана. */
+.screen:has(.dock) {
+  padding-bottom: calc(24px + env(safe-area-inset-bottom));
 }
 
 .topBar {
@@ -22,7 +28,8 @@
    размытого блока своё размытие видит только этот блок, и кнопка стала бы просто полупрозрачной. */
 .dock {
   position: sticky;
-  bottom: calc(10px + env(safe-area-inset-bottom) + var(--audio-bar, 0px));
+  /* Плеер панель не поднимает: свёрнутый он встаёт над ней, в место над «Почему?» (dockSlot.ts). */
+  bottom: calc(10px + env(safe-area-inset-bottom));
   z-index: 1;
   margin-top: auto;
   /* Внизу страницы панель стоит там же, где прилипает при прокрутке: у экрана поле снизу 24px, у прилипшей — 10px.
@@ -54,9 +61,23 @@
   grid-column: auto;
 }
 
-/* Кнопка над панелью справа, в 10px от неё. */
+/* Кнопка над панелью справа, в 10px от неё; над кнопкой — место для свёрнутого плеера. */
 .aside {
   position: absolute;
   right: 0;
   bottom: calc(100% + 10px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-end;
+  /* Пустое место не перехватывает нажатия по тексту под ним. */
+  pointer-events: none;
+}
+
+.aside > * {
+  pointer-events: auto;
+}
+
+.slot:empty {
+  display: none;
 }

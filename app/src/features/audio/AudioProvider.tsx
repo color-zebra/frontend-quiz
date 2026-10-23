@@ -8,7 +8,7 @@ export interface AudioTrack {
   lessonId: string;
   /** Полная https-ссылка на аудиофайл. */
   src: string;
-  /** Название урока — в мини-плеере и на экране блокировки. */
+  /** Название урока — в плеере и на экране блокировки. */
   title: string;
   /** Название курса — вторая строка на экране блокировки. */
   course: string;
@@ -33,13 +33,13 @@ interface AudioContextValue extends AudioState {
   pause: () => void;
   seekBy: (seconds: number) => void;
   seekTo: (seconds: number) => void;
-  /** Следующая скорость: 1× → 1,25× → 1,5× → 2× → 1×. Запоминается на устройстве. */
-  cycleRate: () => void;
-  /** Закрыть мини-плеер: остановить и запомнить место. */
+  /** Скорость из меню плеера. Запоминается на устройстве. */
+  setRate: (rate: number) => void;
+  /** Выключить плеер: остановить и запомнить место. */
   close: () => void;
 }
 
-export const AUDIO_RATES = [1, 1.25, 1.5, 2] as const;
+export const AUDIO_RATES = [0.75, 1, 1.25, 1.5, 2] as const;
 const RATE_KEY = "fq.audioRate";
 /** Как часто запоминать место, пока играет: Android может выгрузить свёрнутое приложение в любой момент. */
 const SAVE_EVERY = 5;
@@ -236,11 +236,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     audio.play().catch(() => patch({ playing: false }));
   }
 
-  function cycleRate() {
-    const next = AUDIO_RATES[(AUDIO_RATES.indexOf(state.rate as (typeof AUDIO_RATES)[number]) + 1) % AUDIO_RATES.length];
-    if (audioRef.current) audioRef.current.playbackRate = next;
-    writeStorage(RATE_KEY, String(next));
-    patch({ rate: next });
+  function setRate(rate: number) {
+    if (audioRef.current) audioRef.current.playbackRate = rate;
+    writeStorage(RATE_KEY, String(rate));
+    patch({ rate });
   }
 
   function close() {
@@ -260,9 +259,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AudioContext value={{ ...state, play, pause, seekBy, seekTo, cycleRate, close }}>
+    <AudioContext value={{ ...state, play, pause, seekBy, seekTo, setRate, close }}>
       {children}
-      {/* Без controls браузер его не показывает; управление — в мини-плеере и на экране блокировки. */}
+      {/* Без controls браузер его не показывает; управление — в плеере (AudioPlayer) и на экране блокировки. */}
       <audio ref={audioRef} preload="metadata" />
     </AudioContext>
   );

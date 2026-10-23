@@ -1,8 +1,10 @@
 import { lazy, useEffect, useRef, useState } from "react";
 import type { BankDiff } from "../data/loadQuestions";
 import { BUILTIN_SET_ID, type Question, type QuestionBank } from "../data/types";
-import { AudioBar } from "../features/audio/AudioBar";
-import { useAudio } from "../features/audio/AudioProvider";
+import { AudioPlayer, type PlayingLesson } from "../features/audio/AudioPlayer";
+import { useAudio, type AudioTrack } from "../features/audio/AudioProvider";
+import { getLessonQuestionIds } from "../features/lessons/course";
+import { useLessons } from "../features/lessons/LessonsProvider";
 import { useProgress } from "../features/progress/ProgressProvider";
 import { dismissBankVersion, fetchBankVersion, getIsNewerBank } from "../features/bank/bankVersion";
 import type { TrainingKind } from "../features/session/filters";
@@ -82,6 +84,7 @@ interface FinishedSession {
 export function QuizApp({ bank, onUpdate }: QuizAppProps) {
   const { getSetBank } = useSets();
   const audio = useAudio();
+  const { getCourse, updateCourse } = useLessons();
   const { recordAnswer, records } = useProgress();
   const [active, setActive] = useState<ActiveSession | null>(null);
   const activeRef = useRef<ActiveSession | null>(null);
@@ -242,11 +245,54 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
     else nav.rewind(stack.length - 1 - first, course);
   }
 
-  /** Нажатие на название в мини-плеере: открыть урок, который играет, если он уже не на экране. */
+  /** Нажатие на «Урок N · курс» в плеере: открыть урок, который играет, если он уже не на экране. */
   function openPlayingLesson(setId: string, lessonId: string) {
-    const screen = nav.screen;
-    if (screen.name === "lesson" && screen.setId === setId && screen.lessonId === lessonId) return;
+    if (isLessonOnScreen(setId, lessonId)) return;
     nav.push({ name: "lesson", setId, lessonId });
+  }
+
+  function isLessonOnScreen(setId: string, lessonId: string) {
+    const screen = nav.screen;
+    return screen.name === "lesson" && screen.setId === setId && screen.lessonId === lessonId;
+  }
+
+  /** Что плеер покажет об играющем уроке: номер, следующий урок с озвучкой, есть ли вопросы. */
+  function describePlayingLesson(track: AudioTrack | null): PlayingLesson | null {
+    if (!track) return null;
+    const courseBank = getBank(track.setId);
+    const lessons = courseBank?.lessons ?? [];
+    const index = lessons.findIndex((l) => l.id === track.lessonId);
+    if (!courseBank || index < 0) return null;
+    const next = lessons[index + 1];
+    return {
+      number: index + 1,
+      hasQuestions: getLessonQuestionIds(courseBank, lessons[index]).length > 0,
+      onLessonPage: isLessonOnScreen(track.setId, track.lessonId),
+      next: next?.audio
+        ? { setId: track.setId, lessonId: next.id, src: next.audio, title: next.title, course: courseBank.title ?? "" }
+        : null,
+    };
+  }
+
+  /** «К вопросам урока» в дослушанном плеере — как одноимённая кнопка в конце урока: начатые продолжаются. */
+  function openPlayingQuestions(setId: string, lessonId: string) {
+    const courseBank = getBank(setId);
+    const lesson = courseBank?.lessons?.find((l) => l.id === lessonId);
+    if (!courseBank || !lesson) return;
+    const count = getLessonQuestionIds(courseBank, lesson).length;
+    const position = getCourse(setId)?.position;
+    const resume = position?.lessonId === lessonId && position.step === "quiz" && position.index > 0 && position.index < count;
+    if (!resume) updateCourse(setId, { position: { lessonId, step: "quiz", index: 0, correct: 0 } });
+    nav.push({ name: "lessonQuiz", setId, lessonId });
+  }
+
+  /** «Урок N+1» в дослушанном плеере: следующий урок играет, а открытая страница урока сменяется на него. */
+  function playNextLesson(track: AudioTrack) {
+    const current = audio.track;
+    if (current && isLessonOnScreen(current.setId, current.lessonId)) {
+      nav.replace({ name: "lesson", setId: track.setId, lessonId: track.lessonId });
+    }
+    audio.play(track);
   }
 
   function selectTheme(id: ThemeId) {
@@ -257,7 +303,12 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
   return (
     <>
       {renderScreen()}
-      <AudioBar onOpenLesson={openPlayingLesson} />
+      <AudioPlayer
+        lesson={describePlayingLesson(audio.track)}
+        onOpenLesson={openPlayingLesson}
+        onOpenQuestions={openPlayingQuestions}
+        onPlayNext={playNextLesson}
+      />
       <ThemeSheet open={themeOpen} current={theme} onSelect={selectTheme} onClose={() => setThemeOpen(false)} />
     </>
   );

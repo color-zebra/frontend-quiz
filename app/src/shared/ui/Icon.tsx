@@ -64,6 +64,7 @@ const PATHS = {
     </>
   ),
   chevronRight: <path d="m9 6 6 6-6 6" />,
+  chevronDown: <path d="m6 9 6 6 6-6" />,
   external: (
     <>
       <path d="M14 4h6v6" />
@@ -135,6 +136,12 @@ const PATHS = {
     <>
       <path d="M4 15v-3a8 8 0 0 1 16 0v3" />
       <path d="M4 15h3v5H5a1 1 0 0 1-1-1ZM20 15h-3v5h2a1 1 0 0 0 1-1Z" />
+    </>
+  ),
+  replay: (
+    <>
+      <path d="M3 12a9 9 0 1 0 2.64-6.36" />
+      <path d="M3 3v6h6" />
     </>
   ),
   play: <path d="M7 4.5v15l12-7.5Z" fill="currentColor" />,

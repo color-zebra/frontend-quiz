@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import type { ReactNode } from "react";
+import { setDockSlot } from "./dockSlot";
 import styles from "./Screen.module.css";
 
 /** Колонка экрана: на телефоне во всю ширину, на ноутбуке — по центру. */
@@ -24,7 +25,11 @@ interface ActionBarProps {
 export function ActionBar({ even = false, aside, children }: ActionBarProps) {
   return (
     <div className={styles.dock}>
-      {aside && <div className={styles.aside}>{aside}</div>}
+      {/* Сверху — место для плавающих кнопок приложения (свёрнутый плеер), под ним — своя кнопка панели. */}
+      <div className={styles.aside}>
+        <div ref={setDockSlot} className={styles.slot} />
+        {aside}
+      </div>
       <div className={clsx(styles.actionBar, even && styles.even)}>{children}</div>
     </div>
   );

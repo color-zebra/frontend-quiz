@@ -1,0 +1,513 @@
+/*
+ * Подъём плеера над низом окна. Установленное приложение на Android открыто во весь экран: системные кнопки
+ * спрятаны и выезжают по свайпу от нижнего края, полоса жеста около 48px — плеер стоит над ней.
+ * Ею же считает запас под значком AudioPlayer.tsx (--audio-bar).
+ */
+:global(:root) {
+  --player-lift: 8px;
+  /* Отступ значка от правого края колонки экрана: центр значка — над центром кнопки «свернуть» в шторке. */
+  --player-side: 21px;
+}
+
+@media (display-mode: fullscreen) {
+  :global(:root) {
+    --player-lift: 48px;
+  }
+}
+
+@media (max-width: 359px) {
+  :global(:root) {
+    --player-side: 17px;
+  }
+}
+
+/* ---- Свёрнутый плеер: круглый значок, кольцо — сколько урока прослушано ---- */
+.mini {
+  position: fixed;
+  /* По колонке экрана (до 600px), а не по краю широкого окна. */
+  right: max(var(--player-side), calc(50vw - 300px + var(--player-side)));
+  bottom: calc(var(--player-lift) + 24px + env(safe-area-inset-bottom));
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: conic-gradient(var(--ring-color) var(--progress), var(--track) var(--progress));
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+  color: var(--text);
+}
+
+/* Над нижней панелью: стоит в общем столбике с «Почему?», центром над той же точкой, что и в углу. */
+.inSlot {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  margin-right: calc(var(--player-side) - 16px);
+}
+
+.miniInner {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--sheet-bg);
+}
+
+/* Играет — три полоски «эквалайзера» прыгают; кто просил меньше движения — стоят. */
+.equalizer {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+  height: 18px;
+}
+
+.equalizer i {
+  width: 4px;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--link);
+  transform-origin: bottom;
+  animation: bounce 0.9s ease-in-out infinite;
+}
+
+.equalizer i:nth-child(1) {
+  animation-delay: -0.3s;
+}
+
+.equalizer i:nth-child(3) {
+  animation-delay: -0.6s;
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+  }
+
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* Пауза — полоски застыли разной высоты и приглушены; так же стоят у тех, кто просил меньше движения. */
+.equalizerPaused i {
+  background: var(--muted);
+  animation: none;
+}
+
+.equalizerPaused i:nth-child(1) {
+  transform: scaleY(0.55);
+}
+
+.equalizerPaused i:nth-child(3) {
+  transform: scaleY(0.75);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .equalizer i {
+    animation: none;
+  }
+
+  .equalizer i:nth-child(1) {
+    transform: scaleY(0.55);
+  }
+
+  .equalizer i:nth-child(3) {
+    transform: scaleY(0.75);
+  }
+}
+
+/* Ошибка: нет сети, а урок не скачан, или файл не загрузился. Подробности — в развёрнутом плеере. */
+.dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  background: var(--bad);
+}
+
+/* ---- Большой плеер на шторке ---- */
+.sheet {
+  width: min(560px, 100%);
+  max-width: 100%;
+  margin: auto auto 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+}
+
+.sheet::backdrop {
+  background: var(--backdrop);
+  backdrop-filter: blur(3px);
+}
+
+.panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  /* Снизу — подъём над зоной жеста и 16px: тогда центр кнопки «свернуть» (ряд высотой 76px) там же, где центр
+     свёрнутого значка: подъём + 24 + 30 = подъём + 16 + 38. */
+  padding: 10px calc(var(--player-side) - 1px) calc(var(--player-lift) + 16px + env(safe-area-inset-bottom));
+  border: 1px solid var(--glass-border);
+  border-bottom: 0;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: var(--sheet-bg);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.45);
+  /* Свайп вниз ведёт шторку за пальцем, а не прокручивает страницу. */
+  touch-action: none;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+  animation: slide-up 0.22s ease-out;
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+}
+
+.handle {
+  align-self: center;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--glass-border);
+}
+
+/* «Урок 6 · курс» и справа «свернуть» и «выключить», по 44px с промежутком 12px — не промахнёшься. */
+.head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: -8px;
+}
+
+.course,
+.lessonLink {
+  overflow: hidden;
+  min-width: 0;
+  font-size: var(--font-size-hint);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.course {
+  color: var(--accent);
+}
+
+/* Плеер открыт не со страницы урока — заголовок ведёт к ней: цвет ссылки и стрелка. */
+.lessonLink {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--link);
+}
+
+.lessonLink span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lessonLink svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.windowButtons {
+  display: flex;
+  flex: none;
+  gap: 12px;
+}
+
+.windowButtons > button {
+  width: 44px;
+  height: 44px;
+}
+
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-heading);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.done {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--ok);
+  font-size: var(--font-size-small);
+  font-weight: 700;
+}
+
+.done svg {
+  width: 18px;
+  height: 18px;
+}
+
+.error {
+  color: var(--bad);
+  font-size: var(--font-size-small);
+}
+
+/* ---- Перемотка: толстая полоса, крупный бегунок ---- */
+.seek {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.range {
+  width: 100%;
+  height: 32px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+}
+
+.range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(var(--ring-color), var(--ring-color)) 0 / var(--fill) 100% no-repeat, var(--track);
+}
+
+.range::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(var(--ring-color), var(--ring-color)) 0 / var(--fill) 100% no-repeat, var(--track);
+}
+
+.range::-webkit-slider-thumb {
+  width: 24px;
+  height: 24px;
+  margin-top: -9px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ring-color);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--ring-color) 25%, transparent);
+  appearance: none;
+}
+
+.range::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ring-color);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--ring-color) 25%, transparent);
+}
+
+.range:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.times {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: var(--font-size-hint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Ряд управления: «1×» / −15 / играть / +15 / свернуть, «играть» по центру ---- */
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 76px;
+}
+
+.rateBox {
+  position: relative;
+  z-index: 2;
+}
+
+.rate {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--chip-border);
+  border-radius: var(--btn-radius);
+  background: var(--chip-bg);
+  color: var(--text);
+  font-size: var(--font-size-small);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.skip {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  background: var(--chip-bg);
+  color: var(--text);
+}
+
+/* Цифры «15» внутри иконки должны читаться. */
+.skip svg {
+  width: 30px;
+  height: 30px;
+}
+
+.play {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--primary-bg);
+  box-shadow: var(--primary-shadow);
+  color: var(--primary-text);
+}
+
+.play svg {
+  width: 32px;
+  height: 32px;
+}
+
+/* «Свернуть» — круг с тонкой обводкой цвета кольца: та же точка и тот же вид, что у свёрнутого значка. */
+.fold {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border: 2px solid var(--ring-color);
+  border-radius: 50%;
+  background: var(--sheet-bg);
+  color: var(--text);
+}
+
+.fold svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* На 320px пять кнопок по макету не влезают — сужаем всё, кроме «свернуть»: она совпадает со значком. */
+@media (max-width: 359px) {
+  .rate {
+    width: 46px;
+  }
+
+  .skip {
+    width: 52px;
+    height: 52px;
+  }
+
+  .play {
+    width: 64px;
+    height: 64px;
+  }
+}
+
+/* ---- Меню скоростей — над кнопкой «1×» ---- */
+.rateMenu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  width: 150px;
+  padding: 6px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--btn-radius);
+  /* Плотно: размытие шторки меню внутри неё не достаётся, и полупрозрачный фон пропускал бы текст под ним. */
+  background: linear-gradient(var(--sheet-bg), var(--sheet-bg)), var(--bg);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+.rateItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: calc(var(--btn-radius) - 6px);
+  background: none;
+  color: var(--text-2);
+  font-size: var(--font-size-body);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+}
+
+.rateCurrent {
+  background: var(--chip-on-bg);
+  color: var(--text);
+}
+
+.rateItem svg {
+  width: 18px;
+  height: 18px;
+  color: var(--accent);
+}
+
+/* Нажатие мимо открытого меню закрывает его. */
+.menuShade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* ---- Урок дослушан ---- */
+.toQuestions {
+  min-height: 56px;
+}
+
+.endRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 76px;
+}
+
+.endRow > :not(.fold) {
+  flex: 1;
+  min-width: 0;
+  padding-inline: 10px;
+  white-space: nowrap;
+}
+
+/* На 320px «Заново», «Урок 2» и круг «свернуть» в ряд — только с промежутками поуже. */
+@media (max-width: 359px) {
+  .endRow {
+    gap: 8px;
+  }
+
+  .endRow > :not(.fold) {
+    gap: 6px;
+    padding-inline: 6px;
+  }
+}
