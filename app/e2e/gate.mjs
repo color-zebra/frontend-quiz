@@ -18,7 +18,7 @@ export default async function gate(t) {
   check("при первом открытии — экран пароля", await visible(field));
   await page.waitForTimeout(500);
   check("до входа база не скачивается", questionRequests === 0, `запросов: ${questionRequests}`);
-  check("до входа приложения не видно", !(await page.getByText("Что тренируем?").isVisible()));
+  check("до входа приложения не видно", !(await page.getByRole("heading", { name: "Тренажёр" }).isVisible()));
   await t.shot(page, "screen");
 
   await field.fill("неправильный");
@@ -27,10 +27,10 @@ export default async function gate(t) {
   await field.fill(`  ${password} `);
   check("сообщение пропадает при вводе", !(await page.getByText("Неверный пароль").isVisible()));
   await page.keyboard.press("Enter");
-  check("верный пароль (с пробелами по краям) — вход", await visible(page.getByText("Что тренируем?"), 8000));
+  check("верный пароль (с пробелами по краям) — вход", await visible(page.getByRole("heading", { name: "Тренажёр" }), 8000));
 
   await page.reload();
-  check("после перезагрузки пароль не спрашивается", await visible(page.getByText("Что тренируем?"), 8000));
+  check("после перезагрузки пароль не спрашивается", await visible(page.getByRole("heading", { name: "Тренажёр" }), 8000));
 
   await page.evaluate(() => localStorage.setItem("fq.access", "старый-отпечаток"));
   await page.reload();
@@ -48,8 +48,8 @@ export default async function gate(t) {
   await p.getByText("Попробовать на готовом примере").click();
   const example = p.locator("details", { hasText: "Попробовать на готовом примере" });
   check(
-    "без пароля «Мои наборы» в инструкции — текст, а не кнопка",
-    (await visible(example.getByText("«Мои наборы»", { exact: true }))) && (await example.getByRole("button", { name: "«Мои наборы»" }).count()) === 0,
+    "без пароля «Свои наборы» в инструкции — текст, а не кнопка",
+    (await visible(example.getByText("«Свои наборы»", { exact: true }))) && (await example.getByRole("button", { name: "«Свои наборы»" }).count()) === 0,
   );
   await p.getByRole("button", { name: "Назад" }).click();
   check("«Назад» из инструкции — экран пароля", await visible(p.getByLabel("Пароль")));
@@ -73,6 +73,6 @@ export default async function gate(t) {
 
   await p.getByLabel("Пароль").fill(password);
   await p.getByRole("button", { name: "Войти" }).click();
-  check("после входа — главная", await visible(p.getByText("Что тренируем?"), 8000));
+  check("после входа — главная", await visible(p.getByRole("heading", { name: "Тренажёр" }), 8000));
   await direct.close();
 }

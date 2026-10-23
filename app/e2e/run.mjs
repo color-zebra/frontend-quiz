@@ -6,7 +6,7 @@ import { chromium } from "playwright-core";
 import { preview } from "vite";
 import { APP_DIR, DIST_DIR, createReport, ensureOutDir, findChrome, getAccessHash, visible } from "./lib.mjs";
 
-const SUITES = ["base", "multi", "features", "screen", "progress", "stats", "cabinet", "achievements", "resume", "training", "bookmarks", "complaint", "speech", "sets", "catalog", "lessons", "audio", "files", "help", "pwa", "gate"];
+const SUITES = ["base", "multi", "features", "screen", "progress", "stats", "cabinet", "achievements", "resume", "training", "bookmarks", "complaint", "speech", "sets", "catalog", "courses", "lessons", "audio", "files", "help", "pwa", "gate"];
 const PORT = 4730;
 const URL_ = `http://127.0.0.1:${PORT}/`;
 
@@ -37,9 +37,17 @@ try {
       info: report.info,
       visible,
       /** Контекст браузера размером с телефон; по умолчанию уже «вошедший» мимо экрана пароля. */
-      async newContext({ login = true, ...options } = {}) {
+      /**
+       * section — раздел, который приложение «помнит» с прошлого раза. По умолчанию «Тренажёр»: большинство наборов
+       * тестов начинают с него, и приложение открывается на нём после каждой перезагрузки, как раньше на главной;
+       * null — как при самом первом запуске (откроются «Курсы»), раздел запоминается.
+       */
+      async newContext({ login = true, section = "trainer", ...options } = {}) {
         const context = await browser.newContext({ viewport: { width: 390, height: 844 }, ...options });
         if (login) await context.addInitScript((hash) => localStorage.setItem("fq.access", hash), accessHash);
+        if (section) {
+          await context.addInitScript((s) => localStorage.setItem("fq.section", s), section);
+        }
         return context;
       },
       shot(page, file, fullPage = false) {

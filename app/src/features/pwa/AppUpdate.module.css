@@ -1,0 +1,22 @@
+/* Строка в потоке экрана, а не поверх него: рамка цвета темы, чтобы её заметили. */
+.banner {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 6px 6px 16px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.text {
+  flex: 1;
+  font-size: var(--font-size-small);
+  font-weight: 600;
+}
+
+.action {
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: var(--font-size-small);
+}

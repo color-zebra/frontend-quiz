@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { useMemo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import { MarkdownImage } from "./MarkdownImage";
 import styles from "./Markdown.module.css";
@@ -40,11 +41,14 @@ interface MarkdownProps {
 }
 
 export function Markdown({ text, inline = false, baseUrl, className }: MarkdownProps) {
+  // Один набор компонентов на ссылку набора: новый на каждой отрисовке — новый «тип» картинки, и React
+  // пересоздаёт её. Пока играет озвучка, экран перерисовывается несколько раз в секунду — подпись картинки дёргалась.
+  const blockComponents = useMemo(() => getBlockComponents(baseUrl), [baseUrl]);
   const content = (
     <ReactMarkdown
       allowedElements={inline ? INLINE_ALLOWED : ALLOWED}
       unwrapDisallowed
-      components={inline ? inlineComponents : getBlockComponents(baseUrl)}
+      components={inline ? inlineComponents : blockComponents}
     >
       {text}
     </ReactMarkdown>

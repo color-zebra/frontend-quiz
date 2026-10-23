@@ -11,14 +11,17 @@ import { useLessons } from "../../features/lessons/LessonsProvider";
 import { useNotes, type ImportStats } from "../../features/notes/NotesProvider";
 import { useProgress } from "../../features/progress/ProgressProvider";
 import { getBankStats } from "../../features/progress/stats";
+import type { AnswerRecord } from "../../features/progress/types";
 import { formatShortDate } from "../../shared/lib/formatDate";
 import { countQuestions, NOTE_FORMS, plural } from "../../shared/lib/plural";
-import { Button, IconButton } from "../../shared/ui/Button";
+import { Button } from "../../shared/ui/Button";
 import { Card } from "../../shared/ui/Card";
 import glass from "../../shared/ui/glass.module.css";
 import { Icon } from "../../shared/ui/Icon";
-import { Screen, TopBar } from "../../shared/ui/Screen";
-import { ScreenTitle } from "../../shared/ui/ScreenTitle";
+import { Screen } from "../../shared/ui/Screen";
+import { SectionHeader, type Section } from "../../shared/ui/SectionSwitch";
+import { UpdateBanner } from "../../features/pwa/AppUpdate";
+import { DownloadedCourses } from "./DownloadedCourses";
 import { Sheet } from "../../shared/ui/Sheet";
 import { THEMES, type ThemeId } from "../../theme/themes";
 import styles from "./CabinetScreen.module.css";
@@ -26,7 +29,8 @@ import styles from "./CabinetScreen.module.css";
 interface CabinetScreenProps {
   bank: QuestionBank;
   theme: ThemeId;
-  onBack: () => void;
+  onSelectSection: (section: Section) => void;
+  onOpenHelp: () => void;
   onOpenStats: () => void;
   onOpenAchievements: () => void;
   onOpenNotes: () => void;
@@ -55,11 +59,35 @@ function formatImport(notes: ImportStats, answers: number | null, lessonsPart: s
   return `Копия загружена. ${notesPart} ${answersPart}${lessonsPart}`;
 }
 
-/** Кабинет: статистика, заметки, оформление и всё, что хранится на устройстве, — копия и сброс. */
+/**
+ * Итоги на виду: сколько ответов, сколько верных и сколько дней подряд человек занимается — день считается, если
+ * в нём был хоть один ответ; цепочка не рвётся, пока сегодня ещё не отвечал.
+ */
+function getSummary(records: readonly AnswerRecord[]) {
+  const answered = records.filter((r) => r.correct !== undefined);
+  const correct = answered.filter((r) => r.correct).length;
+  const dayKey = (at: number) => new Date(at).toDateString();
+  const days = new Set(records.map((r) => dayKey(r.at)));
+  const day = new Date();
+  if (!days.has(dayKey(day.getTime()))) day.setDate(day.getDate() - 1);
+  let streak = 0;
+  while (days.has(dayKey(day.getTime()))) {
+    streak++;
+    day.setDate(day.getDate() - 1);
+  }
+  return {
+    answers: answered.length,
+    accuracy: answered.length ? Math.round((correct / answered.length) * 100) : 0,
+    days: streak,
+  };
+}
+
+/** Кабинет — раздел: статистика, заметки, оформление, скачанные курсы и всё, что хранится на устройстве. */
 export function CabinetScreen({
   bank,
   theme,
-  onBack,
+  onSelectSection,
+  onOpenHelp,
   onOpenStats,
   onOpenAchievements,
   onOpenNotes,
@@ -81,6 +109,7 @@ export function CabinetScreen({
     ? `видел ${stats.seen} из ${stats.total} · верных ${Math.round(stats.answers.accuracy * 100)} %`
     : "ещё нет ответов";
   const achievements = getAchievements(bank, records);
+  const summary = getSummary(records);
   const earned = achievements.filter((s) => s.earnedAt).length;
 
   async function handleFile(e: ChangeEvent<HTMLInputElement>) {
@@ -101,10 +130,30 @@ export function CabinetScreen({
 
   return (
     <Screen>
-      <TopBar>
-        <IconButton icon="arrowLeft" label="Назад" onClick={onBack} />
-      </TopBar>
-      <ScreenTitle title="Кабинет" subtitle="Всё здесь хранится только на этом устройстве" />
+      <SectionHeader
+        section="cabinet"
+        title="Кабинет"
+        subtitle="Всё здесь хранится только на этом устройстве"
+        onSelect={onSelectSection}
+        onOpenHelp={onOpenHelp}
+      >
+        <UpdateBanner />
+      </SectionHeader>
+
+      <dl className={clsx(styles.summary, glass.glass)}>
+        <div>
+          <dt>ответов</dt>
+          <dd>{summary.answers}</dd>
+        </div>
+        <div>
+          <dt>верно</dt>
+          <dd>{summary.answers ? `${summary.accuracy}%` : "—"}</dd>
+        </div>
+        <div>
+          <dt>{plural(summary.days, ["день подряд", "дня подряд", "дней подряд"])}</dt>
+          <dd>{summary.days}</dd>
+        </div>
+      </dl>
 
       <div className={styles.tiles}>
         <button type="button" className={clsx(styles.tile, styles.wide, glass.glass)} onClick={onOpenStats}>
@@ -126,12 +175,19 @@ export function CabinetScreen({
             {notes.size} {plural(notes.size, NOTE_FORMS)}
           </span>
         </button>
-        <button type="button" className={clsx(styles.tile, glass.glass)} onClick={onOpenTheme}>
+        <button type="button" className={clsx(styles.tile, glass.glass)} onClick={onOpenStats}>
+          <Icon name="bookmark" />
+          <span className={styles.tileTitle}>Закладки</span>
+          <span className={styles.tileSub}>{bookmarks.size ? countQuestions(bookmarks.size) : "нет закладок"}</span>
+        </button>
+        <button type="button" className={clsx(styles.tile, styles.wide, glass.glass)} onClick={onOpenTheme}>
           <Icon name="palette" />
           <span className={styles.tileTitle}>Оформление</span>
           <span className={styles.tileSub}>{THEMES.find((t) => t.id === theme)?.name}</span>
         </button>
       </div>
+
+      <DownloadedCourses />
 
       <Card label="База вопросов">
         <p className={styles.hint}>

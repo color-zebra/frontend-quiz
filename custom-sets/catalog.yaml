@@ -16,6 +16,15 @@
 #     description: …
 # Вместо числа вопросов в карточке будет видно, откуда набор; после добавления — название и вопросы из файла.
 #
+# Курсы одной серии (у них поле series с одним и тем же названием) идут в разделе «Все курсы» нумерованным списком
+# в порядке этого файла:
+#     series: Системный дизайн фронтенда
+# Набор-дополнение к курсу (например, устная тренировка) — поле course со ссылкой на курс из этого же каталога:
+# его видно на странице курса и в «Своих наборах» тренажёра, а не отдельным курсом.
+#     course: https://raw.githubusercontent.com/…/custom-sets/system-design-practice.yaml
+# Значки курса «Озвучен» и «Практика за компьютером» ставятся не здесь, а в самом наборе — поле features
+# (формат — examples/README.md); оглавление, значки и размер файла сборка берёт из набора.
+#
 # Опечатка в имени файла, неизвестное поле или пустое описание остановят сборку с понятной ошибкой.
 # Правка этого файла пересобирает сайт (.github/workflows/deploy.yml), правка самих наборов — нет: число вопросов
 # в карточке обновится со следующим деплоем.
@@ -33,25 +42,33 @@
   description: С уроками, макетами «как было / как стало» и картинками в вопросах. Как человек видит экран, иерархия, отступы, шрифт и цвет, палец и узкий экран, состояния, окна и шторки, формы, навигация, анимация, тексты, своя дизайн-система, проверка без дизайнера и разбор одного экрана.
 
 - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-basics.yaml
+  series: Системный дизайн фронтенда
   description: Курс 1 из 7, с уроками. Требования, деление на модули, состояние и владелец данных, контракт API, сравнение решений.
 
 - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-data.yaml
+  series: Системный дизайн фронтенда
   description: Курс 2 из 7, с уроками. Кэш и свежесть, гонки, оптимизм, повторы без дублей, конфликты, офлайн, файлы, сессия.
 
 - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-delivery.yaml
+  series: Системный дизайн фронтенда
   description: Курс 3 из 7, с уроками. Метрики скорости, SSR и SSG, загрузка кода и картинок, выкатка версий, Service Worker, безопасность, доступность, наблюдаемость, локализация.
 
 - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-live.yaml
+  series: Системный дизайн фронтенда
   description: Курс 4 из 7, с уроками. Большие списки и виртуализация, тяжёлая работа без зависаний, выбор по фильтру, SSE и WebSocket, обрывы, дубли событий, снимок и догоняющие события, чат, уведомления.
 
 - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-sync.yaml
+  series: Системный дизайн фронтенда
   description: Курс 5 из 7, с уроками. Несколько вкладок и устройств, связанные изменения, совместная работа, блокировки, OT и CRDT, офлайн, журнал операций, синхронизация.
 
 - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-scale.yaml
+  series: Системный дизайн фронтенда
   description: Курс 6 из 7, с уроками. Границы между командами, модульный монолит и микрофронтенды, контракты, постепенная миграция, эволюция API, технический долг, спорящие требования, отказы и деградация, поиск узкого места.
 
 - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-practice.yaml
+  series: Системный дизайн фронтенда
   description: Курс 7 из 7, с уроками. Как вести архитектурное интервью и защищать решение, семь разборов кейсов — от выбора даты до растущего продукта.
 
 - url: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-practice-speech.yaml
+  course: https://raw.githubusercontent.com/color-zebra/frontend-quiz/refs/heads/main/custom-sets/system-design-practice.yaml
   description: Устная тренировка к курсу 7. Задачи для самостоятельного решения с эталонным планом ответа и тезисами для самопроверки.

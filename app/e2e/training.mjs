@@ -21,7 +21,7 @@ export default async function training(t) {
   const back = () => page.getByRole("button", { name: "Назад" }).click();
 
   await page.goto(t.url);
-  await page.getByText("Что тренируем?").waitFor();
+  await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
   check("сводка по умолчанию — все темы, подтемы и уровни", (await summaryText()).includes("Все темы все подтемы · все уровни"), await summaryText());
   check(
     "на главной нет выбора тем и уровней",
@@ -112,7 +112,7 @@ export default async function training(t) {
   await page.goBack();
   await page.getByText(/^Сессия завершена/).waitFor();
   await page.getByRole("button", { name: "На главную" }).click();
-  check("старт с экрана настройки: из итога — на главную", await visible(page.getByText("Что тренируем?")));
+  check("старт с экрана настройки: из итога — на главную", await visible(page.getByRole("heading", { name: "Тренажёр" })));
 
   // Устные вопросы: тот же экран, своя подпись, без галки «Добавлять устные».
   await page.getByRole("button", { name: /Устные вопросы/ }).click();
@@ -127,7 +127,7 @@ export default async function training(t) {
   await back();
 
   // Маленький свой набор без тем и подтем: на экране настройки нет карточки тем.
-  await page.getByRole("button", { name: /Мои наборы/ }).click();
+  await page.getByRole("button", { name: /Свои наборы/ }).click();
   const small = `title: Маленький
 questions:
   - id: m-1
@@ -156,7 +156,7 @@ questions:
     const narrow = await t.newContext({ serviceWorkers: "block", viewport: { width, height: 760 } });
     const p = await narrow.newPage();
     await p.goto(t.url);
-    await p.getByText("Что тренируем?").waitFor();
+    await p.getByRole("heading", { name: "Тренажёр" }).waitFor();
     const overflow = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     check(`${width}px: главная без горизонтальной прокрутки`, overflow <= 0, `${overflow}px`);
     await t.shot(p, `home-${width}`);

@@ -87,7 +87,7 @@ export default async function stats(t) {
     const seeded = await t.newContext({ serviceWorkers: "block" });
     const p = await seeded.newPage();
     await p.goto(t.url);
-    await p.getByText("Что тренируем?").waitFor();
+    await p.getByRole("heading", { name: "Тренажёр" }).waitFor();
     await seedAnswers(p, Array.from({ length: 120 }, (_, i) => answerRecord("j3", 1000 + i, i >= 20)));
     await openCabinet(p, t.url);
     await p.getByRole("button", { name: /^Статистика/ }).click();
@@ -105,14 +105,14 @@ ${["s1", "s2", "s3"]
   )
   .join("")}`;
     await p.goto(t.url);
-    await p.getByRole("button", { name: /Мои наборы/ }).click();
+    await p.getByRole("button", { name: /Свои наборы/ }).click();
     await p.locator('input[type="file"]').setInputFiles(fileInput("my.yaml", setYaml));
     await openCabinet(p, t.url);
     await p.getByRole("button", { name: /^Статистика/ }).click();
     check("набор без ответов в статистике не показан", !(await p.getByText("Набор «Мой набор»").isVisible()));
 
     await p.goto(t.url);
-    await p.getByRole("button", { name: /Мои наборы/ }).click();
+    await p.getByRole("button", { name: /Свои наборы/ }).click();
     await p.getByRole("button", { name: /^Мой набор/ }).click();
     await p.getByRole("button", { name: /^Начать/ }).click();
     const wrongId = (await p.locator("article").first().innerText()).match(/НАБОР-(s\d)/)[1];
@@ -156,7 +156,7 @@ ${["p1", "p2"]
   )
   .join("")}`;
     await p.goto(t.url);
-    await p.getByRole("button", { name: /Мои наборы/ }).click();
+    await p.getByRole("button", { name: /Свои наборы/ }).click();
     await p.locator('input[type="file"]').setInputFiles(fileInput("plain.yaml", plainYaml));
     await p.getByRole("button", { name: /^Без тем/ }).click();
     await p.getByRole("button", { name: /^Начать/ }).click();

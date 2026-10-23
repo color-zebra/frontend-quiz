@@ -70,7 +70,16 @@ export interface Lesson {
   questionIds: string[];
   /** Озвучка урока — полная https-ссылка на аудиофайл (относительный путь из файла уже разрешён от ссылки набора). */
   audio?: string;
+  /** В уроке есть практика за компьютером: демо-страница, DevTools. Ставит автор курса (computer: true). */
+  computer?: boolean;
 }
+
+/**
+ * Значки курса, которые ставит его автор: audio — «Озвучен», computer — «Практика за компьютером».
+ * Приложение их не проверяет — это слово автора.
+ */
+export type CourseFeature = "audio" | "computer";
+export const COURSE_FEATURES: readonly CourseFeature[] = ["audio", "computer"];
 
 /** Формат dist/questions.json. */
 export interface QuestionsFile {
@@ -85,6 +94,8 @@ export interface QuestionsFile {
   speech?: Question[];
   /** Уроки режима обучения, в порядке изучения. Бывают только у тестовых наборов. */
   lessons?: Lesson[];
+  /** Значки курса (features в файле набора). */
+  features?: CourseFeature[];
 }
 
 export interface QuestionBank extends QuestionsFile {

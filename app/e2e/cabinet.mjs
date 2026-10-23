@@ -19,7 +19,7 @@ export default async function cabinet(t) {
     const status = page.getByRole("status");
 
     await page.goto(t.url);
-    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
     check("на главной — значок кабинета вместо палитры", (await visible(page.getByRole("button", { name: "Кабинет" }))) && !(await page.getByRole("button", { name: "Оформление" }).isVisible()));
     check("заметок и статистики на главной больше нет", !(await page.getByRole("button", { name: /^Мои заметки/ }).isVisible()) && !(await statsTile.isVisible()));
 

@@ -20,7 +20,7 @@ export default async function progress(t) {
     const label = async (name) => await segment(name).getAttribute("aria-label");
     const home = async () => {
       await page.goto(t.url);
-      await page.getByText("Что тренируем?").waitFor();
+      await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
     };
     /** Отвечает на текущий вопрос: «верно», «неверно» или «не знаю»; возвращает id вопроса из его текста. */
     const answer = async (how) => {
@@ -79,7 +79,7 @@ export default async function progress(t) {
     );
 
     await page.reload();
-    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
     check("после перезагрузки ответы на месте: новых 1", (await label("Новые")) === "Новые · 1");
 
     // «Новые» — только неотвеченный вопрос; отвечаем на него неверно.
@@ -99,7 +99,7 @@ export default async function progress(t) {
     await page.getByRole("button", { name: "Кабинет" }).click();
     await page.getByRole("button", { name: "Обновить базу" }).click();
     await page.getByText(/исправлено 1/).waitFor();
-    await page.getByRole("button", { name: "Назад" }).click();
+    await page.getByRole("button", { name: "Тренажёр" }).click();
     check("исправленный вопрос ушёл из ошибок", (await label("Ошибки")) === "Ошибки · 0");
 
     // Устный вопрос: оценка «Не знал» на последнем вопросе сразу ведёт в итог — и всё равно записана.

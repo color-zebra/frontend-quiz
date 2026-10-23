@@ -6,6 +6,8 @@ import { openSettings } from "./fixtures.mjs";
 
 const BASE = "https://raw.githubusercontent.com/test/audio/main/";
 const SECONDS = 40;
+/** Картинка 1×1 — для урока с картинкой и подписью. */
+const PIXEL = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=", "base64");
 
 /** WAV с тишиной: 8 кГц, моно, 16 бит. */
 function silentWav(seconds) {
@@ -34,6 +36,8 @@ lessons:
     title: Урок со звуком
     audio: audio/a.wav
     body: |
+      ![Схема урока](images/pic.png "Подпись к картинке урока — длинная, чтобы переноситься рядом с кнопкой")
+
 ${Array.from({ length: 40 }, (_, i) => `      Абзац ${i + 1} урока, чтобы было что прокручивать.\n`).join("\n")}
   - id: a2
     title: Второй звуковой урок
@@ -61,6 +65,7 @@ export default async function audioSuite(t) {
   await context.route(`${BASE}**`, (route) => {
     const name = new URL(route.request().url()).pathname.split("/main/")[1];
     if (name === "course.yaml") return route.fulfill({ status: 200, contentType: "text/plain; charset=utf-8", body: COURSE });
+    if (name === "images/pic.png") return route.fulfill({ status: 200, contentType: "image/png", headers: { "Access-Control-Allow-Origin": "*" }, body: PIXEL });
     if (name !== "audio/a.wav" && name !== "audio/a2.wav") return route.fulfill({ status: 404 });
     const range = /bytes=(\d+)-(\d*)/.exec(route.request().headers().range ?? "");
     if (!range) return route.fulfill({ status: 200, contentType: "audio/wav", headers: { "Accept-Ranges": "bytes" }, body: wav });
@@ -106,7 +111,7 @@ export default async function audioSuite(t) {
         }),
     );
   const openLessonA = async () => {
-    await page.getByRole("button", { name: /Мои наборы/ }).click();
+    await page.getByRole("button", { name: /Свои наборы/ }).click();
     await page.getByRole("button", { name: /^Курс со звуком/ }).first().click();
     await page.getByRole("button", { name: "Оглавление", exact: true }).click();
     await page.getByRole("button", { name: /Урок со звуком/ }).click();
@@ -114,8 +119,8 @@ export default async function audioSuite(t) {
   };
 
   await page.goto(t.url);
-  await page.getByText("Что тренируем?").waitFor();
-  await page.getByRole("button", { name: /Мои наборы/ }).click();
+  await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
+  await page.getByRole("button", { name: /Свои наборы/ }).click();
   await page.getByRole("textbox", { name: "Ссылка на YAML-файл" }).fill(`${BASE}course.yaml`);
   await page.getByRole("button", { name: "Добавить", exact: true }).click();
   await page.getByRole("status").filter({ hasText: "Добавлен" }).waitFor();
@@ -131,6 +136,12 @@ export default async function audioSuite(t) {
   await page.getByRole("button", { name: "Слушать урок" }).click();
   await waitPlaying();
   check("звук пошёл, на уроке — «Пауза»", await visible(page.locator("main").getByRole("button", { name: "Пауза", exact: true })));
+  // Пока играет звук, экран перерисовывается несколько раз в секунду. Картинка урока при этом не должна
+  // пересоздаваться: иначе у подписи на миг пропадает кнопка «на весь экран» и подпись дёргается.
+  const lessonImage = page.locator("main img").first();
+  await lessonImage.evaluate((img) => (img.dataset.mark = "1"));
+  await page.waitForTimeout(1500);
+  check("пока играет звук, картинка урока не пересоздаётся", (await page.locator('main img[data-mark="1"]').count()) === 1);
   check("свёрнутый плеер: значок «играет» с названием урока", /«Урок со звуком»: играет/.test((await mini.getAttribute("aria-label")) ?? ""));
   const session = await page.evaluate(() => ({
     title: navigator.mediaSession.metadata?.title,
@@ -196,7 +207,7 @@ export default async function audioSuite(t) {
   await collapse();
   check("на паузе значок — «пауза»", /: пауза$/.test((await mini.getAttribute("aria-label")) ?? ""));
   await page.reload();
-  await page.getByText("Что тренируем?").waitFor();
+  await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
   check("после перезагрузки плеера нет", !(await mini.isVisible()));
   await openLessonA();
   const resume = page.getByRole("button", { name: /^Продолжить слушать · с / });
@@ -268,19 +279,20 @@ export default async function audioSuite(t) {
   // Второй урок уже слушали — кнопка предлагает продолжить.
   await page.getByRole("button", { name: /^(Слушать урок|Продолжить слушать)/ }).click();
   await waitPlaying();
-  for (let i = 0; i < 8 && !(await page.getByText("Что тренируем?").isVisible()); i++) {
+  for (let i = 0; i < 8 && !(await page.getByRole("heading", { name: "Тренажёр" }).isVisible()); i++) {
     await page.goBack();
     await page.waitForTimeout(200);
   }
-  await page.getByRole("button", { name: /Мои наборы/ }).click();
+  await page.getByRole("button", { name: /Свои наборы/ }).click();
   check("перед удалением звук играет", !(await media()).paused && (await mini.isVisible()));
   await page.getByRole("button", { name: "Удалить «Курс со звуком»" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Удалить" }).click();
-  check("набор удалён — плеер закрылся", !(await mini.isVisible()));
+  // Плеер закрывается на следующей отрисовке после удаления набора — ждём, а не смотрим в тот же миг.
+  check("набор удалён — плеер закрылся", await mini.waitFor({ state: "hidden", timeout: 3000 }).then(() => true, () => false));
 
   // Ответы в обучении по-прежнему не трогают тренировку на главной; блок настроек цел.
   await page.goto(t.url);
-  await page.getByText("Что тренируем?").waitFor();
+  await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
   await openSettings(page);
   check("приложение работает дальше", await visible(page.getByRole("heading", { name: "Настройка тренировки" })));
   await context.close();
@@ -358,10 +370,10 @@ questions:
     page.evaluate(async () => (await (await caches.open("lesson-audio")).keys()).map((r) => r.url.split("/").pop()).sort());
   const home = async () => {
     await page.goto(t.url);
-    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
   };
   const openCourse = async (title) => {
-    await page.getByRole("button", { name: /Мои наборы/ }).click();
+    await page.getByRole("button", { name: /Свои наборы/ }).click();
     await page.getByRole("button", { name: new RegExp(`^${title}`) }).first().click();
     await page.getByRole("button", { name: "Оглавление", exact: true }).click();
     await page.getByRole("heading", { name: "Оглавление" }).waitFor();
@@ -376,7 +388,7 @@ questions:
   await home();
   await page.evaluate(() => navigator.serviceWorker.ready);
   await home();
-  await page.getByRole("button", { name: /Мои наборы/ }).click();
+  await page.getByRole("button", { name: /Свои наборы/ }).click();
   await addSet("course.yaml");
   await addSet("second.yaml");
   await home();
@@ -465,7 +477,7 @@ questions:
   check("при запуске лишнее аудио стёрто", JSON.stringify(await stored()) === JSON.stringify(["shared.wav"]), JSON.stringify(await stored()));
 
   // Удалили оба курса — на телефоне не осталось ничего.
-  await page.getByRole("button", { name: /Мои наборы/ }).click();
+  await page.getByRole("button", { name: /Свои наборы/ }).click();
   for (const title of ["Курс офлайн", "Второй курс"]) {
     await page.getByRole("button", { name: `Удалить «${title}»` }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Удалить" }).click();

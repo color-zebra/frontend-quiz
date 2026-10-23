@@ -7,7 +7,7 @@ import { BookmarksProvider } from "../features/bookmarks/BookmarksProvider";
 import { LessonsProvider } from "../features/lessons/LessonsProvider";
 import { NotesProvider } from "../features/notes/NotesProvider";
 import { ProgressProvider } from "../features/progress/ProgressProvider";
-import { AppUpdateToast } from "../features/pwa/AppUpdateToast";
+import { AppUpdateProvider } from "../features/pwa/AppUpdate";
 import { SetsProvider } from "../features/sets/SetsProvider";
 import { Background } from "../shared/ui/Background";
 import { Brand } from "../shared/ui/Brand";
@@ -39,9 +39,8 @@ export function App() {
   }
 
   return (
-    <>
+    <AppUpdateProvider>
       <Background />
-      <AppUpdateToast />
       {state.status === "ready" && (
         <NotesProvider>
           <ProgressProvider>
@@ -75,6 +74,6 @@ export function App() {
           </Button>
         </div>
       )}
-    </>
+    </AppUpdateProvider>
   );
 }

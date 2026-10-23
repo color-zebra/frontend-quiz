@@ -85,8 +85,8 @@ export default async function lessons(t) {
 
   const lessonTitle = (name) => page.getByRole("heading", { level: 1, name });
   const openSets = async () => {
-    await page.getByRole("button", { name: /Мои наборы/ }).click();
-    await page.getByRole("heading", { name: "Мои наборы" }).waitFor();
+    await page.getByRole("button", { name: /Свои наборы/ }).click();
+    await page.getByRole("heading", { name: "Свои наборы" }).waitFor();
   };
   const addSet = async (name) => {
     await page.getByRole("textbox", { name: "Ссылка на YAML-файл" }).fill(`${BASE}${name}`);
@@ -104,7 +104,7 @@ export default async function lessons(t) {
   };
 
   await page.goto(t.url);
-  await page.getByText("Что тренируем?").waitFor();
+  await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
 
   // Незаконченная тренировка основной базы: режим обучения не должен её трогать.
   await page.getByRole("button", { name: /^Начать/ }).click();
@@ -125,13 +125,13 @@ export default async function lessons(t) {
       }),
   );
   await page.reload();
-  await page.getByText("Что тренируем?").waitFor();
+  await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
   const savedSession = await page.evaluate(() => localStorage.getItem("fq.activeSession"));
   const answersBefore = await countAnswers(page);
   check("до обучения: незаконченная тренировка и один ответ в ленте", !!savedSession && answersBefore === 1, `ответов: ${answersBefore}`);
   await page.getByRole("button", { name: "Кабинет" }).click();
   const achievementsBefore = await page.getByRole("button", { name: /^Достижения/ }).innerText();
-  await page.getByRole("button", { name: "Назад" }).click();
+  await page.getByRole("button", { name: "Тренажёр" }).click();
 
   // Набор без уроков — экран набора прежний.
   await openSets();
@@ -291,7 +291,7 @@ questions:
 
   // Приложение закрыли посреди вопросов урока, на втором вопросе.
   await page.reload();
-  await page.getByText("Что тренируем?").waitFor();
+  await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
   check("ответы обучения не попали в ленту", (await countAnswers(page)) === answersBefore, `ответов: ${await countAnswers(page)}`);
   check("незаконченная тренировка не перезаписана", (await page.evaluate(() => localStorage.getItem("fq.activeSession"))) === savedSession);
   check("плашка незаконченной тренировки на главной на месте", await visible(page.getByRole("status").filter({ hasText: "Незаконченная сессия" })));
@@ -359,7 +359,10 @@ questions:
   await page.getByRole("button", { name: "Завершить курс" }).click();
   await page.getByRole("heading", { name: "Оглавление" }).waitFor();
   check("последний урок без вопросов освоен кнопкой — «Курс пройден: все уроки освоены.»", await visible(page.getByText("Курс пройден: все уроки освоены.")));
-  check("в оглавлении «освоено 3» и отметки у всех уроков", (await visible(page.getByText(/· освоено 3$/))) && (await page.getByText("освоен ·").count()) === 3);
+  check(
+    "на странице курса «Уроки освоены 3 из 3» и отметки у всех уроков",
+    (await visible(page.getByText("3 из 3", { exact: true }).first())) && (await page.getByText("освоен ·").count()) === 3,
+  );
   await t.shot(page, "finished");
   await page.goBack();
   await page.getByRole("heading", { level: 1, name: "Курс для проверки" }).waitFor();
@@ -371,7 +374,7 @@ questions:
 
   check("после всего обучения лента ответов прежняя", (await countAnswers(page)) === answersBefore);
   await page.goto(t.url);
-  await page.getByText("Что тренируем?").waitFor();
+  await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
   await page.getByRole("button", { name: "Кабинет" }).click();
   check("достижений не прибавилось", (await page.getByRole("button", { name: /^Достижения/ }).innerText()) === achievementsBefore);
 
@@ -389,7 +392,7 @@ questions:
   );
 
   // Сброс курса — отдельной кнопкой в оглавлении.
-  await page.getByRole("button", { name: "Назад" }).click();
+  await page.getByRole("button", { name: "Тренажёр" }).click();
   await openSets();
   await openSet("Курс для проверки");
   await courseLink.click();
@@ -411,7 +414,7 @@ questions:
   const oldBackup = JSON.stringify({ ...backup, version: 2, lessons: undefined });
   await upload.setInputFiles(fileInput("old.json", oldBackup));
   check("старая копия без уроков: свой прогресс остался", (await status.innerText()).includes("Прогресса уроков в копии нет — твой остался как был."), await status.innerText());
-  await page.getByRole("button", { name: "Назад" }).click();
+  await page.getByRole("button", { name: "Тренажёр" }).click();
   await openSets();
   await openSet("Курс для проверки");
   check("прогресс вернулся из копии", await visible(learn.getByText("Курс пройден · освоено 3 из 3")));
@@ -477,8 +480,8 @@ questions:
   try {
     const page = await context.newPage();
     await page.goto(t.url);
-    await page.getByText("Что тренируем?").waitFor();
-    await page.getByRole("button", { name: /Мои наборы/ }).click();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
+    await page.getByRole("button", { name: /Свои наборы/ }).click();
     await page.getByRole("textbox", { name: "Ссылка на YAML-файл" }).fill(`${BASE}pictures.yaml`);
     await page.getByRole("button", { name: "Добавить", exact: true }).click();
     await page.getByRole("button", { name: /^Картинки в вопросах/ }).first().click();
@@ -514,8 +517,8 @@ questions:
 
     // Набор из файла: относительный путь не от чего считать — плашка с описанием, а не битая картинка.
     await page.goto(t.url);
-    await page.getByText("Что тренируем?").waitFor();
-    await page.getByRole("button", { name: /Мои наборы/ }).click();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
+    await page.getByRole("button", { name: /Свои наборы/ }).click();
     await page.locator('input[type="file"]').setInputFiles(fileInput("pictures-file.yaml", yaml.replace("Картинки в вопросах", "Картинки из файла")));
     await page.getByRole("button", { name: /^Картинки из файла/ }).first().click();
     await page.getByRole("button", { name: /^Начать/ }).click();
@@ -568,8 +571,8 @@ questions:
       await page.waitForTimeout(200);
     };
     await page.goto(t.url);
-    await page.getByText("Что тренируем?").waitFor();
-    await page.getByRole("button", { name: /Мои наборы/ }).click();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
+    await page.getByRole("button", { name: /Свои наборы/ }).click();
     await page.getByRole("textbox", { name: "Ссылка на YAML-файл" }).fill(`${BASE}long.yaml`);
     await page.getByRole("button", { name: "Добавить", exact: true }).click();
     await page.getByRole("button", { name: /^Длинные уроки/ }).first().click();
@@ -661,11 +664,11 @@ async function offline(t, files, image) {
   try {
     const page = await context.newPage();
     await page.goto(t.url);
-    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
     await page.evaluate(() => navigator.serviceWorker.ready);
     await page.reload();
-    await page.getByText("Что тренируем?").waitFor();
-    await page.getByRole("button", { name: /Мои наборы/ }).click();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
+    await page.getByRole("button", { name: /Свои наборы/ }).click();
     await page.getByRole("textbox", { name: "Ссылка на YAML-файл" }).fill(`${BASE}course.yaml`);
     await page.getByRole("button", { name: "Добавить", exact: true }).click();
     await page.getByRole("button", { name: /^Курс для проверки/ }).first().click();
@@ -681,8 +684,8 @@ async function offline(t, files, image) {
     networkDown = true;
     await context.setOffline(true);
     await page.goto(t.url);
-    await page.getByText("Что тренируем?").waitFor();
-    await page.getByRole("button", { name: /Мои наборы/ }).click();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
+    await page.getByRole("button", { name: /Свои наборы/ }).click();
     await page.getByRole("button", { name: /^Курс для проверки/ }).first().click();
     await page.getByRole("button", { name: "Продолжить обучение" }).click();
     check("без сети урок открывается", await visible(page.getByRole("heading", { level: 1, name: "Первый урок" })));

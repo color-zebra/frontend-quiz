@@ -25,7 +25,7 @@ export default async function base(t) {
       check("причина ошибки понятная", await visible(page.getByText("Нет связи с сервером")));
       await page.unroute("**/questions.json*");
       await page.getByRole("button", { name: "Попробовать ещё раз" }).click();
-      check("повтор после появления связи — главная", await visible(page.getByText("Что тренируем?")));
+      check("повтор после появления связи — главная", await visible(page.getByRole("heading", { name: "Тренажёр" })));
       await context.close();
     }
 
@@ -35,13 +35,13 @@ export default async function base(t) {
     page.on("request", (r) => r.url().includes("questions.json") && requests++);
 
     await page.goto(t.url);
-    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
     check("первый запуск скачал базу один раз", requests === 1, `запросов: ${requests}`);
-    check("подзаголовок с числом вопросов и датой базы", await visible(page.getByText(new RegExp(`^${total} вопрос\\S* · база от `))));
+    check("подзаголовок с числом вопросов и датой базы", await visible(page.getByText(new RegExp(`${total} вопрос\\S* · база от `))));
     check(`под фильтр все ${total} вопросов`, await visible(page.getByText(new RegExp(`^Под фильтр подходит ${total} `))));
     requests = 0;
     await page.reload();
-    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
     await page.waitForTimeout(300);
     check("повторное открытие — без сети, из копии на устройстве", requests === 0, `запросов: ${requests}`);
 
@@ -65,7 +65,7 @@ export default async function base(t) {
     check("сессия на 10 доходит до итога", await visible(page.getByText("Отвечено 10 вопросов")));
     await t.shot(page, "summary", true);
     await page.getByRole("button", { name: "На главную" }).click();
-    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
 
     // Подтемы — на экране настройки, шторка одной темы.
     await openSettings(page);
@@ -93,8 +93,8 @@ export default async function base(t) {
     await page.getByRole("button", { name: "Обновить базу" }).click();
     check("сводка: новых 2, исправлено 1, удалено 1", await visible(page.getByText("База обновлена: новых 2, исправлено 1, удалено 1.")));
     await page.reload();
-    await page.getByText("Что тренируем?").waitFor();
-    check("обновлённая база сохранилась на устройстве", await visible(page.getByText(new RegExp(`^${total + 1} вопрос\\S* · база`))));
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
+    check("обновлённая база сохранилась на устройстве", await visible(page.getByText(new RegExp(`${total + 1} вопрос\\S* · база`))));
     await page.getByRole("button", { name: "Кабинет" }).click();
     await page.route("**/questions.json*", (route) => route.abort());
     await page.getByRole("button", { name: "Обновить базу" }).click();
@@ -108,7 +108,7 @@ export default async function base(t) {
     await page.getByRole("button", { name: /Мои заметки/ }).click();
     check("заметка в списке заметок", await visible(page.getByText("Проверочная заметка")));
     await page.getByRole("button", { name: "Назад" }).click();
-    await page.getByRole("button", { name: "Назад" }).click();
+    await page.getByRole("button", { name: "Тренажёр" }).click();
 
     // Бесконечный режим и системная «Назад».
     await chooseLength(page, "∞");

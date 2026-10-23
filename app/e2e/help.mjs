@@ -1,8 +1,8 @@
-// Помощь: плашка «Впервые здесь?», экран «Помощь» с двумя инструкциями, разделы, «Поделиться», переходы,
+// Помощь: подсказка «Впервые здесь?» в «Курсах», экран «Помощь» с двумя инструкциями, разделы, «Поделиться», переходы,
 // прямые ссылки #help, #help-basics и #help-sets.
 export default async function help(t) {
   const { check, visible } = t;
-  const context = await t.newContext();
+  const context = await t.newContext({ section: "courses" });
   await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: t.url.slice(0, -1) });
   const page = await context.newPage();
   const hub = page.getByRole("heading", { name: "Помощь" });
@@ -16,12 +16,12 @@ export default async function help(t) {
   };
 
   await page.goto(t.url);
-  await page.getByText("Что тренируем?").waitFor();
+  await page.getByRole("heading", { name: "Курсы", exact: true }).waitFor();
   check("плашка «Впервые здесь?» на первом открытии", await visible(page.getByText("Впервые здесь?")));
   await page.waitForTimeout(300);
   await t.shot(page, "hint");
 
-  await page.getByRole("button", { name: "Открыть инструкцию" }).click();
+  await page.getByRole("button", { name: "Как устроена Зубрилка" }).click();
   check("плашка ведёт на экран «Помощь»", await visible(hub));
   check(
     "на «Помощи» — обе инструкции плитками",
@@ -33,7 +33,7 @@ export default async function help(t) {
 
   await page.getByRole("button", { name: /^Как пользоваться/ }).click();
   check("плитка открывает общую инструкцию", await visible(basics));
-  check("первый раздел раскрыт", await visible(page.getByText(/тренажёр вопросов с вариантами ответов/)));
+  check("первый раздел раскрыт", await visible(page.getByText(/курсы и тренажёр для подготовки/)));
   check("остальные разделы свёрнуты", !(await page.getByText("Открой сайт в Chrome.").isVisible()));
   await page.getByText("Как установить на телефон или ноутбук").click();
   check("раздел раскрывается по нажатию", await visible(page.getByText("Открой сайт в Chrome.")));
@@ -49,7 +49,7 @@ export default async function help(t) {
   check("пример YAML подсвечен", (await page.locator("pre .token").count()) > 10);
   await page.getByText("Попробовать на готовом примере").click();
   const example = page.locator("details", { hasText: "Попробовать на готовом примере" });
-  check("после входа «Мои наборы» в инструкции — кнопка", await visible(example.getByRole("button", { name: "«Мои наборы»" })));
+  check("после входа «Свои наборы» в инструкции — кнопка", await visible(example.getByRole("button", { name: "«Свои наборы»" })));
   await t.shot(page, "sets", true);
   await share("#help-sets");
 
@@ -58,10 +58,10 @@ export default async function help(t) {
   await page.getByRole("button", { name: "Назад" }).click();
   check("«Назад» — снова «Помощь»", await visible(hub));
   await page.getByRole("button", { name: "Назад" }).click();
-  check("«Назад» — на главную", await visible(page.getByText("Что тренируем?")));
+  check("«Назад» — на главную", await visible(page.getByRole("heading", { name: "Курсы", exact: true })));
   check("плашка больше не показывается", !(await page.getByText("Впервые здесь?").isVisible()));
   await page.reload();
-  await page.getByText("Что тренируем?").waitFor();
+  await page.getByRole("heading", { name: "Курсы", exact: true }).waitFor();
   check("и после перезагрузки тоже", !(await visible(page.getByText("Впервые здесь?"), 800)));
 
   await page.getByRole("button", { name: "Помощь" }).click();
@@ -71,7 +71,8 @@ export default async function help(t) {
   await page.getByRole("button", { name: "Назад" }).click();
   await page.getByRole("button", { name: "Назад" }).click();
 
-  await page.getByRole("button", { name: /Мои наборы/ }).click();
+  await page.getByRole("button", { name: "Тренажёр" }).click();
+  await page.getByRole("button", { name: /Свои наборы/ }).click();
   await page.getByRole("button", { name: "инструкция", exact: true }).click();
   check("с экрана наборов — сразу инструкция про наборы", await visible(setsHelp));
   await context.close();
@@ -87,7 +88,7 @@ export default async function help(t) {
     check(`прямая ссылка ${hash} открывает «${heading}»`, await visible(p.getByRole("heading", { name: heading }), 5000));
     check(`${hash}: метка убрана из адреса`, !p.url().includes("#"), p.url());
     await p.goBack();
-    check(`${hash}: «Назад» ведёт на главную`, await visible(p.getByText("Что тренируем?")));
+    check(`${hash}: «Назад» ведёт на главную`, await visible(p.getByRole("heading", { name: "Тренажёр" })));
     await direct.close();
   }
 }

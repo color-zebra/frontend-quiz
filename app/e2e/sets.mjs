@@ -60,10 +60,10 @@ questions:
   );
   const page = await context.newPage();
   await page.goto(t.url);
-  await page.getByText("Что тренируем?").waitFor();
+  await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
 
-  await page.getByRole("button", { name: /Мои наборы/ }).click();
-  check("экран наборов открылся", await visible(page.getByRole("heading", { name: "Мои наборы" })));
+  await page.getByRole("button", { name: /Свои наборы/ }).click();
+  check("экран наборов открылся", await visible(page.getByRole("heading", { name: "Свои наборы" })));
   check("пустой список", await visible(page.getByText("Наборов пока нет.")));
 
   const input = page.getByRole("textbox", { name: "Ссылка на YAML-файл" });
@@ -159,7 +159,7 @@ questions:
   check("заметка помечена «Набор удалён»", await visible(page.getByText("Набор удалён")));
 
   await page.reload();
-  await page.getByText("Что тренируем?").waitFor();
+  await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
   check("после перезагрузки на главной 1 набор", await visible(page.getByText("1 набор")));
   await context.close();
 }

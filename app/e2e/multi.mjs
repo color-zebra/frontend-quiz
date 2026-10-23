@@ -13,7 +13,7 @@ export default async function multi(t) {
     const context = await t.newContext({ serviceWorkers: "block" });
     const page = await context.newPage();
     await page.goto(t.url);
-    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
     await chooseLength(page, "10");
     await page.getByRole("button", { name: "Начать · 3 вопроса" }).click();
 

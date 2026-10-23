@@ -19,7 +19,7 @@ export default async function resume(t) {
     const currentId = async () => (await page.locator("article").first().innerText()).match(/ВОПРОС-(r\d)/)[1];
     const home = async () => {
       await page.goto(t.url);
-      await page.getByText("Что тренируем?").waitFor();
+      await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
     };
 
     await home();
@@ -33,7 +33,7 @@ export default async function resume(t) {
 
     // Перезапуск посреди сессии — как будто Android выгрузил приложение.
     await page.reload();
-    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
     check("после перезапуска — плашка «Незаконченная сессия · вопрос 2 из 3»", await visible(banner.getByText("вопрос 2 из 3")));
     await t.shot(page, "banner");
     await banner.getByRole("button", { name: "Продолжить" }).click();
@@ -52,11 +52,11 @@ export default async function resume(t) {
     await page.getByRole("button", { name: /^Начать/ }).click();
     await page.getByRole("button", { name: "Не знаю" }).click();
     await page.reload();
-    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
     await banner.getByRole("button", { name: "Не продолжать сессию" }).click();
     check("«×» убирает плашку", !(await visible(banner, 800)));
     await page.reload();
-    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
     check("и после перезапуска её нет", !(await visible(banner, 800)));
     await context.close();
   });
@@ -69,7 +69,7 @@ export default async function resume(t) {
     const page = await context.newPage();
     const newBank = page.getByRole("status").filter({ hasText: "Вышла новая база вопросов" });
     await page.goto(t.url);
-    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
     check("база свежая — плашки нет", !(await visible(newBank, 1500)));
     check("в шапке главной больше нет «Обновить базу»", !(await page.getByRole("button", { name: "Обновить базу" }).isVisible()));
     await openCabinet(page, t.url);
@@ -83,12 +83,12 @@ export default async function resume(t) {
     writeFileSync(VERSION, JSON.stringify({ generatedAt: fresh.generatedAt }));
 
     await page.goto(t.url);
-    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
     check("вышла новая база — плашка на главной", await visible(newBank));
     await t.shot(page, "new-bank");
     await newBank.getByRole("button", { name: "Не сейчас" }).click();
     await page.reload();
-    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
     check("закрытая плашка про эту версию не возвращается", !(await visible(newBank, 1500)));
 
     // Ещё более свежая база — плашка снова; «Обновить» прямо в ней.
@@ -101,7 +101,7 @@ export default async function resume(t) {
     check("«Обновить» в плашке — база обновлена: новых 1", await visible(page.getByText("База обновлена: новых 1.")));
     check("после обновления плашки нет", !(await newBank.isVisible()));
     await page.reload();
-    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
     check("и после перезапуска — база свежая, плашки нет", !(await visible(newBank, 1500)));
     await context.close();
   } finally {

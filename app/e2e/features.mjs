@@ -17,7 +17,7 @@ export default async function features(t) {
     const context = await t.newContext({ serviceWorkers: "block" });
     const page = await context.newPage();
     await page.goto(t.url);
-    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
     await chooseLength(page, "10");
     await page.getByRole("button", { name: "Начать · 2 вопроса" }).click();
     await page.getByText(/^\d \/ 2$/).waitFor();
@@ -67,8 +67,8 @@ export default async function features(t) {
   const context = await t.newContext({ serviceWorkers: "block" });
   const page = await context.newPage();
   await page.goto(t.url);
-  await page.getByText("Что тренируем?").waitFor();
-  await page.getByRole("button", { name: /Мои наборы/ }).click();
+  await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
+  await page.getByRole("button", { name: /Свои наборы/ }).click();
   const yaml = `title: С ошибками
 questions:
   - id: ok-1

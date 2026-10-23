@@ -2164,6 +2164,7 @@ lessons:
     subtopic: Анимация со смыслом
     title: Анимация со смыслом
     audio: https://color-zebra.github.io/frontend-quiz-audio/ui-ux/uix-motion.mp3
+    computer: true
     questions: [uix-077, uix-078, uix-079, uix-080, uix-081, uix-082]
     body: |
       ## Какую проблему решаем

@@ -69,3 +69,69 @@
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
+
+/* Скачанные курсы: название и размер, справа — удалить. */
+.courseList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.courseRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.courseRow + .courseRow {
+  border-top: 1px solid var(--glass-border);
+}
+
+.courseText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.courseTitle {
+  font-size: var(--font-size-body);
+  font-weight: 600;
+}
+
+.courseMeta {
+  color: var(--muted);
+  font-size: var(--font-size-hint);
+}
+
+/* Итоги: три числа в ряд — ответов, верно, дней подряд. */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 0;
+  padding: 14px 8px;
+  text-align: center;
+}
+
+.summary div {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+}
+
+.summary dd {
+  margin: 0;
+  font-size: var(--font-size-heading);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary dt {
+  color: var(--muted);
+  font-size: var(--font-size-hint);
+}

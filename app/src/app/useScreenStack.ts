@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import type { TrainingKind } from "../features/session/filters";
 
 export type AppScreen =
+  // Три раздела — корни стека: «Курсы», «Тренажёр» (home) и «Кабинет». Переключатель подменяет корень.
+  | { name: "courses" }
+  | { name: "allCourses" }
+  // Курс из каталога до скачивания — по ссылке набора.
+  | { name: "coursePreview"; url: string }
   | { name: "home" }
   | { name: "session" }
   | { name: "summary" }

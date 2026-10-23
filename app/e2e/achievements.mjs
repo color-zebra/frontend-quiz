@@ -26,7 +26,7 @@ export default async function achievements(t) {
     /** Отвечает на один вопрос сессии (верно или «Не знаю») и выходит в итог. */
     const answerOneAndFinish = async (how = "верно") => {
       await page.goto(t.url);
-      await page.getByText("Что тренируем?").waitFor();
+      await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
       await page.getByRole("button", { name: /^Начать/ }).click();
       if (how === "не знаю") await page.getByRole("button", { name: "Не знаю" }).click();
       else {

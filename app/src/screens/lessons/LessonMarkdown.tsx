@@ -1,4 +1,4 @@
-import type { MouseEvent } from "react";
+import { useMemo, type MouseEvent } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { CodeLang } from "../../data/types";
@@ -110,6 +110,10 @@ interface LessonMarkdownProps {
 }
 
 export function LessonMarkdown({ text, baseUrl }: LessonMarkdownProps) {
+  // Один набор компонентов на ссылку набора: новый на каждой отрисовке — новый «тип» картинки, и React пересоздаёт
+  // её. Пока играет озвучка, урок перерисовывается несколько раз в секунду — подпись картинки то переносилась,
+  // то возвращалась: у только что созданной картинки ещё нет кнопки «на весь экран».
+  const components = useMemo(() => getComponents(baseUrl), [baseUrl]);
   return (
     <div className={styles.lesson}>
       <ReactMarkdown
@@ -121,7 +125,7 @@ export function LessonMarkdown({ text, baseUrl }: LessonMarkdownProps) {
           footnoteLabelProperties: {},
           footnoteBackLabel: "Вернуться к тексту",
         }}
-        components={getComponents(baseUrl)}
+        components={components}
       >
         {text}
       </ReactMarkdown>

@@ -11,8 +11,8 @@ export default async function files(t) {
   const context = await t.newContext({ serviceWorkers: "block" });
   const page = await context.newPage();
   await page.goto(t.url);
-  await page.getByText("Что тренируем?").waitFor();
-  await page.getByRole("button", { name: /Мои наборы/ }).click();
+  await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
+  await page.getByRole("button", { name: /Свои наборы/ }).click();
   const input = page.locator('input[type="file"]');
 
   check("кнопка «Загрузить файл с устройства»", await visible(page.getByRole("button", { name: "Загрузить файл с устройства" })));

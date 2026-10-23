@@ -1,4 +1,4 @@
-// Каталог готовых наборов на экране «Мои наборы»: добавление по кнопке, «Открыть», нет сети, набор, добавленный
+// Каталог готовых наборов без уроков на экране «Свои наборы»: добавление по кнопке, «Открыть», нет сети, набор, добавленный
 // вручную по ссылке на страницу файла, удаление, сворачивание и его запоминание. Пункты — из custom-sets/catalog.yaml.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -28,7 +28,9 @@ export default async function catalog(t) {
     if (!file || !path.startsWith(`${repoPath}/main/`) || !existsSync(join(setsDir, file))) return { url, title };
     const yaml = readFileSync(join(setsDir, file), "utf8");
     return { url, file, path, yaml, title: load(yaml).title };
-  });
+  })
+    // Курсы с уроками живут в разделе «Курсы» (их проверяет courses.mjs); здесь — только наборы без уроков.
+    .filter((entry) => !entry.yaml || !load(entry.yaml).lessons?.length);
   const total = entries.length;
   const totalText = `${total} ${plural(total, SET_FORMS)}`;
   const local = entries.filter((e) => e.file);
@@ -49,9 +51,9 @@ export default async function catalog(t) {
   const page = await context.newPage();
   const openSets = async () => {
     await page.goto(t.url);
-    await page.getByText("Что тренируем?").waitFor();
-    await page.getByRole("button", { name: /Мои наборы/ }).click();
-    await page.getByRole("heading", { name: "Мои наборы" }).waitFor();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
+    await page.getByRole("button", { name: /Свои наборы/ }).click();
+    await page.getByRole("heading", { name: "Свои наборы" }).waitFor();
   };
   const summary = page.locator("summary", { hasText: "Готовые наборы" });
   // Карточка пункта — свой <details>; её шапка — название и цифры, внутри — описание и кнопка.

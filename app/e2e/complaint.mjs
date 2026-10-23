@@ -42,7 +42,7 @@ export default async function complaint(t) {
     await page.getByRole("button", COMPLAIN).click();
   };
   await page.goto(t.url);
-  await page.getByText("Что тренируем?").waitFor();
+  await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
 
   // Основная база: ссылка ведёт на файл и строку текущего вопроса.
   await page.getByRole("button", { name: /^Начать/ }).click();
@@ -64,17 +64,17 @@ export default async function complaint(t) {
 
   // Номер строки сдвигается от правок соседних вопросов — это не «исправление» вопроса.
   await page.goto(t.url);
-  await page.getByText("Что тренируем?").waitFor();
+  await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
   const shift = (q) => ({ ...q, line: q.line + 3 });
   await withBank({ questions: base.questions.map(shift), speech: (base.speech ?? []).map(shift) }, async () => {
     await page.getByRole("button", { name: "Кабинет" }).click();
     await page.getByRole("button", { name: "Обновить базу" }).click();
     check("сдвиг строк в файлах не считается исправлением", await visible(page.getByText("У тебя самая свежая база.")));
-    await page.getByRole("button", { name: "Назад" }).click();
+    await page.getByRole("button", { name: "Тренажёр" }).click();
   });
 
   // Набор с устройства — шутка без ссылки; та же кнопка на разборе ошибки.
-  await page.getByRole("button", { name: /Мои наборы/ }).click();
+  await page.getByRole("button", { name: /Свои наборы/ }).click();
   await page.locator('input[type="file"]').setInputFiles(fileInput("my.yaml", setYaml("Мой набор")));
   await openSet("Мой набор");
   const joke = page.getByText("Так ты сам вопросы составлял, я-то при чём? 🙂");
@@ -95,7 +95,7 @@ export default async function complaint(t) {
     ["Набор с сайта", "https://files.example.test/sets/x.yaml", "https://files.example.test/sets/x.yaml"],
   ]) {
     await page.goto(t.url);
-    await page.getByRole("button", { name: /Мои наборы/ }).click();
+    await page.getByRole("button", { name: /Свои наборы/ }).click();
     await page.getByRole("textbox", { name: "Ссылка на YAML-файл" }).fill(link);
     await page.getByRole("button", { name: "Добавить", exact: true }).click();
     await openSet(title);

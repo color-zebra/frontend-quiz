@@ -12,8 +12,8 @@ export default async function speech(t) {
     const context = await t.newContext({ serviceWorkers: "block" });
     const page = await context.newPage();
     await page.goto(t.url);
-    await page.getByText("Что тренируем?").waitFor();
-    await page.getByRole("button", { name: /Мои наборы/ }).click();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
+    await page.getByRole("button", { name: /Свои наборы/ }).click();
     const sample = readFileSync(join(ROOT_DIR, "examples", "speech-sample.yaml"), "utf8");
     await page.locator('input[type="file"]').setInputFiles(fileInput("speech-sample.yaml", sample));
     check("устный набор добавлен: 6 вопросов", await visible(page.getByText("Добавлен «Пример устного набора — JavaScript и React»: 6 вопросов.")));
@@ -59,8 +59,8 @@ export default async function speech(t) {
     const context = await t.newContext({ serviceWorkers: "block" });
     const page = await context.newPage();
     await page.goto(t.url);
-    await page.getByText("Что тренируем?").waitFor();
-    await page.getByRole("button", { name: /Мои наборы/ }).click();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
+    await page.getByRole("button", { name: /Свои наборы/ }).click();
     const mixed = `title: Смешанный
 questions:
   - id: t-1
@@ -91,7 +91,7 @@ questions:
     const context = await t.newContext({ serviceWorkers: "block" });
     const page = await context.newPage();
     await page.goto(t.url);
-    await page.getByText("Что тренируем?").waitFor();
+    await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
     check("плитка «Устные вопросы» на главной", await visible(page.getByRole("button", { name: /Устные вопросы/ })));
     check("без галки — только тестовые", await visible(page.getByText(/^Под фильтр подходит 2 вопроса$/)));
     await openSettings(page);

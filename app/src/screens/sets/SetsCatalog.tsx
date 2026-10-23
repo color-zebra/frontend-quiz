@@ -16,6 +16,9 @@ import { getErrorText, getQuestionCount, getReportDetails, getReportText, type M
 import styles from "./SetsCatalog.module.css";
 
 /** Свёрнут ли каталог: запоминаем выбор, в первый раз каталог открыт — чтобы его заметили. */
+/** Наборы каталога без уроков: курсы показываются в разделе «Курсы». */
+const CATALOG_SETS = CATALOG.filter((entry) => entry.lessons.length === 0);
+
 const OPEN_KEY = "fq.setsCatalogOpen";
 const SET_FORMS = ["набор", "набора", "наборов"] as const;
 
@@ -62,15 +65,18 @@ interface SetsCatalogProps {
   onDeleteSet: (record: SetRecord) => void;
 }
 
-/** Каталог готовых наборов: список из custom-sets/catalog.yaml, набор скачивается по кнопке «Добавить». */
+/**
+ * Готовые наборы без уроков (устная тренировка к курсу): список из custom-sets/catalog.yaml, набор скачивается по
+ * кнопке «Добавить». Курсы с уроками живут в разделе «Курсы» — здесь они не повторяются.
+ */
 export function SetsCatalog({ onOpenSet, onDeleteSet }: SetsCatalogProps) {
   const { sets, addSet } = useSets();
   const [open, setOpen] = useState(() => readStorage(OPEN_KEY) !== "0");
   const [busyKeys, setBusyKeys] = useState<string[]>([]);
   const [messages, setMessages] = useState<Record<string, Message>>({});
 
-  if (CATALOG.length === 0) return null;
-  const added = CATALOG.filter((entry) => findAddedSet(entry, sets)).length;
+  if (CATALOG_SETS.length === 0) return null;
+  const added = CATALOG_SETS.filter((entry) => findAddedSet(entry, sets)).length;
 
   function showMessage(key: string, message: Message | null) {
     setMessages((prev) => {
@@ -113,12 +119,12 @@ export function SetsCatalog({ onOpenSet, onDeleteSet }: SetsCatalogProps) {
       <summary className={styles.summary}>
         <span className={styles.head}>
           <SectionLabel className={styles.label}>Готовые наборы</SectionLabel>
-          <span className={styles.line}>{getSummary(CATALOG.length, added)}</span>
+          <span className={styles.line}>{getSummary(CATALOG_SETS.length, added)}</span>
         </span>
         <Icon name="chevronRight" className={styles.marker} />
       </summary>
       <ul className={styles.list}>
-        {CATALOG.map((entry) => {
+        {CATALOG_SETS.map((entry) => {
           const record = findAddedSet(entry, sets);
           const message = messages[entry.url];
           return (
@@ -137,6 +143,7 @@ export function SetsCatalog({ onOpenSet, onDeleteSet }: SetsCatalogProps) {
           );
         })}
       </ul>
+      <p className={styles.coursesHint}>Курсы с уроками — в разделе «Курсы», на экране «Все курсы».</p>
     </details>
   );
 }

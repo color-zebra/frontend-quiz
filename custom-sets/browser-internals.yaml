@@ -4,6 +4,7 @@
 # Уроки перечисляют свои вопросы полем questions; номера вопросов не менять — к ним привязан прогресс людей.
 # Скриншоты DevTools сняты в Chrome 155 с демо-страниц app/public/demos/browser. План — plans/browser-course.md.
 title: Браузер изнутри
+features: [computer]
 lessons:
   - id: brw-intro
     topic: Введение
@@ -179,6 +180,7 @@ lessons:
     topic: Как браузер рисует
     subtopic: Event loop и кадр
     title: Event loop и кадр
+    computer: true
     questions: [brw-005, brw-006, brw-007, brw-008, brw-009, brw-010]
     body: |
       ## Какую проблему решаем
@@ -384,6 +386,7 @@ lessons:
     topic: Как браузер рисует
     subtopic: Конвейер отрисовки
     title: Конвейер отрисовки
+    computer: true
     questions: [brw-011, brw-012, brw-013, brw-014, brw-015, brw-016]
     body: |
       ## Какую проблему решаем
@@ -567,6 +570,7 @@ lessons:
     topic: Как браузер рисует
     subtopic: Принудительная раскладка
     title: Принудительная раскладка
+    computer: true
     questions: [brw-017, brw-018, brw-019, brw-020, brw-021, brw-022]
     body: |
       ## Какую проблему решаем
@@ -755,6 +759,7 @@ lessons:
     topic: 'Скорость: найти и починить'
     subtopic: Вкладка Performance
     title: Читаем вкладку Performance
+    computer: true
     questions: [brw-023, brw-024, brw-077, brw-026, brw-027, brw-028]
     body: |
       ## Какую проблему решаем
@@ -968,6 +973,7 @@ lessons:
     topic: 'Скорость: найти и починить'
     subtopic: Медленные взаимодействия
     title: Медленные взаимодействия
+    computer: true
     questions: [brw-029, brw-030, brw-031, brw-032, brw-033, brw-034]
     body: |
       ## Какую проблему решаем
@@ -1128,6 +1134,7 @@ lessons:
     topic: 'Скорость: найти и починить'
     subtopic: Загрузка страницы
     title: Загрузка страницы
+    computer: true
     questions: [brw-035, brw-036, brw-037, brw-038, brw-039, brw-040]
     body: |
       ## Какую проблему решаем
@@ -1308,6 +1315,7 @@ lessons:
     topic: Память
     subtopic: Как браузер управляет памятью
     title: Как браузер управляет памятью
+    computer: true
     questions: [brw-041, brw-042, brw-043, brw-044, brw-045, brw-046]
     body: |
       ## Какую проблему решаем
@@ -1509,6 +1517,7 @@ lessons:
     topic: Память
     subtopic: Поиск утечек
     title: Охота на утечку
+    computer: true
     questions: [brw-047, brw-048, brw-049, brw-050, brw-075, brw-052]
     body: |
       ## Какую проблему решаем
@@ -1903,6 +1912,7 @@ lessons:
     topic: Отладка
     subtopic: Логи и точки останова
     title: Логи или точки останова
+    computer: true
     questions: [brw-058, brw-059, brw-060, brw-061, brw-062, brw-063]
     body: |
       ## Какую проблему решаем
@@ -2113,6 +2123,7 @@ lessons:
     topic: Данные пользователей
     subtopic: Скорость у реальных людей
     title: Скорость у реальных людей
+    computer: true
     questions: [brw-064, brw-065, brw-066, brw-067, brw-068, brw-069]
     body: |
       ## Какую проблему решаем
@@ -2296,6 +2307,7 @@ lessons:
     topic: Итог
     subtopic: Разбор дашборда
     title: 'Разбор: дашборд от жалобы до исправления'
+    computer: true
     questions: [brw-070, brw-071, brw-072, brw-073, brw-074]
     body: |
       ## Жалоба

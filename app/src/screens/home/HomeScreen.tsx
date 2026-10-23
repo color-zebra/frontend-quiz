@@ -1,5 +1,4 @@
 import clsx from "clsx";
-import { useState } from "react";
 import type { BankDiff } from "../../data/loadQuestions";
 import type { QuestionBank } from "../../data/types";
 import { useBankUpdate } from "../../features/bank/useBankUpdate";
@@ -7,25 +6,24 @@ import { promptInstall, useCanInstall } from "../../features/pwa/install";
 import type { SessionLength } from "../../features/session/filters";
 import { useSets } from "../../features/sets/SetsProvider";
 import { formatShortDate } from "../../shared/lib/formatDate";
-import { readStorage, writeStorage } from "../../shared/lib/storage";
 import { countQuestions, plural } from "../../shared/lib/plural";
-import { Brand } from "../../shared/ui/Brand";
 import { Button, IconButton } from "../../shared/ui/Button";
 import glass from "../../shared/ui/glass.module.css";
 import { Icon } from "../../shared/ui/Icon";
 import { Notice } from "../../shared/ui/Notice";
-import { Screen, TopBar } from "../../shared/ui/Screen";
-import { ScreenTitle } from "../../shared/ui/ScreenTitle";
+import { Screen } from "../../shared/ui/Screen";
+import { SectionHeader, type Section } from "../../shared/ui/SectionSwitch";
+import { UpdateBanner } from "../../features/pwa/AppUpdate";
 import { TrainingStart } from "../training/TrainingStart";
 import styles from "./HomeScreen.module.css";
 
 interface HomeScreenProps {
+  onSelectSection: (section: Section) => void;
   bank: QuestionBank;
   onStart: (questionIds: string[], length: SessionLength) => void;
   onOpenSpeech: () => void;
   /** Экран «Настройка тренировки» тестовых вопросов основной базы. */
   onOpenSettings: () => void;
-  onOpenCabinet: () => void;
   onOpenSets: () => void;
   onOpenHelp: () => void;
   onUpdate: () => Promise<BankDiff>;
@@ -37,14 +35,15 @@ interface HomeScreenProps {
 
 const SET_FORMS = ["набор", "набора", "наборов"] as const;
 
-/** Плашку для новичков показываем, пока её не закрыли и не открыли инструкцию. */
-const HELP_HINT_KEY = "fq.helpHintSeen";
-
+/**
+ * «Тренажёр» — раздел вопросов для подготовки к собеседованию: основная база, «Все / Новые / Ошибки», «Начать»,
+ * устные вопросы и свои наборы. Подсказка новичку живёт в «Курсах» — первом экране приложения.
+ */
 export function HomeScreen({
+  onSelectSection,
   bank,
   onStart,
   onOpenSettings,
-  onOpenCabinet,
   onOpenSets,
   onOpenSpeech,
   onOpenHelp,
@@ -56,32 +55,24 @@ export function HomeScreen({
   const canInstall = useCanInstall();
   const update = useBankUpdate(onUpdate);
   const bankDate = formatShortDate(bank.generatedAt);
-  const [showHelpHint, setShowHelpHint] = useState(() => readStorage(HELP_HINT_KEY) === null);
-
-  function hideHelpHint() {
-    setShowHelpHint(false);
-    writeStorage(HELP_HINT_KEY, "1");
-  }
-
-  function openHelp() {
-    hideHelpHint();
-    onOpenHelp();
-  }
 
   return (
     <Screen>
-      <TopBar>
-        <Brand />
-        <div className={styles.topActions}>
-          <IconButton icon="user" label="Кабинет" onClick={onOpenCabinet} />
-          <IconButton icon="help" label="Помощь" onClick={openHelp} />
-        </div>
-      </TopBar>
-
-      <ScreenTitle
-        title="Что тренируем?"
-        subtitle={[countQuestions(bank.questions.length), bankDate && `база от ${bankDate}`].filter(Boolean).join(" · ")}
-      />
+      <SectionHeader
+        section="trainer"
+        title="Тренажёр"
+        subtitle={[
+          "Вопросы для подготовки к собеседованию",
+          countQuestions(bank.questions.length),
+          bankDate && `база от ${bankDate}`,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+        onSelect={onSelectSection}
+        onOpenHelp={onOpenHelp}
+      >
+        <UpdateBanner />
+      </SectionHeader>
 
       {(update.state.kind === "done" || update.state.kind === "error") && (
         <Notice kind={update.state.kind === "done" ? "ok" : "error"} text={update.state.text} onClose={update.reset} />
@@ -115,25 +106,10 @@ export function HomeScreen({
         </div>
       )}
 
-      {showHelpHint && (
-        <div className={clsx(styles.helpHint, glass.glass)}>
-          <p>
-            <b>Впервые здесь?</b> В инструкции — как тренироваться, установить приложение на телефон и добавить свои
-            вопросы.
-          </p>
-          <div className={styles.helpHintButtons}>
-            <Button icon="help" onClick={openHelp}>
-              Открыть инструкцию
-            </Button>
-            <IconButton icon="close" label="Скрыть подсказку" onClick={hideHelpHint} />
-          </div>
-        </div>
-      )}
-
       {/* key: после обновления базы выбор перечитывается — новые темы не должны потеряться */}
       <TrainingStart key={bank.generatedAt} bank={bank} kind="test" onStart={onStart} onOpenSettings={onOpenSettings} />
 
-      {/* Две плитки в ряд; без устных вопросов «Мои наборы» — во всю ширину. */}
+      {/* Две плитки в ряд; без устных вопросов «Свои наборы» — во всю ширину. */}
       <div className={styles.tiles}>
         {bank.speech.length > 0 && (
           <button type="button" className={clsx(styles.tile, glass.glass)} onClick={onOpenSpeech}>
@@ -148,9 +124,9 @@ export function HomeScreen({
           onClick={onOpenSets}
         >
           <Icon name="folder" />
-          <span className={styles.tileTitle}>Мои наборы</span>
+          <span className={styles.tileTitle}>Свои наборы</span>
           <span className={styles.tileSub}>
-            {sets.length ? `${sets.length} ${plural(sets.length, SET_FORMS)}` : "Свои вопросы"}
+            {sets.length ? `${sets.length} ${plural(sets.length, SET_FORMS)}` : "По ссылке или файлом"}
           </span>
         </button>
       </div>

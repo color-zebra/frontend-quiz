@@ -12,7 +12,7 @@ export default async function screen(t) {
   const page = await context.newPage();
   const scrollY = () => page.evaluate(() => window.scrollY);
   await page.goto(t.url);
-  await page.getByText("Что тренируем?").waitFor();
+  await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
 
   // 1. Жест обновления: сам жест есть только на телефоне — здесь проверяем, что правило стоит.
   const overscroll = await page.evaluate(() =>
@@ -22,7 +22,7 @@ export default async function screen(t) {
   t.info("сам жест на телефоне проверяется руками после деплоя");
 
   // Карточки и плитки не размывают фон — иначе прокрутка на телефоне ступенчатая.
-  const tileBlur = await page.getByRole("button", { name: /Мои наборы/ }).evaluate((el) => getComputedStyle(el).backdropFilter);
+  const tileBlur = await page.getByRole("button", { name: /Свои наборы/ }).evaluate((el) => getComputedStyle(el).backdropFilter);
   check("плитки без размытия — прокрутка лёгкая", tileBlur === "none", tileBlur);
 
   // 2. Шторка подтем: страница под ней стоит.
@@ -54,7 +54,7 @@ export default async function screen(t) {
     const ctx = await t.newContext({ serviceWorkers: "block" });
     const p = await ctx.newPage();
     await p.goto(t.url);
-    await p.getByText("Что тренируем?").waitFor();
+    await p.getByRole("heading", { name: "Тренажёр" }).waitFor();
     await chooseLength(p, "10");
     await p.getByRole("button", { name: /^Начать/ }).click();
 
@@ -157,7 +157,7 @@ export default async function screen(t) {
     const ctx = await t.newContext({ serviceWorkers: "block", viewport: { width: 330, height: 640 } });
     const p = await ctx.newPage();
     await p.goto(t.url);
-    await p.getByText("Что тренируем?").waitFor();
+    await p.getByRole("heading", { name: "Тренажёр" }).waitFor();
     check("330px: главная не вылезает вбок", (await p.evaluate(() => document.documentElement.scrollWidth - innerWidth)) === 0);
     await p.getByRole("button", { name: /^Начать/ }).click();
     const options = p.locator("ol li button");

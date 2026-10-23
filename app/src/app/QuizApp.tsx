@@ -3,7 +3,7 @@ import type { BankDiff } from "../data/loadQuestions";
 import { BUILTIN_SET_ID, type Question, type QuestionBank } from "../data/types";
 import { AudioPlayer, type PlayingLesson } from "../features/audio/AudioPlayer";
 import { useAudio, type AudioTrack } from "../features/audio/AudioProvider";
-import { getLessonQuestionIds } from "../features/lessons/course";
+import { getLessonQuestionIds, getStartLesson } from "../features/lessons/course";
 import { useLessons } from "../features/lessons/LessonsProvider";
 import { useProgress } from "../features/progress/ProgressProvider";
 import { dismissBankVersion, fetchBankVersion, getIsNewerBank } from "../features/bank/bankVersion";
@@ -42,6 +42,13 @@ import { ThemeSheet } from "../theme/ThemeSheet";
 import { applyTheme, readSavedTheme, type ThemeId } from "../theme/themes";
 import { LazyScreen } from "./LazyScreen";
 import { useScreenStack, type AppScreen } from "./useScreenStack";
+import { useCatalogAdd } from "../features/courses/useCatalogAdd";
+import { getEntryProgress, getEntrySetId } from "../features/courses/courses";
+import { CATALOG, findAddedSet, type CatalogEntry } from "../features/sets/catalog";
+import { readSection, writeSection, type Section } from "../shared/ui/SectionSwitch";
+import { AllCoursesScreen } from "../screens/courses/AllCoursesScreen";
+import { CoursePreviewScreen } from "../screens/courses/CoursePreviewScreen";
+import { CoursesScreen } from "../screens/courses/CoursesScreen";
 
 // Режим обучения — отдельным файлом сборки: его код и разметка уроков грузятся, только когда открывают уроки.
 const loadLessonScreens = () => import("../screens/lessons/lessonScreens");
@@ -54,12 +61,23 @@ function isCourseScreen(screen: AppScreen, setId: string) {
   return (screen.name === "course" || screen.name === "lesson" || screen.name === "lessonQuiz") && screen.setId === setId;
 }
 
-/** Прямые ссылки на помощь: …/#help, …/#help-basics и …/#help-sets открывают её поверх главной. */
+/** Корневой экран раздела. */
+function getSectionRoot(section: Section): AppScreen {
+  if (section === "courses") return { name: "courses" };
+  if (section === "cabinet") return { name: "cabinet" };
+  return { name: "home" };
+}
+
+/**
+ * Открываемся в разделе, где были в прошлый раз (первый запуск — «Курсы»). Прямые ссылки на помощь: …/#help,
+ * …/#help-basics и …/#help-sets открывают её поверх раздела.
+ */
 function getInitialStack(): AppScreen[] {
-  if (location.hash === "#help") return [{ name: "home" }, { name: "help" }];
-  if (location.hash === "#help-basics") return [{ name: "home" }, { name: "helpBasics" }];
-  if (location.hash === "#help-sets") return [{ name: "home" }, { name: "helpSets" }];
-  return [{ name: "home" }];
+  const root = getSectionRoot(readSection());
+  if (location.hash === "#help") return [root, { name: "help" }];
+  if (location.hash === "#help-basics") return [root, { name: "helpBasics" }];
+  if (location.hash === "#help-sets") return [root, { name: "helpSets" }];
+  return [root];
 }
 
 interface QuizAppProps {
@@ -82,9 +100,10 @@ interface FinishedSession {
 }
 
 export function QuizApp({ bank, onUpdate }: QuizAppProps) {
-  const { getSetBank } = useSets();
+  const { sets, getSetBank } = useSets();
   const audio = useAudio();
   const { getCourse, updateCourse } = useLessons();
+  const catalogAdd = useCatalogAdd();
   const { recordAnswer, records } = useProgress();
   const [active, setActive] = useState<ActiveSession | null>(null);
   const activeRef = useRef<ActiveSession | null>(null);
@@ -245,6 +264,38 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
     else nav.rewind(stack.length - 1 - first, course);
   }
 
+  /** Переключатель разделов: корень стека подменяется, раздел запоминается до следующего запуска. */
+  function selectSection(section: Section) {
+    writeSection(section);
+    nav.replace(getSectionRoot(section));
+  }
+
+  /** Курс из каталога: добавлен — его страница, нет — страница до скачивания. */
+  function openCatalogCourse(entry: CatalogEntry) {
+    const record = findAddedSet(entry, sets);
+    nav.push(record ? { name: "course", setId: record.id } : { name: "coursePreview", url: entry.url });
+  }
+
+  /**
+   * «Начать курс»: скачать, встать на место страницы до скачивания страницей курса и открыть урок — первый или тот,
+   * на котором остановился, если курс уже проходили и удаляли с телефона: прогресс живёт отдельно от файлов.
+   */
+  async function startCatalogCourse(entry: CatalogEntry) {
+    const record = await catalogAdd.add(entry);
+    const lessons = record?.file.lessons ?? [];
+    if (!record || lessons.length === 0) return;
+    const progress = getCourse(record.id);
+    const lesson = lessons.find((l) => l.id === progress?.position?.lessonId) ?? getStartLesson(lessons, progress);
+    nav.replace({ name: "course", setId: record.id });
+    nav.push({ name: "lesson", setId: record.id, lessonId: lesson.id });
+  }
+
+  /** Вопросы урока поверх самого урока: системная «Назад» из вопросов ведёт к тексту урока. */
+  function openLessonQuiz(setId: string, lessonId: string) {
+    nav.push({ name: "lesson", setId, lessonId });
+    nav.push({ name: "lessonQuiz", setId, lessonId });
+  }
+
   /** Нажатие на «Урок N · курс» в плеере: открыть урок, который играет, если он уже не на экране. */
   function openPlayingLesson(setId: string, lessonId: string) {
     if (isLessonOnScreen(setId, lessonId)) return;
@@ -318,13 +369,51 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
     const screen = nav.screen;
     const resumable = screen.name === "home" ? getResumable() : null;
     switch (screen.name) {
+      case "courses":
+        return (
+          <CoursesScreen
+            onSelectSection={selectSection}
+            onOpenHelp={() => nav.push({ name: "help" })}
+            onOpenCourse={(setId) => nav.push({ name: "course", setId })}
+            onOpenPreview={(url) => nav.push({ name: "coursePreview", url })}
+            onOpenAll={() => nav.push({ name: "allCourses" })}
+            onOpenLesson={(setId, lessonId) => nav.push({ name: "lesson", setId, lessonId })}
+            onOpenLessonQuiz={openLessonQuiz}
+          />
+        );
+      case "allCourses":
+        return (
+          <AllCoursesScreen
+            onBack={nav.back}
+            onOpenCourse={openCatalogCourse}
+            onOpenSets={() => nav.push({ name: "sets" })}
+          />
+        );
+      case "coursePreview": {
+        const entry = CATALOG.find((e) => e.url === screen.url);
+        if (!entry) return null;
+        // Курс уже скачан (например, добавлен в «Своих наборах») — сразу его страница.
+        const added = findAddedSet(entry, sets);
+        if (added) return renderCourseScreen({ name: "course", setId: added.id });
+        return (
+          <CoursePreviewScreen
+            entry={entry}
+            progress={getEntryProgress(entry, getCourse(getEntrySetId(entry) ?? ""))}
+            onBack={nav.back}
+            onStart={() => void startCatalogCourse(entry)}
+            busy={catalogAdd.busyUrl === entry.url}
+            message={catalogAdd.message?.url === entry.url ? catalogAdd.message : null}
+            onCloseMessage={catalogAdd.clearMessage}
+          />
+        );
+      }
       case "home":
         return (
           <HomeScreen
+            onSelectSection={selectSection}
             bank={bank}
             onStart={(ids, length) => begin(bank, ids, length, "push")}
             onOpenSettings={() => nav.push({ name: "training", setId: BUILTIN_SET_ID, kind: "test" })}
-            onOpenCabinet={() => nav.push({ name: "cabinet" })}
             onOpenSets={() => nav.push({ name: "sets" })}
             onOpenSpeech={() => nav.push({ name: "speechHome" })}
             onOpenHelp={() => nav.push({ name: "help" })}
@@ -349,7 +438,8 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
           <CabinetScreen
             bank={bank}
             theme={theme}
-            onBack={nav.back}
+            onSelectSection={selectSection}
+            onOpenHelp={() => nav.push({ name: "help" })}
             onOpenStats={() => nav.push({ name: "stats" })}
             onOpenAchievements={() => nav.push({ name: "achievements" })}
             onOpenNotes={() => nav.push({ name: "notes" })}
@@ -486,6 +576,10 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
             finished={!!screen.finished}
             onBack={nav.back}
             onOpenLesson={(lessonId) => nav.push({ name: "lesson", setId, lessonId })}
+            onOpenQuiz={(lessonId) => openLessonQuiz(setId, lessonId)}
+            onOpenQuestions={() => nav.push({ name: "setHome", setId })}
+            onRetryMistakes={(ids) => begin(courseBank, ids, ids.length, "push")}
+            onOpenSet={(id) => nav.push({ name: "setHome", setId: id })}
           />
         )}
         {screen.name === "lesson" && (

@@ -120,7 +120,7 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
         <IconButton icon="arrowLeft" label="Назад" onClick={onBack} />
       </TopBar>
 
-      <ScreenTitle title="Мои наборы" subtitle="Свои вопросы из YAML-файла — по ссылке, с устройства или из готовых" />
+      <ScreenTitle title="Свои наборы" subtitle="Свои вопросы из YAML-файла — по ссылке, с устройства или из готовых" />
 
       {!persistent && (
         <p className={clsx(styles.banner, glass.glass)}>

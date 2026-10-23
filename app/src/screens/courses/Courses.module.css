@@ -1,0 +1,490 @@
+/* ---- Значки курса ---- */
+.featureIcons {
+  display: inline-flex;
+  flex: none;
+  gap: 6px;
+}
+
+.featureIcon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.featureIcon svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* Озвучен — цветом ссылок, практика — тёплым, как лампочка «Почему?». */
+.audio {
+  color: var(--link);
+}
+
+.computer {
+  color: var(--bulb);
+}
+
+.badge {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 5px 12px;
+  border: 1px solid currentColor;
+  border-radius: var(--chip-radius);
+  font-size: var(--font-size-small);
+  font-weight: 700;
+}
+
+.badge svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ---- Прогресс ---- */
+.progress {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.bar {
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--track);
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary-bg);
+}
+
+.fillOk {
+  background: var(--ok);
+}
+
+.progressLabel {
+  flex: none;
+  color: var(--text-2);
+  font-size: var(--font-size-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.done {
+  display: inline-flex;
+  flex: none;
+  gap: 4px;
+  align-items: center;
+  padding: 3px 10px;
+  border: 1px solid color-mix(in srgb, var(--ok) 60%, transparent);
+  border-radius: var(--chip-radius);
+  background: var(--ok-bg);
+  color: var(--ok);
+  font-size: var(--font-size-hint);
+  font-weight: 700;
+}
+
+.done svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* «скачан» — спокойной пилюлей: это состояние телефона, а не достижение. */
+.downloaded {
+  display: inline-flex;
+  flex: none;
+  gap: 4px;
+  align-items: center;
+  padding: 3px 10px;
+  border: 1px solid var(--chip-border);
+  border-radius: var(--chip-radius);
+  color: var(--text-2);
+  font-size: var(--font-size-hint);
+  font-weight: 600;
+}
+
+.downloaded svg {
+  width: 14px;
+  height: 14px;
+}
+
+.mine {
+  flex: none;
+  padding: 3px 10px;
+  border: 1px solid var(--chip-border);
+  border-radius: var(--chip-radius);
+  color: var(--muted);
+  font-size: var(--font-size-hint);
+  font-weight: 700;
+}
+
+/* ---- Карточки ---- */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 16px;
+  color: var(--text);
+  text-align: left;
+}
+
+.cardHead {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cardTitle {
+  min-width: 0;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-body);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.cardMeta {
+  color: var(--muted);
+  font-size: var(--font-size-small);
+}
+
+.cardText {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--font-size-small);
+  line-height: 1.45;
+}
+
+.cardFoot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-size: var(--font-size-small);
+}
+
+.pill {
+  padding: 3px 10px;
+  border-radius: var(--chip-radius);
+  background: var(--chip-on-bg);
+  color: var(--chip-on-text);
+  font-size: var(--font-size-hint);
+  font-weight: 700;
+}
+
+/* ---- «Продолжить» и «Дальше» ---- */
+.continue {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 16px 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--glass-border));
+}
+
+.continue .label {
+  margin: 0;
+}
+
+.continueCourse {
+  color: var(--text-2);
+  font-size: var(--font-size-small);
+}
+
+.continueLesson {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-heading);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 10px;
+}
+
+.actions > :only-child {
+  grid-column: 1 / -1;
+}
+
+.actions > * {
+  padding-inline: 12px;
+  white-space: nowrap;
+}
+
+/* На 320px «Читать урок →» и «Слушать» в ряд не влезают — друг под другом во всю ширину. */
+@media (max-width: 359px) {
+  .actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Ссылка-строка: «Все курсы · ещё 8», «Вопросы курса» ---- */
+.linkRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 16px;
+  color: var(--text);
+  text-align: left;
+}
+
+.linkRow > svg:first-child {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  color: var(--text-2);
+}
+
+.linkText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.linkTitle {
+  font-size: var(--font-size-body);
+  font-weight: 700;
+}
+
+.linkSub {
+  color: var(--muted);
+  font-size: var(--font-size-small);
+}
+
+.chevron {
+  flex: none;
+  color: var(--muted);
+}
+
+.dashed {
+  border-style: dashed;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.sectionHead > :first-child {
+  margin: 0;
+}
+
+.textLink {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--link);
+  font-size: var(--font-size-small);
+  font-weight: 700;
+}
+
+/* ---- Подсказка новичку ---- */
+.hint {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 14px 8px 14px 16px;
+}
+
+.hintBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.hintBody p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--font-size-small);
+  line-height: 1.5;
+}
+
+/* ---- Серия: нумерованный список в одной карточке ---- */
+.series {
+  padding: 4px 0;
+}
+
+.seriesItem + .seriesItem {
+  border-top: 1px solid var(--glass-border);
+}
+
+.seriesRow {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+  padding: 14px 16px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  text-align: left;
+}
+
+.seriesNumber {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--chip-bg);
+  font-size: var(--font-size-small);
+  font-weight: 700;
+}
+
+.seriesText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* ---- Страница курса ---- */
+.eyebrow {
+  margin: 0 0 -8px;
+  color: var(--accent);
+  font-size: var(--font-size-small);
+  font-weight: 700;
+}
+
+.badgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  margin-top: -4px;
+  color: var(--muted);
+  font-size: var(--font-size-small);
+}
+
+.featureNote {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 14px 16px;
+}
+
+.featureNote p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--font-size-small);
+  line-height: 1.5;
+}
+
+.note {
+  margin: -4px 0 0;
+  color: var(--muted);
+  font-size: var(--font-size-hint);
+  text-align: center;
+}
+
+.description {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--font-size-body);
+  line-height: 1.5;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 16px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tileLabel {
+  color: var(--muted);
+  font-size: var(--font-size-small);
+}
+
+.tileValue {
+  font-size: var(--font-size-heading);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.toc {
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+
+.tocItem {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 16px;
+  font-size: var(--font-size-body);
+}
+
+.tocItem + .tocItem {
+  border-top: 1px solid var(--glass-border);
+}
+
+.tocNumber {
+  flex: none;
+  width: 24px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.tocTitle {
+  flex: 1;
+  min-width: 0;
+}
+
+.tocMark {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.filters {
+  margin-top: -2px;
+}
+
+.tocHeading {
+  margin: 6px 0 -4px;
+  color: var(--muted);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

@@ -78,7 +78,7 @@ export function seedAnswers(page, records) {
 /** Открывает кабинет с главной. */
 export async function openCabinet(page, url) {
   await page.goto(url);
-  await page.getByText("Что тренируем?").waitFor();
+  await page.getByRole("heading", { name: "Тренажёр" }).waitFor();
   await page.getByRole("button", { name: "Кабинет" }).click();
   await page.getByRole("heading", { name: "Кабинет" }).waitFor();
 }

@@ -182,3 +182,9 @@
   width: 16px;
   height: 16px;
 }
+
+.coursesHint {
+  margin: 4px 16px 14px;
+  color: var(--muted);
+  font-size: var(--font-size-hint);
+}

@@ -39,3 +39,8 @@
 .empty:not(.on) {
   opacity: 0.5;
 }
+
+.icon {
+  width: 16px;
+  height: 16px;
+}

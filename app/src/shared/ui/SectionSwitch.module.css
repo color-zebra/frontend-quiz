@@ -1,0 +1,57 @@
+.switch {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  background: var(--seg-bg);
+}
+
+.item {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: calc(var(--radius) - 4px);
+  background: none;
+  color: var(--text-2);
+  font-size: var(--font-size-small);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.item svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.current {
+  background: var(--seg-on-bg);
+  box-shadow: var(--seg-on-shadow);
+  color: var(--seg-on-text);
+}
+
+/* На 320px три слова с иконками впритык — иконки убираем, слова важнее. */
+@media (max-width: 359px) {
+  .item svg {
+    display: none;
+  }
+}
+
+.head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.head > :first-child {
+  flex: 1;
+  min-width: 0;
+}

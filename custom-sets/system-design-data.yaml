@@ -1,9 +1,11 @@
 title: 'Системный дизайн: данные и надёжность'
+features: [audio]
 lessons:
   - id: sdd-intro
     topic: Введение
     subtopic: Ненадёжная сеть
     title: Почему сеть всё усложняет
+    computer: true
     audio: https://color-zebra.github.io/frontend-quiz-audio/system-design-data/sdd-intro.mp3
     body: |
       ## Какую проблему решаем

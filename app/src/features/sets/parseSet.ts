@@ -1,9 +1,11 @@
 import { load } from "js-yaml";
 import {
   CODE_LANGS,
+  COURSE_FEATURES,
   LEVELS,
   UNGROUPED,
   type CodeLang,
+  type CourseFeature,
   type Lesson,
   type Level,
   type Option,
@@ -230,7 +232,29 @@ function readLesson(raw: unknown): Omit<Lesson, "questionIds"> | string {
     ...(isText(raw.topic) ? { topic: raw.topic.trim() } : {}),
     ...(isText(raw.subtopic) ? { subtopic: raw.subtopic.trim() } : {}),
     body: raw.body,
+    ...(raw.computer === true ? { computer: true } : {}),
   };
+}
+
+/**
+ * Значки курса из поля features: audio — «Озвучен», computer — «Практика за компьютером». Незнакомое значение
+ * пропускается с замечанием: набор от этого не ломается, а новая версия приложения может знать больше значков.
+ */
+function readFeatures(raw: unknown, warnings: string[]): CourseFeature[] {
+  if (raw === undefined) return [];
+  if (!Array.isArray(raw)) {
+    warnings.push("features — это список значков курса, например [audio, computer]; значки не показаны");
+    return [];
+  }
+  const features: CourseFeature[] = [];
+  for (const item of raw) {
+    if ((COURSE_FEATURES as readonly unknown[]).includes(item)) {
+      if (!features.includes(item as CourseFeature)) features.push(item as CourseFeature);
+    } else {
+      warnings.push(`features: незнакомый значок «${String(item)}» — бывают audio и computer`);
+    }
+  }
+  return features;
 }
 
 /**
@@ -337,6 +361,7 @@ export function parseSetFile(text: string, fallbackTitle: string, baseUrl?: stri
   let lessons: Lesson[] = [];
   if (kind === "test") lessons = readLessons(doc.lessons, questions, fileTopic, baseUrl, skipped, warnings);
   else if (doc.lessons !== undefined) warnings.push("Уроки работают только в тестовых наборах — в устном наборе они не показываются");
+  const features = readFeatures(doc.features, warnings);
   return {
     file: {
       title: isText(doc.title) ? doc.title.trim() : fallbackTitle,
@@ -344,6 +369,7 @@ export function parseSetFile(text: string, fallbackTitle: string, baseUrl?: stri
       questions: kind === "test" ? questions : [],
       speech: kind === "speech" ? questions : [],
       ...(lessons.length ? { lessons } : {}),
+      ...(features.length ? { features } : {}),
     },
     skipped,
     warnings,

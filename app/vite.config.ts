@@ -1,6 +1,6 @@
 import react from "@vitejs/plugin-react";
 import { load } from "js-yaml";
-import { createReadStream, existsSync, readFileSync } from "node:fs";
+import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, type Plugin } from "vite";
@@ -65,6 +65,7 @@ const CATALOG_MODULE = "virtual:sets-catalog";
 // Тип — из объявления модуля в src: обычный import из src конфиг сборки подтягивать не должен.
 type CatalogItem = (typeof import("virtual:sets-catalog"))["default"][number];
 const CATALOG_LEVELS = ["junior", "middle", "senior"] as const;
+const CATALOG_FEATURES = ["audio", "computer"] as const;
 
 function failCatalog(message: string): never {
   throw new Error(`custom-sets/catalog.yaml: ${message}`);
@@ -83,15 +84,33 @@ function readCatalogSet(file: string) {
   } catch (error) {
     failCatalog(`${file} не читается как YAML — ${(error as Error).message}`);
   }
-  const set = (doc ?? {}) as { title?: unknown; kind?: unknown; questions?: unknown };
+  const set = (doc ?? {}) as { title?: unknown; kind?: unknown; questions?: unknown; lessons?: unknown; features?: unknown };
   if (!Array.isArray(set.questions) || set.questions.length === 0) failCatalog(`в ${file} нет вопросов в списке questions`);
   const questions = set.questions as { level?: unknown }[];
+  // Оглавление и значки — чтобы курс было видно до скачивания. Кривой урок здесь не страшен: приложение
+  // разберёт файл при добавлении и покажет причину.
+  const lessons = (Array.isArray(set.lessons) ? (set.lessons as Record<string, unknown>[]) : [])
+    .filter((lesson) => typeof lesson?.title === "string" && lesson.title.trim() && typeof lesson.id === "string")
+    .map((lesson) => ({
+      // id — чтобы прогресс курса был виден и у нескачанного: он привязан к id уроков, а не к файлу.
+      id: (lesson.id as string).trim(),
+      title: (lesson.title as string).trim(),
+      ...(lesson.computer === true ? { computer: true as const } : {}),
+      ...(typeof lesson.audio === "string" && lesson.audio ? { audio: true as const } : {}),
+    }));
+  const features = Array.isArray(set.features)
+    ? CATALOG_FEATURES.filter((feature) => (set.features as unknown[]).includes(feature))
+    : [];
   return {
     path,
     title: typeof set.title === "string" && set.title.trim() ? set.title.trim() : file.replace(/\.ya?ml$/, ""),
     count: questions.length,
     speech: set.kind === "speech",
     levels: CATALOG_LEVELS.filter((level) => questions.some((q) => q?.level === level)),
+    lessons,
+    features,
+    // Размер файла набора — «курс скачается, около 450 КБ»; картинки и аудио в него не входят.
+    bytes: statSync(path).size,
   };
 }
 
@@ -118,24 +137,32 @@ function readCatalog(onSetFile: (path: string) => void): CatalogItem[] {
   const doc: unknown = load(readFileSync(CATALOG_FILE, "utf8")) ?? [];
   if (!Array.isArray(doc)) failCatalog("нужен список пунктов вида «- url: … description: …»");
   const seen = new Set<string>();
-  return doc.map((raw: unknown, index) => {
+  const items = doc.map((raw: unknown, index): CatalogItem => {
     let at = `пункт ${index + 1}`;
     if (typeof raw !== "object" || raw === null) failCatalog(`${at}: нужны поля url и description`);
-    const { url, title, description, ...extra } = raw as Record<string, unknown>;
+    const { url, title, description, series, course, ...extra } = raw as Record<string, unknown>;
     const unknownField = Object.keys(extra)[0];
-    if (unknownField) failCatalog(`${at}: неизвестное поле «${unknownField}» — бывают url, title и description`);
+    if (unknownField) {
+      failCatalog(`${at}: неизвестное поле «${unknownField}» — бывают url, title, description, series и course`);
+    }
     if (!isHttpsUrl(url)) failCatalog(`${at}: в url нужна ссылка с https:// — такая же, как в поле «Добавить набор»`);
     at = `${at} (${url})`;
     if (seen.has(url)) failCatalog(`${at}: такая ссылка уже есть в каталоге выше`);
     seen.add(url);
     if (typeof description !== "string" || !description.trim()) failCatalog(`${at}: нужно описание — одна-две фразы о наборе`);
+    if (series !== undefined && (typeof series !== "string" || !series.trim())) failCatalog(`${at}: series — название серии`);
+    if (course !== undefined && !isHttpsUrl(course)) failCatalog(`${at}: course — ссылка на курс из этого каталога`);
+    const place = {
+      ...(typeof series === "string" ? { series: series.trim() } : {}),
+      ...(typeof course === "string" ? { course } : {}),
+    };
     const file = getCustomSetsFile(url);
     const hasTitle = typeof title === "string" && title.trim() !== "";
     if (file && existsSync(join(CUSTOM_SETS_DIR, file))) {
       if (title !== undefined) failCatalog(`${at}: title не нужен — название берётся из custom-sets/${file}`);
       const { path, ...set } = readCatalogSet(file);
       onSetFile(path);
-      return { url, description: description.trim(), ...set };
+      return { url, description: description.trim(), ...place, ...set };
     }
     if (!hasTitle) {
       failCatalog(
@@ -144,8 +171,15 @@ function readCatalog(onSetFile: (path: string) => void): CatalogItem[] {
           : `${at}: у набора не из custom-sets/ нужен title — сборка его файл не скачивает`,
       );
     }
-    return { url, title: title.trim(), description: description.trim(), speech: false, levels: [] };
+    return { url, title: title.trim(), description: description.trim(), ...place, speech: false, levels: [], lessons: [], features: [] };
   });
+  // course ведёт на курс этого же каталога: иначе устная тренировка повиснет ни к чему.
+  for (const item of items) {
+    if (item.course && !items.some((other) => other.url === item.course && other.lessons.length > 0)) {
+      failCatalog(`${item.url}: course ведёт не на курс с уроками из этого каталога — ${item.course}`);
+    }
+  }
+  return items;
 }
 
 /** Модуль virtual:sets-catalog — каталог, собранный при сборке; правка каталога или набора в разработке видна сразу. */
