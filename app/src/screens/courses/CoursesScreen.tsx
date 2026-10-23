@@ -25,6 +25,9 @@ import { Screen } from "../../shared/ui/Screen";
 import { SectionHeader, type Section } from "../../shared/ui/SectionSwitch";
 import { CourseMarks, DoneMark, FeatureIcons, formatCourseSize, ProgressLine } from "./CourseBits";
 import styles from "./Courses.module.css";
+import { CoursesDesktop } from "./desktop/CoursesDesktop";
+import { useIsDesktop } from "../../shared/ui/useIsDesktop";
+import type { QuestionBank } from "../../data/types";
 
 /** Подсказку новичку показываем, пока её не закрыли и не открыли инструкцию. */
 const HELP_HINT_KEY = "fq.helpHintSeen";
@@ -32,6 +35,9 @@ const HELP_HINT_KEY = "fq.helpHintSeen";
 const FIRST_RUN_COURSES = 4;
 
 interface CoursesScreenProps {
+  /** Основная база — для карточки «Сегодня» на десктопе (ошибки тренажёра). */
+  bank: QuestionBank;
+  onRetryMistakes: (questionIds: string[]) => void;
   onSelectSection: (section: Section) => void;
   onOpenHelp: () => void;
   onOpenCourse: (setId: string) => void;
@@ -45,7 +51,20 @@ interface CoursesScreenProps {
  * «Курсы» — первый экран приложения. Новичку — подсказка и курсы каталога; дальше — «Продолжить» (урок, на котором
  * остановился, читать или слушать), «Мои курсы» с прогрессом и вход во «Все курсы».
  */
-export function CoursesScreen({
+export function CoursesScreen(props: CoursesScreenProps) {
+  const desktop = useIsDesktop();
+  const [showHint, setShowHint] = useState(() => readStorage(HELP_HINT_KEY) === null);
+  function hideHint() {
+    setShowHint(false);
+    writeStorage(HELP_HINT_KEY, "1");
+  }
+  if (desktop) return <CoursesDesktop {...props} showHint={showHint} onHideHint={hideHint} />;
+  return <CoursesMobile {...props} showHint={showHint} onHideHint={hideHint} />;
+}
+
+function CoursesMobile({
+  showHint,
+  onHideHint: hideHint,
   onSelectSection,
   onOpenHelp,
   onOpenCourse,
@@ -53,13 +72,12 @@ export function CoursesScreen({
   onOpenAll,
   onOpenLesson,
   onOpenLessonQuiz,
-}: CoursesScreenProps) {
+}: CoursesScreenProps & { showHint: boolean; onHideHint: () => void }) {
   const { sets } = useSets();
   const { getCourse } = useLessons();
   const { mine, current } = useMyCourses();
   const { getProgress } = useProgress();
   const audio = useAudio();
-  const [showHint, setShowHint] = useState(() => readStorage(HELP_HINT_KEY) === null);
 
   const others = mine.filter((c) => c !== current);
   const notAdded = CATALOG_COURSES.filter((entry) => !findAddedSet(entry, sets));
@@ -68,11 +86,6 @@ export function CoursesScreen({
   function entryProgress(entry: CatalogEntry) {
     const setId = getEntrySetId(entry);
     return getEntryProgress(entry, setId ? getCourse(setId) : undefined);
-  }
-
-  function hideHint() {
-    setShowHint(false);
-    writeStorage(HELP_HINT_KEY, "1");
   }
 
   return (

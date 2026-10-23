@@ -33,3 +33,21 @@ export function removeStorage(key: string) {
     // Нечего удалять или нельзя — не страшно.
   }
 }
+
+// sessionStorage — то, что живёт до закрытия вкладки: раскрытый раздел списка и т. п.
+
+export function readSessionStorage(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+export function writeSessionStorage(key: string, value: string) {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    // Просто не запомнится.
+  }
+}

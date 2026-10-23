@@ -14,6 +14,9 @@ import { ScreenTitle } from "../../shared/ui/ScreenTitle";
 import { formatTasks } from "./AllCoursesScreen";
 import { FeatureBadge, formatCourseSize } from "./CourseBits";
 import styles from "./Courses.module.css";
+import desk from "../lessons/CourseDesktop.module.css";
+import { useIsDesktop } from "../../shared/ui/useIsDesktop";
+import { useFillToBottom } from "../../shared/ui/useFillToBottom";
 
 interface CoursePreviewScreenProps {
   entry: CatalogEntry;
@@ -48,6 +51,95 @@ export function CoursePreviewScreen({ entry, progress, onBack, onStart, busy, me
   const resume = progress?.started && !progress.finished;
   const series = getSeriesPlace(entry);
   const companion = getCompanion(entry.url);
+  const desktop = useIsDesktop();
+  const sideRef = useFillToBottom<HTMLElement>();
+  const description = entry.description.replace(/^Курс \d+ из \d+,?\s*|^С уроками[^.]*\.\s*/i, "").replace(/^с уроками\.\s*/i, "");
+
+  const startBlock = (
+    <>
+      {progress?.started && (
+        <p className={styles.note}>
+          {progress.finished
+            ? "Ты уже прошёл этот курс — отметки сохранились."
+            : `Ты остановился на уроке ${progress.number} из ${progress.total} — курс продолжится с него.`}
+        </p>
+      )}
+      <Button iconAfter="arrowRight" disabled={busy} onClick={onStart}>
+        {busy ? "Скачиваем курс…" : resume ? "Скачать и продолжить" : "Начать курс"}
+      </Button>
+      <p className={styles.note}>
+        Курс скачается на устройство{entry.bytes ? ` (около ${formatBytes(entry.bytes)} текста)` : ""} и дальше работает без интернета
+      </p>
+      {message && <Notice kind={message.kind} text={message.text} onClose={onCloseMessage} />}
+    </>
+  );
+  const featureNotes = entry.features.map((feature) => (
+    <div key={feature} className={clsx(styles.featureNote, glass.glass)}>
+      <FeatureBadge feature={feature} />
+      <p>{explainFeature(feature, entry)}</p>
+    </div>
+  ));
+  const companionNote = companion && (
+    <div className={clsx(styles.featureNote, glass.glass)}>
+      <span className={styles.badge}>
+        <Icon name="mic" />
+        Устная тренировка к курсу
+      </span>
+      <p>
+        {formatTasks(companion.count ?? 0)} для ответа вслух с эталонным планом — отдельно, когда пройдёшь уроки.
+        Найти её можно на странице курса и в «Тренажёре».
+      </p>
+    </div>
+  );
+
+  // Десктоп — как страница курса: шапка во всю ширину, оглавление одной колонкой, справа «Начать курс» и значки.
+  if (desktop) {
+    return (
+      <Screen width="wide" className={desk.page}>
+        <TopBar>
+          <IconButton icon="arrowLeft" label="Назад" onClick={onBack} />
+        </TopBar>
+        <section className={clsx(desk.hero, glass.glass)}>
+          <div className={desk.heroText}>
+            {series && (
+              <p className={desk.eyebrow}>
+                Серия «{series.name}» · курс {series.number} из {series.total}
+              </p>
+            )}
+            <h1 className={desk.title}>{entry.title}</h1>
+            <p className={desk.description}>{description}</p>
+            <div className={styles.badgeRow}>
+              <span>{formatCourseSize(entry.lessons.length, entry.count)}</span>
+            </div>
+          </div>
+        </section>
+        <div className={desk.columns}>
+          <section className={clsx(desk.toc, glass.glass)} aria-label="Оглавление">
+            <div className={desk.group}>
+              <h2 className={desk.groupTitle}>Оглавление</h2>
+            </div>
+            <ol className={desk.lessons}>
+              {entry.lessons.map((lesson, index) => (
+                <li key={`${index}-${lesson.title}`} className={desk.lesson}>
+                  <span className={desk.mark}>{index + 1}</span>
+                  <span className={desk.lessonTitle}>{lesson.title}</span>
+                  <span className={desk.lessonMeta}>
+                    {lesson.computer && <Icon name="monitor" className={styles.computer} aria-label="Практика за компьютером" />}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </section>
+          <aside ref={sideRef} className={desk.side}>
+            <div className={clsx(styles.continue, glass.glass)}>{startBlock}</div>
+            {featureNotes}
+            {companionNote}
+          </aside>
+        </div>
+      </Screen>
+    );
+  }
+
   return (
     <Screen>
       <TopBar>

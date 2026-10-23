@@ -411,6 +411,8 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
       case "courses":
         return (
           <CoursesScreen
+            bank={bank}
+            onRetryMistakes={(ids) => begin(bank, ids, ids.length, "push")}
             onSelectSection={selectSection}
             onOpenHelp={() => nav.push({ name: "help" })}
             onOpenCourse={(setId) => nav.push({ name: "course", setId })}
@@ -426,6 +428,7 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
             onBack={nav.back}
             onOpenCourse={openCatalogCourse}
             onOpenSets={() => nav.push({ name: "sets" })}
+            onOpenOwnCourse={(setId) => nav.push({ name: "course", setId })}
           />
         );
       case "coursePreview": {

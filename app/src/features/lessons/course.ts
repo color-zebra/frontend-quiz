@@ -52,3 +52,12 @@ export function getPosition(bank: QuestionBank, progress: CourseProgress | undef
 export function getStartLesson(lessons: readonly Lesson[], progress: CourseProgress | undefined) {
   return lessons.find((l) => !isMastered(progress, l.id)) ?? lessons[0];
 }
+
+/** Скорость чтения учебного текста, слов в минуту: с кодом и терминами медленнее обычной прозы. */
+const WORDS_PER_MINUTE = 160;
+
+/** Минут на чтение урока — «11 минут чтения». Код и разметка считаются словами наравне с текстом: читать их тоже. */
+export function getReadingMinutes(text: string) {
+  const words = text.split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / WORDS_PER_MINUTE));
+}

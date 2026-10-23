@@ -22,6 +22,8 @@ import { Screen, TopBar } from "../../shared/ui/Screen";
 import { ScreenTitle } from "../../shared/ui/ScreenTitle";
 import { CourseMarks, formatCourseSize } from "./CourseBits";
 import styles from "./Courses.module.css";
+import { AllCoursesDesktop } from "./desktop/AllCoursesDesktop";
+import { useIsDesktop } from "../../shared/ui/useIsDesktop";
 
 type Filter = "all" | CourseFeature | "new";
 
@@ -38,6 +40,8 @@ interface AllCoursesScreenProps {
   /** Курс: добавлен — его страница, нет — страница до скачивания. */
   onOpenCourse: (entry: CatalogEntry) => void;
   onOpenSets: () => void;
+  /** Свой курс по ссылке (не из каталога) — на десктопе он в разделе «Свои курсы». */
+  onOpenOwnCourse: (setId: string) => void;
 }
 
 /** Название курса в серии без её имени: «Системный дизайн: основы» → «Основы». */
@@ -51,7 +55,11 @@ function shortTitle(title: string) {
  * её порядок важен, — отдельные курсы карточками и вход к своим наборам. Дополнения к курсу (устная тренировка)
  * здесь не показываются: они на странице своего курса и в «Своих наборах» тренажёра.
  */
-export function AllCoursesScreen({ onBack, onOpenCourse, onOpenSets }: AllCoursesScreenProps) {
+export function AllCoursesScreen(props: AllCoursesScreenProps) {
+  return useIsDesktop() ? <AllCoursesDesktop {...props} /> : <AllCoursesMobile {...props} />;
+}
+
+function AllCoursesMobile({ onBack, onOpenCourse, onOpenSets }: AllCoursesScreenProps) {
   const { sets, getSetBank } = useSets();
   const { getCourse } = useLessons();
   const [filter, setFilter] = useState<Filter>("all");
