@@ -409,7 +409,10 @@ questions:
   const status = page.getByRole("status");
   await upload.setInputFiles(backupPath);
   check("загрузка копии: «Прогресс уроков обновлён: 1 набор.»", (await status.innerText()).includes("Прогресс уроков обновлён: 1 набор."), await status.innerText());
+  // Ждём, пока сообщение сменится: иначе под нагрузкой читается ещё прежнее, от первой загрузки.
+  const first = await status.innerText();
   await upload.setInputFiles(backupPath);
+  await page.waitForFunction((prev) => document.querySelector("[role=status]")?.innerText !== prev, first, { timeout: 4000 }).catch(() => {});
   check("повторная загрузка прогресс не меняет", !(await status.innerText()).includes("Прогресс уроков"), await status.innerText());
   const oldBackup = JSON.stringify({ ...backup, version: 2, lessons: undefined });
   await upload.setInputFiles(fileInput("old.json", oldBackup));
