@@ -67,9 +67,10 @@ export function BookmarksBlock({ bank, onStart, onOpenQuestion }: BookmarksBlock
           </p>
           <div className={styles.confirmButtons}>
             <Button variant="secondary" onClick={() => setConfirmOpen(false)}>
-              Отмена
+              Оставить
             </Button>
             <Button
+              variant="danger"
               icon="trash"
               onClick={() => {
                 clear(bank.setId);

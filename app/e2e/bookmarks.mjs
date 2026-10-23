@@ -48,10 +48,10 @@ export default async function bookmarks(t) {
     await page.getByRole("button", { name: /^Статистика/ }).click();
     check("верный ответ и сброс статистики закладку не сняли", await visible(page.getByText("Вернуться позже · 1")));
 
-    // «Снять все закладки»: «Отмена» не трогает, «Снять» снимает.
+    // «Снять все закладки»: «Оставить» не трогает, «Снять» снимает.
     await section.getByRole("button", { name: "Снять все закладки" }).click();
-    await page.getByRole("dialog").getByRole("button", { name: "Отмена" }).click();
-    check("«Отмена» — закладка на месте", await visible(page.getByText("Вернуться позже · 1")));
+    await page.getByRole("dialog").getByRole("button", { name: "Оставить" }).click();
+    check("«Оставить» — закладка на месте", await visible(page.getByText("Вернуться позже · 1")));
     await section.getByRole("button", { name: "Снять все закладки" }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Снять" }).click();
     check("«Снять» — раздела больше нет", !(await visible(page.getByText(/^Вернуться позже/), 800)));

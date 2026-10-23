@@ -36,6 +36,12 @@
   color: var(--text);
 }
 
+/* Цвет у .danger общий с иконкой «Не согласен с вопросом» ниже; кнопке — ещё рамка и фон. */
+.button.danger {
+  border: 1px solid var(--bad);
+  background: var(--bad-bg);
+}
+
 .iconButton {
   display: grid;
   flex: none;

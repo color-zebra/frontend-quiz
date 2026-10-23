@@ -133,7 +133,8 @@ export function SummaryScreen({
           return (
             <button key={id} type="button" className={clsx(styles.mistake, glass.glass)} onClick={() => onOpenQuestion(id)}>
               <span className={styles.mistakeMeta}>
-                <LevelBadge level={question.level} /> {formatTopicLine(topicTitle, subtopicTitle)}
+                <LevelBadge level={question.level} />
+                <span className={styles.mistakeTopic}>{formatTopicLine(topicTitle, subtopicTitle)}</span>
               </span>
               <Markdown text={question.question} inline className={styles.mistakeText} />
               <Icon name="chevronRight" className={styles.chevron} />

@@ -20,7 +20,7 @@
   border-radius: calc(var(--radius) - 6px);
   background: var(--seg-bg);
   color: var(--text);
-  font-size: 15px;
+  font-size: 16px; /* меньше 16 px — Safari на iPhone увеличивает страницу при вводе */
 }
 
 .input::placeholder {

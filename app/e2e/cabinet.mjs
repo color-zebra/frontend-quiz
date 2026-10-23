@@ -51,10 +51,10 @@ export default async function cabinet(t) {
     const backup = JSON.parse(readFileSync(file, "utf8"));
     check("в копии и заметка, и ответы", backup.notes.length === 1 && backup.answers.length === 2);
 
-    // Сброс: «Отмена» ничего не трогает, «Сбросить» стирает ответы, но не заметки.
+    // Сброс: «Оставить» ничего не трогает, «Сбросить» стирает ответы, но не заметки.
     await reset.click();
-    await page.getByRole("dialog").getByRole("button", { name: "Отмена" }).click();
-    check("«Отмена» — статистика на месте", await visible(statsTile.getByText("видел 2 из 3 · верных 50 %")));
+    await page.getByRole("dialog").getByRole("button", { name: "Оставить" }).click();
+    check("«Оставить» — статистика на месте", await visible(statsTile.getByText("видел 2 из 3 · верных 50 %")));
     await reset.click();
     await t.shot(page, "confirm");
     await page.getByRole("dialog").getByRole("button", { name: "Сбросить" }).click();

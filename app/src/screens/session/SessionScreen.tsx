@@ -207,7 +207,7 @@ export function SessionScreen({
     if (!multiple) {
       return (
         <>
-          <span className={styles.placeholder} aria-hidden="true" />
+          <span className={styles.placeholder}>Выбери вариант</span>
           {giveUp}
         </>
       );

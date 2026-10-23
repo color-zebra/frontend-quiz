@@ -30,7 +30,8 @@
 | [plans/mfe-course.md](plans/mfe-course.md) | Набор «Микрофронтенды» (бывший «Module Federation»): уроки, новые вопросы, что не трогаем | Работа над набором микрофронтендов |
 | [plans/browser-course.md](plans/browser-course.md) | План курса «Браузер изнутри»: скорость, память, отладка, движок | Работа над этим курсом |
 | [plans/uiux-course.md](plans/uiux-course.md) | План курса «UI и UX дизайн» и доработки «картинки в вопросах» | Работа над этим курсом и картинками в вопросах |
-| [plans/uiux-zubrilka-review.md](plans/uiux-zubrilka-review.md) | Что не так с интерфейсом Зубрилки — находки по ходу курса UI/UX | Правки интерфейса приложения, бэклог |
+| [plans/uiux-zubrilka-review.md](plans/uiux-zubrilka-review.md) | Что не так с интерфейсом Зубрилки — находки по ходу курса UI/UX и решения по ним | Правки интерфейса приложения, бэклог |
+| [plans/zubrilka-redesign.md](plans/zubrilka-redesign.md) | План правок по разбору: быстрые правки, шкала шрифтов, сворачиваемый плеер, приложение вокруг курсов | Работа над редизайном приложения |
 | [plans/theory-core.md](plans/theory-core.md) | План теоретических вопросов в основную базу (JS, TS, React) и промпт | Пополнение базы теорией |
 | [plans/private-repo.md](plans/private-repo.md) | Переезд в приватный репозиторий без смены адреса сайта | Изменения хостинга, деплоя и ссылок на наборы |
 | [.github/workflows/deploy.yml](.github/workflows/deploy.yml) | Деплой на GitHub Pages | Правки, которые должны или не должны пересобирать сайт |

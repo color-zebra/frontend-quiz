@@ -113,9 +113,10 @@ export function CourseScreen({ bank, finished, onBack, onOpenLesson }: CourseScr
           </p>
           <div className={styles.confirmButtons}>
             <Button variant="secondary" onClick={() => setConfirmOpen(false)}>
-              Отмена
+              Оставить
             </Button>
             <Button
+              variant="danger"
               icon="refresh"
               onClick={() => {
                 resetCourse(bank.setId);

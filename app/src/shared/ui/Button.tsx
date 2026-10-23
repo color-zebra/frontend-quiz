@@ -7,7 +7,8 @@ import { Icon, type IconName } from "./Icon";
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /** Подсветка с точкой-меткой, например «у вопроса есть заметка». */
   marked?: boolean;
-  variant?: "primary" | "secondary";
+  /** danger — необратимое действие в подтверждении: цвет ошибки вместо главного градиента. */
+  variant?: "primary" | "secondary" | "danger";
   icon?: IconName;
   iconAfter?: IconName;
 }

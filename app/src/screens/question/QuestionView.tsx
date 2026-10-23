@@ -74,7 +74,7 @@ export function QuestionView({
 
       {question.code && <CodeBlock code={question.code} lang={question.codeLang} />}
 
-      {multiple && !showResult && <p className={styles.hint}>Выберите все подходящие варианты</p>}
+      {multiple && !showResult && <p className={styles.hint}>Отметь все верные</p>}
       {gaveUp && (
         <p className={clsx(styles.verdict, styles.verdictBad)} role="status">
           {learning ? "Ответ показан" : "Ответ показан — вопрос попадёт в «Прорешать ошибки»"}
@@ -219,7 +219,7 @@ function getStatus(correct: boolean, selected: boolean, multiple: boolean, revea
   if (reveal) return correct ? "Правильный ответ" : null;
   if (correct && selected) return "Верно";
   if (correct) return multiple ? "Пропущен" : "Правильный ответ";
-  if (selected) return multiple ? "Лишний" : "Ваш ответ";
+  if (selected) return multiple ? "Лишний" : "Твой ответ";
   return null;
 }
 

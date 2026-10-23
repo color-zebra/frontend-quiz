@@ -28,7 +28,7 @@ export default async function multi(t) {
       await page.getByText(`${i} / 3`).waitFor();
       const text = await page.locator("article").first().innerText();
       if (text.includes("MULTI-A")) {
-        check("A: подсказка «Выберите все подходящие»", await visible(page.getByText("Выберите все подходящие варианты")));
+        check("A: подсказка «Отметь все верные»", await visible(page.getByText("Отметь все верные")));
         check("A: «Ответить» недоступна без галочек", await page.getByRole("button", { name: "Ответить" }).isDisabled());
         await page.keyboard.press(String(await positionOf("A1")));
         check(
@@ -40,7 +40,7 @@ export default async function multi(t) {
         check("A: Enter отвечает, все правильные — засчитано", await visible(page.getByText("Ответ засчитан")));
         check("A: обе правильные помечены «Верно»", (await page.locator("ol").getByText("Верно", { exact: true }).count()) === 2);
       } else if (text.includes("MULTI-B")) {
-        check("B: multiple: true с одним правильным — тоже галочки", await visible(page.getByText("Выберите все подходящие варианты")));
+        check("B: multiple: true с одним правильным — тоже галочки", await visible(page.getByText("Отметь все верные")));
         await optionButton("B2").click();
         await optionButton("B2").click();
         check("B: повторное нажатие снимает галочку", (await optionButton("B2").getAttribute("aria-pressed")) === "false");
@@ -50,7 +50,7 @@ export default async function multi(t) {
         check("B: правильный невыбранный — «Пропущен»", await visible(optionButton("B1").getByText("Пропущен")));
         check("B: неправильный выбранный — «Лишний»", await visible(optionButton("B2").getByText("Лишний")));
       } else {
-        check("C: обычный вопрос — без подсказки про галочки", !(await visible(page.getByText("Выберите все подходящие варианты"), 500)));
+        check("C: обычный вопрос — без подсказки про галочки", !(await visible(page.getByText("Отметь все верные"), 500)));
         await optionButton("C2").click();
         check("C: обычный вопрос отвечается одним нажатием", await visible(explanation));
         check("C: «Верно» у выбранного правильного", await visible(optionButton("C2").getByText("Верно")));

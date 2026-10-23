@@ -90,7 +90,7 @@
 
 .mistake {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 4px 10px;
   align-items: center;
   padding: 12px 14px;
@@ -98,13 +98,25 @@
   text-align: left;
 }
 
+/* Уровень и тема всегда одной строкой: длинная подтема обрезается многоточием, а не переносит уровень отдельно. */
 .mistakeMeta {
   display: flex;
-  flex-wrap: wrap;
   gap: 4px;
   align-items: center;
+  min-width: 0;
   color: var(--muted);
   font-size: 11.5px;
+}
+
+.mistakeMeta > :first-child {
+  flex: none;
+}
+
+.mistakeTopic {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mistakeText {

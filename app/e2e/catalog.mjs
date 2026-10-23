@@ -148,9 +148,9 @@ export default async function catalog(t) {
   check("«Удалить» спрашивает подтверждение", await visible(dialog.getByText(`Набор «${first.title}» пропадёт с этого устройства.`, { exact: false })));
   await page.waitForTimeout(400);
   await t.shot(page, "delete-confirm");
-  await dialog.getByRole("button", { name: "Отмена" }).click();
+  await dialog.getByRole("button", { name: "Оставить" }).click();
   await dialog.waitFor({ state: "hidden" });
-  check("«Отмена» ничего не удаляет", (await visible(addedMark(first))) && (await visible(page.getByRole("button", { name: `Обновить «${first.title}»` }))));
+  check("«Оставить» ничего не удаляет", (await visible(addedMark(first))) && (await visible(page.getByRole("button", { name: `Обновить «${first.title}»` }))));
   await deleteButton(first).click();
   await dialog.getByRole("button", { name: "Удалить" }).click();
   await dialog.waitFor({ state: "hidden" });

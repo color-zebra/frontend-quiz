@@ -232,9 +232,10 @@ export function SetsScreen({ onBack, onOpenSet, onOpenHelp }: SetsScreenProps) {
             </p>
             <div className={styles.confirmButtons}>
               <Button variant="secondary" onClick={() => setToDelete(null)}>
-                Отмена
+                Оставить
               </Button>
               <Button
+                variant="danger"
                 icon="trash"
                 onClick={() => {
                   removeSet(toDelete.id);
