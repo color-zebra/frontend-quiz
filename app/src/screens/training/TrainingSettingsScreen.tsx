@@ -78,9 +78,12 @@ export function TrainingSettingsPanel({
   training,
   extra,
   action,
+  part = "all",
 }: {
   bank: QuestionBank;
   training: TrainingFiltersState;
+  /** Десктоп делит панель на колонки: topics — только темы, filters — всё, кроме тем. */
+  part?: "all" | "topics" | "filters";
   /** После «Сколько вопросов» — на десктопе «Какие вопросы». */
   extra?: ReactNode;
   /** Справа в строке с галкой «Добавлять устные вопросы» — на десктопе «Начать». */
@@ -103,7 +106,7 @@ export function TrainingSettingsPanel({
 
   return (
     <>
-      {hasTopicChoice && (
+      {hasTopicChoice && part !== "filters" && (
         <Card>
           <div className={styles.cardHead}>
             <SectionLabel>Темы</SectionLabel>
@@ -125,6 +128,8 @@ export function TrainingSettingsPanel({
         </Card>
       )}
 
+      {part !== "topics" && (
+      <>
       <Card label="Уровень">
         <Segmented
           label="Уровень"
@@ -145,13 +150,9 @@ export function TrainingSettingsPanel({
 
       {extra}
 
-      {action ? (
-        <div className={styles.actionRow}>
-          {canMixSpeech ? speechToggle : <span />}
-          <div className={styles.action}>{action}</div>
-        </div>
-      ) : (
-        canMixSpeech && speechToggle
+      {canMixSpeech && speechToggle}
+      {action}
+      </>
       )}
 
       <SubtopicsSheet

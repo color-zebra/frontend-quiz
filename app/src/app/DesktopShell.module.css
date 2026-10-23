@@ -32,15 +32,30 @@
 }
 
 .side {
-  gap: 4px;
-  padding: 26px 16px 18px;
+  gap: 2px;
+  padding: 18px 16px 14px;
+}
+
+.brand,
+.logoButton {
+  border: 0;
+  background: none;
+  text-align: left;
+}
+
+.brandRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 12px 10px;
 }
 
 .brand {
   display: flex;
   gap: 10px;
   align-items: center;
-  padding: 0 10px 22px;
+  padding: 0;
   font-family: var(--font-heading);
   font-size: var(--font-size-heading);
   font-weight: 800;
@@ -71,7 +86,7 @@
   flex: none;
   gap: 12px;
   align-items: center;
-  height: 46px;
+  height: 42px;
   padding: 0 14px;
   border: 0;
   border-radius: calc(var(--radius) - 6px);
@@ -109,12 +124,42 @@
 
 .label {
   margin: 0;
-  padding: 22px 14px 8px;
+  padding: 16px 14px 6px;
   color: var(--muted);
   font-size: var(--font-size-caption);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.groupToggle {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
+.groupToggle:hover {
+  color: var(--text);
+}
+
+.groupArrow {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s;
+}
+
+.groupClosed {
+  transform: rotate(-90deg);
 }
 
 .course {
@@ -195,8 +240,14 @@
   padding: 22px 0 18px;
 }
 
-.rail .logo {
-  margin-bottom: 18px;
+.logoButton {
+  margin-bottom: 4px;
+  padding: 0;
+}
+
+.railHelp {
+  margin-bottom: 12px;
+  color: var(--muted);
 }
 
 .railItem {
@@ -220,7 +271,7 @@
 
 @media (max-width: 1279px) {
   .shell {
-    --side-width: 232px;
+    --side-width: 244px;
   }
 
   .withRail {
@@ -234,4 +285,49 @@
   .railItem {
     width: 64px;
   }
+}
+
+/* ---- Прогресс по темам в меню тренажёра ---- */
+/* Тема — название и «3 из 74» строкой, полоса под ними; между темами — немного воздуха, чтобы меню вместе
+   с плеером помещалось в окно ноутбука. */
+.topic {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 3px 14px;
+}
+
+.topic .courseLine {
+  justify-content: space-between;
+}
+
+.topic .bar {
+  display: flex;
+  flex: none;
+}
+
+.fillOkPart {
+  background: var(--ok);
+}
+
+.fillBadPart {
+  background: var(--bad);
+}
+
+.statsLink {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-top: 2px;
+  padding: 4px 14px;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: var(--font-size-small);
+  font-weight: 700;
+}
+
+.statsLink svg {
+  width: 16px;
+  height: 16px;
 }

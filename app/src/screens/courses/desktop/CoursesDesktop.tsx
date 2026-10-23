@@ -151,8 +151,15 @@ export function CoursesDesktop({
                   <b>{mistakes.length ? `Ошибки · ${mistakes.length}` : "Ошибок нет"}</b>
                   <span className={styles.meta}>{mistakes.length ? "в тренажёре — пора прорешать" : "в тренажёре всё чисто"}</span>
                 </span>
+                {/* Заметная кнопка, но не вторая главная: главная на экране — «Читать урок». Нет «Продолжить» —
+                    тогда «Прорешать» и есть главное действие, градиентом. */}
                 {mistakes.length > 0 && (
-                  <Button variant="secondary" onClick={() => onRetryMistakes(mistakes)}>
+                  <Button
+                    variant={current ? "secondary" : "primary"}
+                    icon="refresh"
+                    className={clsx(current && styles.accentButton)}
+                    onClick={() => onRetryMistakes(mistakes)}
+                  >
                     Прорешать
                   </Button>
                 )}

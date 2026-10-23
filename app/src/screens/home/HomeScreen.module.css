@@ -70,6 +70,7 @@
 /* ---- Десктоп: настройка слева, запуск справа ---- */
 .desk {
   display: grid;
+  margin-top: -4px;
   grid-template-columns: minmax(0, 1fr) clamp(320px, 26vw, 420px);
   gap: 24px;
   align-items: start;
@@ -83,105 +84,50 @@
   min-width: 0;
 }
 
-.deskSide {
-  position: sticky;
-  top: 24px;
+/* Справа — фильтры и «Начать»: колонка шире, чтобы «Все / Новые / Ошибки» и «10 / 20 / 30 / ∞» не теснились. */
+.desk {
+  grid-template-columns: minmax(0, 1fr) clamp(360px, 30vw, 480px);
 }
 
-.panel {
+
+
+/* Карточки фильтров внутри общей карточки — без своих рамок и фона, с разделителем между собой. */
+.filters {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 16px;
+  padding: 4px 0 16px;
 }
 
-.panelTitle {
-  margin: 0 0 4px;
-  color: var(--muted);
-  font-size: var(--font-size-caption);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.filters > * {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
 }
 
-.week {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+.filters > section {
+  padding: 14px 16px 12px;
 }
 
-.week span {
-  display: flex;
-  flex-direction: column;
-  color: var(--muted);
-  font-size: var(--font-size-caption);
+.filters > section + section {
+  border-top: 1px solid var(--glass-border);
 }
 
-.week b {
-  color: var(--text);
-  font-size: var(--font-size-heading);
-  font-variant-numeric: tabular-nums;
+.filters > label {
+  padding: 12px 16px 14px;
+  border-top: 1px solid var(--glass-border);
 }
 
-.topic {
+.filters > .start {
+  padding: 0 16px;
+}
+
+.start {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 6px 8px;
-  margin: 0 -8px;
-  border: 0;
-  border-radius: calc(var(--radius) - 8px);
-  background: none;
-  text-align: left;
 }
 
-.topic:hover {
-  background: var(--chip-bg);
-}
-
-.topicHead {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: var(--font-size-small);
-  font-weight: 600;
-}
-
-.topicCount {
-  color: var(--muted);
-  font-size: var(--font-size-caption);
-  font-variant-numeric: tabular-nums;
-}
-
-.topicBar {
-  display: flex;
-  height: 6px;
-  overflow: hidden;
-  border-radius: 3px;
-  background: var(--track);
-}
-
-.barOk {
-  background: var(--ok);
-}
-
-.barBad {
-  background: var(--bad);
-}
-
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 6px;
-  align-items: center;
-  margin-top: 4px;
-  color: var(--muted);
-  font-size: var(--font-size-caption);
-}
-
-.legend i {
-  display: inline-block;
-  width: 10px;
-  height: 6px;
-  border-radius: 3px;
+.start p {
+  margin: 0;
 }

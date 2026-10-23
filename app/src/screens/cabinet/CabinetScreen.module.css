@@ -138,7 +138,18 @@
 
 /* Десктоп: пять плиток одним рядом — все разделы кабинета на виду без прокрутки. Кнопки — по ширине надписи
    и в ряд: на всю карточку в 900 px они превращаются в полосы. */
+.pair {
+  display: contents;
+}
+
 @media (min-width: 1024px) {
+  .pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: stretch;
+  }
+
   .fileButtons {
     display: flex;
     flex-wrap: wrap;
@@ -150,7 +161,7 @@
   }
 
   .resetStats {
-    align-self: flex-start;
+    align-self: center;
   }
 
   .tiles {
@@ -163,6 +174,28 @@
   }
 
   .tile {
-    min-height: 120px;
+    min-height: 92px;
+    padding-block: 12px;
+  }
+
+  .summary {
+    padding-block: 10px;
+  }
+
+  /* Скачанные курсы — сеткой по 3 в ряд: столбиком список съедал полэкрана. */
+  .courseList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+  }
+
+  .courseRow {
+    padding: 10px 8px 10px 14px;
+    border: 1px solid var(--glass-border);
+    border-radius: calc(var(--radius) - 6px);
+  }
+
+  .courseRow + .courseRow {
+    border-top: 1px solid var(--glass-border);
   }
 }

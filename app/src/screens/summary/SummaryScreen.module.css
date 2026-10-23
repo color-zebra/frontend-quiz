@@ -1,3 +1,21 @@
+.top {
+  display: contents;
+}
+
+@media (min-width: 1024px) {
+  .top {
+    display: grid;
+    grid-template-columns: minmax(240px, 1fr) 2fr;
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .wideCard {
+    grid-column: 1 / -1;
+    order: 1;
+  }
+}
+
 .score {
   display: grid;
   place-items: center;
@@ -144,12 +162,19 @@
   text-align: center;
 }
 
-/* Десктоп: кнопки в ряд по ширине надписи, подпись — рядом. */
+/* Десктоп: кнопки в ряд по ширине надписи, по центру, сразу под содержимым — без провала до низа окна. */
 @media (min-width: 1024px) {
+  /* Счёт слева на высоту двух строк, справа «По темам» и под ним кнопки в ряд. */
+  .score {
+    grid-row: span 2;
+  }
+
   .buttons {
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: center;
+    margin-top: 0;
   }
 
   .buttons > button {
@@ -158,8 +183,18 @@
 
   .saved {
     flex-basis: 100%;
-    text-align: left;
   }
+
+  /* «По темам» нет (тема одна): счёт во всю ширину, кнопки под ним по центру. */
+  .score:has(+ .buttons) {
+    grid-row: auto;
+    grid-column: 1 / -1;
+  }
+
+  .score + .buttons {
+    grid-column: 1 / -1;
+  }
+
 }
 
 .achievements {

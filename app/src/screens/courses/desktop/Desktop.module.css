@@ -455,6 +455,30 @@
   display: block;
 }
 
+/* Подпись переносится, а не уходит под кнопку. */
+.mistakes > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.mistakes .meta {
+  display: block;
+}
+
+.mistakes > button {
+  flex: none;
+}
+
+.accentButton {
+  border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--text);
+}
+
+.accentButton:hover {
+  border-color: var(--accent);
+}
+
 /* Ноутбук: колонка «Сегодня» уже, «Продолжить» без кольца, если тесно. */
 @media (max-width: 1279px) {
   .continue {

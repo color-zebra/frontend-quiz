@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import type { CSSProperties } from "react";
 import { formatTopicLine, getTopicTitles } from "../../data/titles";
-import type { QuestionBank } from "../../data/types";
+import { UNGROUPED, type QuestionBank } from "../../data/types";
 import { AchievementBadge } from "../../features/achievements/AchievementBadge";
 import type { Achievement } from "../../features/achievements/achievements";
 import { getMistakeIds, type SessionAnswer } from "../../features/session/session";
@@ -30,17 +30,27 @@ interface SummaryScreenProps {
   onBack: () => void;
 }
 
+/**
+ * Разбор сессии: по темам, а если тема одна — по её подтемам: строка «JavaScript 3 из 5» только повторила бы счёт,
+ * а «Замыкания 1 из 2, Промисы 0 из 3» показывает, что проседает. На десктопе блок есть всегда — раскладка итога
+ * одна; на телефоне — только по темам, как раньше.
+ */
 function getTopicStats(bank: QuestionBank, answers: readonly SessionAnswer[]) {
-  const stats = new Map<string, { title: string; correct: number; total: number }>();
-  for (const answer of answers) {
+  const questions = answers.flatMap((answer) => {
     const question = bank.byId.get(answer.questionId);
-    if (!question) continue;
-    const entry = stats.get(question.topic) ?? { title: getTopicTitles(bank, question).topicTitle, correct: 0, total: 0 };
+    return question ? [{ answer, question, ...getTopicTitles(bank, question) }] : [];
+  });
+  const byTopic = new Set(questions.map((q) => q.question.topic)).size > 1;
+  const stats = new Map<string, { title: string; correct: number; total: number }>();
+  for (const { answer, question, topicTitle, subtopicTitle } of questions) {
+    const key = byTopic ? question.topic : question.subtopic;
+    const title = byTopic || subtopicTitle === UNGROUPED ? topicTitle : subtopicTitle;
+    const entry = stats.get(key) ?? { title, correct: 0, total: 0 };
     entry.total++;
     if (answer.correct) entry.correct++;
-    stats.set(question.topic, entry);
+    stats.set(key, entry);
   }
-  return [...stats.values()];
+  return { byTopic, label: byTopic ? "По темам" : "По подтемам", rows: [...stats.values()] };
 }
 
 /** «Отвечено 10 вопросов», а если были устные — ещё и разбивка самооценки. */
@@ -68,6 +78,15 @@ export function SummaryScreen({
   const mistakeIds = getMistakeIds(answers);
   const topicStats = getTopicStats(bank, answers);
   const desktop = useIsDesktop();
+  const buttons = (
+    <SummaryButtons
+      mistakeIds={mistakeIds}
+      speechOnly={speechOnly}
+      backLabel={backLabel}
+      onRetryMistakes={onRetryMistakes}
+      onBack={onBack}
+    />
+  );
 
   return (
     <Screen>
@@ -80,6 +99,8 @@ export function SummaryScreen({
 
       <ScreenTitle title="Сессия завершена" subtitle={getSubtitle(answers)} />
 
+      {/* На десктопе счёт и «По темам» — рядом, достижения — под ними во всю ширину. */}
+      <div className={styles.top}>
       <section className={clsx(styles.score, glass.glass)}>
         <div className={styles.ringWrap}>
           <div className={styles.ring} style={{ "--p": `${percent}%` } as CSSProperties} />
@@ -95,7 +116,7 @@ export function SummaryScreen({
       </section>
 
       {achievements.length > 0 && (
-        <Card label="Новые достижения">
+        <Card label="Новые достижения" className={styles.wideCard}>
           <ul className={styles.achievements}>
             {achievements.map((achievement) => (
               <li key={achievement.id} className={styles.achievement}>
@@ -110,10 +131,11 @@ export function SummaryScreen({
         </Card>
       )}
 
-      {topicStats.length > 1 && (
-        <Card label="По темам">
+      {/* На телефоне — только когда тем несколько: там экран узкий, лишний блок только удлиняет итог. */}
+      {topicStats.rows.length > 0 && (desktop || topicStats.byTopic) && (
+        <Card label={topicStats.label}>
           <div className={styles.stats}>
-            {topicStats.map((s) => (
+            {topicStats.rows.map((s) => (
               <div key={s.title} className={styles.stat}>
                 <span>{s.title}</span>
                 <span className={styles.bar}>
@@ -127,6 +149,9 @@ export function SummaryScreen({
           </div>
         </Card>
       )}
+      {/* На десктопе кнопки — наверху, под «По темам»: видны сразу, даже когда ошибок длинный список. */}
+      {desktop && buttons}
+      </div>
 
       <div className={styles.mistakes}>
         <SectionLabel>{mistakeIds.length ? `${speechOnly ? "Слабые места" : "Ошибки"} · ${mistakeIds.length}` : "Ошибок нет"}</SectionLabel>
@@ -148,6 +173,25 @@ export function SummaryScreen({
         })}
       </div>
 
+      {!desktop && buttons}
+    </Screen>
+  );
+}
+
+function SummaryButtons({
+  mistakeIds,
+  speechOnly,
+  backLabel,
+  onRetryMistakes,
+  onBack,
+}: {
+  mistakeIds: string[];
+  speechOnly: boolean;
+  backLabel: string;
+  onRetryMistakes: (ids: string[]) => void;
+  onBack: () => void;
+}) {
+  return (
       <div className={styles.buttons}>
         {mistakeIds.length > 0 && (
           <Button icon="refresh" onClick={() => onRetryMistakes(mistakeIds)}>
@@ -161,6 +205,5 @@ export function SummaryScreen({
           <p className={styles.saved}>Ошибки сохранены — их можно прорешать и позже: в фильтрах «Ошибки».</p>
         )}
       </div>
-    </Screen>
   );
 }

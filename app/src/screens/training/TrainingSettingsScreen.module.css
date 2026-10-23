@@ -161,26 +161,6 @@
   transform: rotate(45deg);
 }
 
-/* Десктоп: галка слева, «Начать» справа одной строкой. */
-.actionRow {
-  display: flex;
-  gap: 24px;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.action {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  gap: 6px;
-  align-items: center;
-  min-width: 300px;
-}
-
-.action > button {
-  width: 100%;
-}
 
 .toggle > span {
   display: flex;
@@ -192,3 +172,4 @@
   color: var(--muted);
   font-size: var(--font-size-caption);
 }
+

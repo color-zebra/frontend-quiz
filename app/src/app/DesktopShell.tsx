@@ -1,7 +1,12 @@
 import clsx from "clsx";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { readStorage, writeStorage } from "../shared/lib/storage";
 import { DesktopPlayer } from "../features/audio/DesktopPlayer";
 import { useMyCourses } from "../features/courses/useMyCourses";
+import { useProgress } from "../features/progress/ProgressProvider";
+import { getBankStats } from "../features/progress/stats";
+import { BUILTIN_SET_ID, type QuestionBank } from "../data/types";
+import { IconButton } from "../shared/ui/Button";
 import { Icon, type IconName } from "../shared/ui/Icon";
 import type { Section } from "../shared/ui/SectionSwitch";
 import styles from "./DesktopShell.module.css";
@@ -25,6 +30,9 @@ const MENU_COURSES = 5;
 
 interface DesktopShellProps {
   mode: ShellMode;
+  /** Основная база — для прогресса по темам в меню тренажёра. */
+  bank: QuestionBank;
+  onOpenStats: () => void;
   /** Раздел, к которому относится открытый экран; null — справка и прочее вне разделов. */
   section: Section | null;
   /** Открыт этот курс — он подсвечен в «Моих курсах». */
@@ -36,7 +44,18 @@ interface DesktopShellProps {
   children: ReactNode;
 }
 
-export function DesktopShell({ mode, section, courseId, onSelectSection, onOpenCourse, onOpenHelp, onOpenLesson, children }: DesktopShellProps) {
+export function DesktopShell({
+  mode,
+  bank,
+  section,
+  courseId,
+  onSelectSection,
+  onOpenCourse,
+  onOpenHelp,
+  onOpenLesson,
+  onOpenStats,
+  children,
+}: DesktopShellProps) {
   const { mine } = useMyCourses();
   if (mode === "focus") return <div className={styles.focus}>{children}</div>;
 
@@ -44,9 +63,12 @@ export function DesktopShell({ mode, section, courseId, onSelectSection, onOpenC
     return (
       <div className={clsx(styles.shell, styles.withRail)}>
         <nav className={styles.rail} aria-label="Разделы">
-          <span className={styles.logo} aria-hidden="true">
-            {"{ }"}
-          </span>
+          <button type="button" className={styles.logoButton} aria-label="Zubrilka — на главную" onClick={() => onSelectSection("courses")}>
+            <span className={styles.logo} aria-hidden="true">
+              {"{ }"}
+            </span>
+          </button>
+          <IconButton icon="help" label="Справка" bare className={styles.railHelp} onClick={onOpenHelp} />
           {SECTIONS.map((s) => (
             <button
               key={s.id}
@@ -59,11 +81,6 @@ export function DesktopShell({ mode, section, courseId, onSelectSection, onOpenC
               {s.label}
             </button>
           ))}
-          <span className={styles.grow} />
-          <button type="button" className={styles.railItem} onClick={onOpenHelp}>
-            <Icon name="help" />
-            Справка
-          </button>
         </nav>
         <div className={styles.main}>{children}</div>
       </div>
@@ -73,11 +90,16 @@ export function DesktopShell({ mode, section, courseId, onSelectSection, onOpenC
   return (
     <div className={styles.shell}>
       <aside className={styles.side}>
-        <div className={styles.brand}>
-          <span className={styles.logo} aria-hidden="true">
-            {"{ }"}
-          </span>
-          Zubrilka
+        {/* Логотип ведёт на главную — «Курсы», как на любом сайте. */}
+        {/* Справка — значком справа от логотипа: внизу меню её место занял плеер. */}
+        <div className={styles.brandRow}>
+          <button type="button" className={styles.brand} title="На главную" onClick={() => onSelectSection("courses")}>
+            <span className={styles.logo} aria-hidden="true">
+              {"{ }"}
+            </span>
+            Zubrilka
+          </button>
+          <IconButton icon="help" label="Справка" onClick={onOpenHelp} />
         </div>
         <nav className={styles.nav} aria-label="Разделы">
           {SECTIONS.map((s) => (
@@ -93,9 +115,10 @@ export function DesktopShell({ mode, section, courseId, onSelectSection, onOpenC
             </button>
           ))}
         </nav>
-        {mine.length > 0 && (
-          <section className={styles.mine} aria-label="Мои курсы">
-            <h2 className={styles.label}>Мои курсы</h2>
+        {/* Под разделами — то, что относится к открытому: в «Курсах» — мои курсы, в «Тренажёре» — прогресс по темам. */}
+        {section === "trainer" && <TopicProgress bank={bank} onOpenStats={onOpenStats} />}
+        {section === "courses" && mine.length > 0 && (
+          <MenuGroup id="mine" title="Мои курсы">
             {mine.slice(0, MENU_COURSES).map(({ record, bank, state }) => (
               <button
                 key={record.id}
@@ -124,16 +147,72 @@ export function DesktopShell({ mode, section, courseId, onSelectSection, onOpenC
                 </span>
               </button>
             ))}
-          </section>
+          </MenuGroup>
         )}
         <span className={styles.grow} />
         <DesktopPlayer onOpenLesson={onOpenLesson} />
-        <button type="button" className={styles.navItem} onClick={onOpenHelp}>
-          <Icon name="help" />
-          Справка
-        </button>
       </aside>
       <div className={styles.main}>{children}</div>
     </div>
+  );
+}
+
+/**
+ * Прогресс по темам основной базы — в меню тренажёра: освоено (зелёным) и ошибки (красным) на каждую тему,
+ * в порядке базы. Только для обзора: темы выбирают на странице тренажёра. Подробно — «Статистика».
+ */
+function TopicProgress({ bank, onOpenStats }: { bank: QuestionBank; onOpenStats: () => void }) {
+  const { records, getProgress } = useProgress();
+  const stats = getBankStats(bank, records, (id) => getProgress(BUILTIN_SET_ID, id));
+  const topics = bank.topics.flatMap((t) => stats.topics.find((s) => s.id === t.id) ?? []);
+  return (
+    <MenuGroup id="topics" title="Прогресс по темам">
+      {topics.map((topic) => (
+        <div key={topic.id} className={styles.topic}>
+          <span className={styles.courseLine}>
+            <span className={styles.courseTitle}>{topic.title}</span>
+            <span className={styles.courseNote}>
+              {topic.mastered} из {topic.total}
+            </span>
+          </span>
+          <span className={styles.bar}>
+            <span className={styles.fillOkPart} style={{ width: `${(topic.mastered / topic.total) * 100}%` }} />
+            <span className={styles.fillBadPart} style={{ width: `${(topic.mistakes / topic.total) * 100}%` }} />
+          </span>
+        </div>
+      ))}
+      <button type="button" className={styles.statsLink} onClick={onOpenStats}>
+        Статистика
+        <Icon name="chevronRight" />
+      </button>
+    </MenuGroup>
+  );
+}
+
+/**
+ * Раздел меню под пунктами — «Мои курсы» или «Прогресс по темам»: заголовок со стрелкой сворачивает его, чтобы
+ * на низком окне он не теснил плеер. Свёрнут ли раздел, запоминается на устройстве.
+ */
+function MenuGroup({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  const key = `fq.menu.${id}`;
+  const [open, setOpen] = useState(() => readStorage(key) !== "0");
+  return (
+    <section className={styles.mine} aria-label={title}>
+      <h2 className={styles.label}>
+        <button
+          type="button"
+          className={styles.groupToggle}
+          aria-expanded={open}
+          onClick={() => {
+            writeStorage(key, open ? "0" : "1");
+            setOpen(!open);
+          }}
+        >
+          {title}
+          <Icon name="chevronDown" className={clsx(styles.groupArrow, !open && styles.groupClosed)} />
+        </button>
+      </h2>
+      {open && children}
+    </section>
   );
 }

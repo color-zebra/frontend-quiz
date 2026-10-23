@@ -1,0 +1,35 @@
+/* Дорожка — у правого края окна поверх фона; видна только ползунком. На телефоне не показывается. */
+.track {
+  position: fixed;
+  top: 4px;
+  right: 2px;
+  bottom: 4px;
+  z-index: 5;
+  display: none;
+  width: 10px;
+}
+
+@media (min-width: 1024px) {
+  .track {
+    display: block;
+  }
+}
+
+.thumb {
+  position: absolute;
+  right: 2px;
+  left: 2px;
+  min-height: 32px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+  cursor: pointer;
+  transition:
+    left 0.15s,
+    background-color 0.15s;
+}
+
+.track:hover .thumb,
+.thumb:active {
+  left: 0;
+  background: color-mix(in srgb, var(--accent) 65%, transparent);
+}

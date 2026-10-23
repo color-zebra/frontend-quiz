@@ -21,6 +21,8 @@ interface AudioState {
   time: number;
   duration: number;
   rate: number;
+  /** Громкость 0–1. Выше 1 штатный <audio> не умеет — а усилитель через Web Audio ломал бы игру в фоне. */
+  volume: number;
   /** Урок дослушан до конца. */
   ended: boolean;
   /** Файл не загрузился. */
@@ -35,12 +37,15 @@ interface AudioContextValue extends AudioState {
   seekTo: (seconds: number) => void;
   /** Скорость из меню плеера. Запоминается на устройстве. */
   setRate: (rate: number) => void;
+  /** Громкость 0–1 (десктопный плеер). Запоминается на устройстве. */
+  setVolume: (volume: number) => void;
   /** Выключить плеер: остановить и запомнить место. */
   close: () => void;
 }
 
 export const AUDIO_RATES = [0.75, 1, 1.25, 1.5, 2] as const;
 const RATE_KEY = "fq.audioRate";
+const VOLUME_KEY = "fq.audioVolume";
 /** Как часто запоминать место, пока играет: Android может выгрузить свёрнутое приложение в любой момент. */
 const SAVE_EVERY = 5;
 /** На сколько секунд перематывают кнопки и экран блокировки. */
@@ -53,7 +58,13 @@ function readRate() {
   return (AUDIO_RATES as readonly number[]).includes(saved) ? saved : 1;
 }
 
-const EMPTY: AudioState = { track: null, playing: false, time: 0, duration: 0, rate: 1, ended: false, error: false };
+function readVolume() {
+  const raw = readStorage(VOLUME_KEY);
+  const saved = raw === null ? 1 : Number(raw);
+  return Number.isFinite(saved) ? Math.min(1, Math.max(0, saved)) : 1;
+}
+
+const EMPTY: AudioState = { track: null, playing: false, time: 0, duration: 0, rate: 1, volume: 1, ended: false, error: false };
 
 /**
  * Плеер озвучки уроков — один на всё приложение и живёт над экранами: человек ушёл из урока в оглавление или на
@@ -63,7 +74,7 @@ const EMPTY: AudioState = { track: null, playing: false, time: 0, duration: 0, r
 export function AudioProvider({ children }: { children: ReactNode }) {
   const { getCourse, updateCourse } = useLessons();
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [state, setState] = useState<AudioState>(() => ({ ...EMPTY, rate: readRate() }));
+  const [state, setState] = useState<AudioState>(() => ({ ...EMPTY, rate: readRate(), volume: readVolume() }));
   const trackRef = useRef<AudioTrack | null>(null);
   // Ссылки на свежие функции контекста уроков: обработчики событий плеера вешаются один раз.
   const lessonsRef = useRef({ getCourse, updateCourse });
@@ -222,7 +233,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       pendingSeek.current = saved > 0 ? saved : null;
       lastSaved.current = saved;
       audio.src = track.src;
-      setState((prev) => ({ ...EMPTY, rate: prev.rate, track, time: saved }));
+      setState((prev) => ({ ...EMPTY, rate: prev.rate, volume: prev.volume, track, time: saved }));
     } else if (audio.error) {
       // Файл не загрузился (не было сети) — грузим заново; место, с которого начинали, ещё ждёт в pendingSeek.
       audio.src = track.src;
@@ -231,6 +242,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       audio.currentTime = 0;
     }
     audio.playbackRate = state.rate;
+    audio.volume = state.volume;
     setupMediaSession(track);
     // play() — прямо в обработчике нажатия: иначе браузер посчитает звук автозапуском и не даст играть.
     audio.play().catch(() => patch({ playing: false }));
@@ -242,6 +254,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     patch({ rate });
   }
 
+  function setVolume(volume: number) {
+    const value = Math.min(1, Math.max(0, volume));
+    if (audioRef.current) audioRef.current.volume = value;
+    writeStorage(VOLUME_KEY, String(value));
+    patch({ volume: value });
+  }
+
   function close() {
     const audio = audioRef.current;
     if (!audio) return;
@@ -251,7 +270,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     audio.load();
     trackRef.current = null;
     pendingSeek.current = null;
-    setState((prev) => ({ ...EMPTY, rate: prev.rate }));
+    setState((prev) => ({ ...EMPTY, rate: prev.rate, volume: prev.volume }));
     if ("mediaSession" in navigator) {
       navigator.mediaSession.metadata = null;
       navigator.mediaSession.playbackState = "none";
@@ -259,7 +278,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AudioContext value={{ ...state, play, pause, seekBy, seekTo, setRate, close }}>
+    <AudioContext value={{ ...state, play, pause, seekBy, seekTo, setRate, setVolume, close }}>
       {children}
       {/* Без controls браузер его не показывает; управление — в плеере (AudioPlayer) и на экране блокировки. */}
       <audio ref={audioRef} preload="metadata" />

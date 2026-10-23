@@ -48,6 +48,7 @@ import { CATALOG, findAddedSet, type CatalogEntry } from "../features/sets/catal
 import { readSection, writeSection, type Section } from "../shared/ui/SectionSwitch";
 import { useIsDesktop } from "../shared/ui/useIsDesktop";
 import { DesktopShell, type ShellMode } from "./DesktopShell";
+import { PageScrollbar } from "../shared/ui/PageScrollbar";
 import { AllCoursesScreen } from "../screens/courses/AllCoursesScreen";
 import { CoursePreviewScreen } from "../screens/courses/CoursePreviewScreen";
 import { CoursesScreen } from "../screens/courses/CoursesScreen";
@@ -379,6 +380,8 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
       {desktop ? (
         <DesktopShell
           mode={getShellMode(screen)}
+          bank={bank}
+          onOpenStats={() => screen.name !== "stats" && nav.push({ name: "stats" })}
           section={getScreenSection(nav.getStack())}
           courseId={"setId" in screen && ["course", "lesson", "lessonQuiz"].includes(screen.name) ? screen.setId : undefined}
           onSelectSection={selectSection}
@@ -399,6 +402,7 @@ export function QuizApp({ bank, onUpdate }: QuizAppProps) {
         onOpenQuestions={openPlayingQuestions}
         onPlayNext={playNextLesson}
       />
+      {desktop && <PageScrollbar />}
       <ThemeSheet open={themeOpen} current={theme} onSelect={selectTheme} onClose={() => setThemeOpen(false)} />
     </>
   );

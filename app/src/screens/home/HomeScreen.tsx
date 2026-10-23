@@ -16,10 +16,6 @@ import { SectionHeader, type Section } from "../../shared/ui/SectionSwitch";
 import { UpdateBanner } from "../../features/pwa/AppUpdate";
 import { TrainingStart } from "../training/TrainingStart";
 import { getStartLabel, ModeCard, PoolHint } from "../training/TrainingControls";
-import { BUILTIN_SET_ID } from "../../data/types";
-import { useProgress } from "../../features/progress/ProgressProvider";
-import { getBankStats } from "../../features/progress/stats";
-import { getSummary } from "../../features/progress/summary";
 import { TrainingSettingsPanel } from "../training/TrainingSettingsScreen";
 import { useTrainingFilters } from "../training/useTrainingFilters";
 import { useIsDesktop } from "../../shared/ui/useIsDesktop";
@@ -232,32 +228,33 @@ interface DesktopTrainingProps {
   links: React.ReactNode;
 }
 
-const ANSWER_FORMS = ["ответ", "ответа", "ответов"] as const;
-const DAY_FORMS = ["день", "дня", "дней"] as const;
 
 /**
- * Тренажёр на десктопе. Слева сверху вниз — что тренировать: темы, уровень, сколько, какие вопросы, и в одной строке
- * галка «устные» и «Начать». Справа — куда ещё пойти и как дела: незаконченная сессия, устные вопросы, свои наборы,
- * итоги недели, прогресс по темам. Одно состояние фильтров на обе колонки.
+ * Тренажёр на десктопе. Слева — темы (в две колонки). Справа сверху вниз — всё, что нужно для запуска: незаконченная
+ * сессия и одной карточкой уровень, сколько вопросов, какие, устные вперемешку и «Начать». Под темами — устные
+ * вопросы и свои наборы. Так страница помещается в окно ноутбука. Прогресс по темам — в боковом меню.
  */
 function DesktopTraining({ bank, onStart, side, links }: DesktopTrainingProps) {
   const training = useTrainingFilters(bank, "test");
-  const { filters, pool, update } = training;
-  const { records, getProgress } = useProgress();
-  const summary = getSummary(records);
-  const stats = getBankStats(bank, records, (id) => getProgress(BUILTIN_SET_ID, id));
-  // Темы — в порядке базы, как слева, а не от отстающих: так глаз находит тему на том же месте.
-  const topics = bank.topics.flatMap((t) => stats.topics.find((s) => s.id === t.id) ?? []);
+  const { filters, pool } = training;
 
   return (
     <div className={styles.desk}>
       <div className={styles.deskMain}>
+        <TrainingSettingsPanel bank={bank} training={training} part="topics" />
+        {links}
+      </div>
+      <aside className={styles.deskSide}>
+        {side}
+        {/* Уровень, длина, какие вопросы и устные — одной карточкой: три отдельные не помещались в окно ноутбука. */}
+        <div className={clsx(styles.filters, glass.glass)}>
         <TrainingSettingsPanel
           bank={bank}
           training={training}
+          part="filters"
           extra={<ModeCard training={training} />}
           action={
-            <>
+            <div className={styles.start}>
               <Button
                 iconAfter="arrowRight"
                 disabled={pool.length === 0}
@@ -271,59 +268,12 @@ function DesktopTraining({ bank, onStart, side, links }: DesktopTrainingProps) {
                 {getStartLabel(filters.length, pool.length)}
               </Button>
               <PoolHint size={pool.length} />
-            </>
+            </div>
           }
         />
-      </div>
-      <aside className={styles.deskSide}>
-        {side}
-        {links}
-        {summary.answers > 0 && (
-          <section className={clsx(styles.panel, glass.glass)} aria-label="Итоги за неделю">
-            <h2 className={styles.panelTitle}>Неделя</h2>
-            <div className={styles.week}>
-              <span>
-                <b>{summary.weekAnswers}</b>
-                {plural(summary.weekAnswers, ANSWER_FORMS)}
-              </span>
-              <span>
-                <b>{summary.weekAnswers ? `${summary.weekAccuracy}%` : "—"}</b>
-                верно
-              </span>
-              <span>
-                <b>{summary.days}</b>
-                {plural(summary.days, DAY_FORMS)} подряд
-              </span>
-            </div>
-          </section>
-        )}
-        <section className={clsx(styles.panel, glass.glass)} aria-label="Прогресс по темам">
-          <h2 className={styles.panelTitle}>Прогресс по темам</h2>
-          {topics.map((topic) => (
-            <button
-              key={topic.id}
-              type="button"
-              className={styles.topic}
-              title="Тренировать только эту тему"
-              onClick={() => update({ topics: [topic.id], excludedSubtopics: [] })}
-            >
-              <span className={styles.topicHead}>
-                <span>{topic.title}</span>
-                <span className={styles.topicCount}>
-                  {topic.mastered} из {topic.total}
-                </span>
-              </span>
-              <span className={styles.topicBar}>
-                <i className={styles.barOk} style={{ width: `${(topic.mastered / topic.total) * 100}%` }} />
-                <i className={styles.barBad} style={{ width: `${(topic.mistakes / topic.total) * 100}%` }} />
-              </span>
-            </button>
-          ))}
-          <span className={styles.legend}>
-            <i className={styles.barOk} /> освоено <i className={styles.barBad} /> ошибки · щелчок — тренировать только эту тему
-          </span>
-        </section>
+        </div>
       </aside>
     </div>
   );
 }
+

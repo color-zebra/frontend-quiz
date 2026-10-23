@@ -106,7 +106,7 @@ export function CabinetScreen({
   }
 
   return (
-    <Screen>
+    <Screen width="wide">
       <SectionHeader
         section="cabinet"
         title="Кабинет"
@@ -166,6 +166,8 @@ export function CabinetScreen({
 
       <DownloadedCourses />
 
+      {/* На десктопе «База вопросов» и «Данные на устройстве» — рядом: кабинет помещается в окно ноутбука. */}
+      <div className={styles.pair}>
       <Card label="База вопросов">
         <p className={styles.hint}>
           {countQuestions(bank.questions.length)}
@@ -214,6 +216,7 @@ export function CabinetScreen({
           </p>
         )}
       </Card>
+      </div>
 
       {records.length > 0 && (
         <Button variant="secondary" icon="trash" className={styles.resetStats} onClick={() => setConfirmOpen(true)}>

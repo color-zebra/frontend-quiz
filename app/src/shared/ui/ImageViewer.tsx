@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { createPortal } from "react-dom";
 import { IconButton } from "./Button";
 import styles from "./ImageViewer.module.css";
 
@@ -256,7 +257,9 @@ export function ImageViewer({ open, src, alt, caption, crossOrigin, onClose }: I
     action();
   }
 
-  return (
+  // В конец страницы, а не рядом с картинкой: картинка в тексте стоит внутри абзаца, а <dialog> внутри <p> — ошибка
+  // разметки (React ругается в консоли, браузер может разорвать абзац).
+  return createPortal(
     <dialog
       ref={dialogRef}
       className={styles.viewer}
@@ -310,6 +313,7 @@ export function ImageViewer({ open, src, alt, caption, crossOrigin, onClose }: I
           {caption && <p className={styles.caption}>{caption}</p>}
         </>
       )}
-    </dialog>
+    </dialog>,
+    document.body,
   );
 }
