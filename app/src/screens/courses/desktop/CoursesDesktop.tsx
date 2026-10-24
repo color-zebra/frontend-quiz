@@ -114,6 +114,7 @@ export function CoursesDesktop({
           {current && (
             <ContinueCard
               course={current}
+              onOpenCourse={() => onOpenCourse(current.record.id)}
               playing={audio.playing && audio.track?.setId === current.record.id && audio.track.lessonId === current.state.lesson.id}
               onRead={() =>
                 current.state.inQuiz
@@ -216,18 +217,24 @@ interface ContinueCardProps {
   playing: boolean;
   onRead: () => void;
   onListen: () => void;
+  onOpenCourse: () => void;
 }
 
-function ContinueCard({ course, playing, onRead, onListen }: ContinueCardProps) {
+/** «Продолжить»: как на телефоне, нажатие мимо кнопок — страница курса, название курса — ссылкой. */
+function ContinueCard({ course, playing, onRead, onListen, onOpenCourse }: ContinueCardProps) {
   const { state, bank } = course;
   const count = getLessonQuestionIds(bank, state.lesson).length;
   const questions = count ? countQuestions(count) : "";
   return (
-    <section className={clsx(styles.continue, glass.glass)} aria-label="Продолжить">
+    <section className={clsx(styles.continue, styles.linked, glass.glass)} aria-label="Продолжить">
       <div className={styles.continueText}>
         <p className={styles.label}>Продолжить</p>
         <span className={styles.meta}>
-          {bank.title} · урок {state.number} из {state.total}
+          <button type="button" className={styles.courseLink} onClick={onOpenCourse}>
+            {bank.title}
+            <Icon name="chevronRight" />
+          </button>{" "}
+          · урок {state.number} из {state.total}
         </span>
         <h2 className={styles.continueTitle}>{state.lesson.title}</h2>
         <span className={styles.meta}>

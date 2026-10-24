@@ -373,6 +373,44 @@
   border-color: color-mix(in srgb, var(--accent) 55%, var(--glass-border));
 }
 
+/* Карточка-ссылка «Продолжить» — как на телефоне (Courses.module.css). */
+.linked {
+  position: relative;
+}
+
+.linked .actions {
+  position: relative;
+  z-index: 1;
+}
+
+.courseLink {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--link);
+  font-weight: 600;
+}
+
+.courseLink svg {
+  width: 16px;
+  height: 16px;
+}
+
+.courseLink::after {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  content: "";
+}
+
+.courseLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .continueText {
   display: flex;
   flex-direction: column;

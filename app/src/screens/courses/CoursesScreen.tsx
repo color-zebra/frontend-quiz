@@ -128,6 +128,7 @@ function CoursesMobile({
       {current && (
         <ContinueCard
           course={current}
+          onOpenCourse={() => onOpenCourse(current.record.id)}
           playing={audio.playing && audio.track?.setId === current.record.id && audio.track.lessonId === current.state.lesson.id}
           onRead={() =>
             current.state.inQuiz
@@ -197,15 +198,22 @@ interface ContinueCardProps {
   playing: boolean;
   onRead: () => void;
   onListen: () => void;
+  onOpenCourse: () => void;
 }
 
-/** Урок, на котором остановился: читать (или продолжить вопросы) и слушать. */
-function ContinueCard({ course, playing, onRead, onListen }: ContinueCardProps) {
+/**
+ * Урок, на котором остановился: читать (или продолжить вопросы) и слушать. Нажатие на карточку мимо кнопок —
+ * страница курса с оглавлением: сам курс в «Моих курсах» ниже не повторяется, другого входа к нему нет.
+ */
+function ContinueCard({ course, playing, onRead, onListen, onOpenCourse }: ContinueCardProps) {
   const { state, bank } = course;
   return (
-    <section className={clsx(styles.continue, glass.glass)} aria-label="Продолжить">
+    <section className={clsx(styles.continue, styles.linked, glass.glass)} aria-label="Продолжить">
       <SectionLabel className={styles.label}>Продолжить</SectionLabel>
-      <span className={styles.continueCourse}>{bank.title}</span>
+      <button type="button" className={styles.courseLink} onClick={onOpenCourse}>
+        {bank.title}
+        <Icon name="chevronRight" />
+      </button>
       <h2 className={styles.continueLesson}>
         Урок {state.number} · {state.lesson.title}
       </h2>
