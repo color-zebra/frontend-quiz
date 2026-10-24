@@ -9,7 +9,7 @@
   width: 10px;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 900px) {
   .track {
     display: block;
   }

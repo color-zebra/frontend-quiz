@@ -1,6 +1,7 @@
 // Десктопная раскладка (от 1024 px): боковое меню с разделами и «Моими курсами», «Курсы» с «Продолжить» и рядами,
 // «Все курсы» с дорожкой серии и «Показать все», страница курса, урок с планом и соседними уроками, тест без меню
-// с дорожкой сессии и клавишами. На 1023 px — прежняя телефонная вёрстка с переключателем разделов.
+// с дорожкой сессии и клавишами. На 900–1099 px меню сворачивается (по умолчанию свёрнуто), на 899 px — прежняя
+// телефонная вёрстка с переключателем разделов.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ROOT_DIR } from "./lib.mjs";
@@ -85,9 +86,25 @@ export default async function desktop(t) {
   check("Esc завершает сессию — итог", await visible(page.getByText(/Верно|верно/).first()));
 
   // Узкое окно: прежняя телефонная вёрстка.
-  await page.setViewportSize({ width: 1023, height: 800 });
+  // Узкий десктоп: меню свёрнуто в полосу значков, кнопка у края разворачивает его и запоминает выбор.
+  await page.setViewportSize({ width: 960, height: 800 });
   await page.goto(t.url);
   await page.getByRole("heading", { level: 1 }).first().waitFor();
-  check("1023 px — меню нет, переключатель разделов под заголовком", !(await visible(page.getByText("Zubrilka"), 300)) && (await visible(page.getByRole("navigation", { name: "Разделы" }))));
+  check("960 px — меню по умолчанию свёрнуто в полосу значков", (await visible(menu)) && !(await visible(page.getByText("Zubrilka"), 300)));
+  await button("Развернуть меню").click();
+  check("«Развернуть меню» — полное меню", await visible(page.getByText("Zubrilka")));
+  await page.reload();
+  await page.getByRole("heading", { level: 1 }).first().waitFor();
+  check("развёрнутое меню запоминается", await visible(page.getByText("Zubrilka")));
+  await button("Свернуть меню").click();
+  check("«Свернуть меню» — снова полоса значков", !(await visible(page.getByText("Zubrilka"), 300)));
+  await page.setViewportSize({ width: 1440, height: 900 });
+  check("на широком окне меню всегда развёрнуто, кнопки нет", (await visible(page.getByText("Zubrilka"))) && !(await visible(button(/меню$/), 300)));
+
+  // Уже 900 px — прежняя телефонная вёрстка.
+  await page.setViewportSize({ width: 899, height: 800 });
+  await page.goto(t.url);
+  await page.getByRole("heading", { level: 1 }).first().waitFor();
+  check("899 px — меню нет, переключатель разделов под заголовком", !(await visible(page.getByRole("button", { name: "Развернуть меню" }), 300)) && (await visible(page.getByRole("navigation", { name: "Разделы" }))) && (await page.getByRole("navigation", { name: "Разделы" }).getByRole("button").count()) === 3);
   await context.close();
 }

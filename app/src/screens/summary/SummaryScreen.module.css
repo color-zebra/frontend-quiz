@@ -2,7 +2,7 @@
   display: contents;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 900px) {
   .top {
     display: grid;
     grid-template-columns: minmax(240px, 1fr) 2fr;
@@ -163,7 +163,7 @@
 }
 
 /* Десктоп: кнопки в ряд по ширине надписи, по центру, сразу под содержимым — без провала до низа окна. */
-@media (min-width: 1024px) {
+@media (min-width: 900px) {
   /* Счёт слева на высоту двух строк, справа «По темам» и под ним кнопки в ряд. */
   .score {
     grid-row: span 2;

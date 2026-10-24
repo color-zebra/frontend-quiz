@@ -347,3 +347,84 @@
     transform: scaleY(0.6);
   }
 }
+
+/* ---- Плеер в свёрнутом меню: вертикальный ---- */
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  width: 60px;
+  padding: 10px 0;
+  border: 1px solid var(--glass-border);
+  border-radius: calc(var(--radius) - 6px);
+  background: var(--sheet-bg);
+}
+
+.railWave {
+  display: flex;
+  gap: 3px;
+  align-items: flex-end;
+  height: 14px;
+}
+
+.railWave i {
+  width: 3px;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--link);
+  transform-origin: bottom;
+  animation: bounce 0.9s ease-in-out infinite;
+}
+
+.railSkip {
+  width: 44px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--chip-border);
+  border-radius: var(--chip-radius);
+  background: var(--chip-bg);
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.railSkip:hover {
+  border-color: var(--accent);
+}
+
+/* «Пауза» с кольцом прогресса — как свёрнутый плеер на телефоне. */
+.railPlay {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: conic-gradient(var(--ring-color) var(--progress), var(--track) var(--progress));
+}
+
+.railPlay > span {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--primary-bg);
+  color: var(--primary-text);
+}
+
+.railTime {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: var(--font-size-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.railTime:hover {
+  color: var(--link);
+  text-decoration: underline;
+}

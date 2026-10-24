@@ -1,13 +1,14 @@
 import clsx from "clsx";
 import { useState, type ReactNode } from "react";
 import { readStorage, writeStorage } from "../shared/lib/storage";
-import { DesktopPlayer } from "../features/audio/DesktopPlayer";
+import { DesktopPlayer, RailPlayer } from "../features/audio/DesktopPlayer";
 import { useMyCourses } from "../features/courses/useMyCourses";
 import { useProgress } from "../features/progress/ProgressProvider";
 import { getBankStats } from "../features/progress/stats";
 import { BUILTIN_SET_ID, type QuestionBank } from "../data/types";
 import { IconButton } from "../shared/ui/Button";
 import { Icon, type IconName } from "../shared/ui/Icon";
+import { NARROW_DESKTOP_QUERY, useMediaQuery } from "../shared/ui/useIsDesktop";
 import type { Section } from "../shared/ui/SectionSwitch";
 import styles from "./DesktopShell.module.css";
 
@@ -24,6 +25,8 @@ const SECTIONS: { id: Section; label: string; icon: IconName }[] = [
   { id: "trainer", label: "Тренажёр", icon: "target" },
   { id: "cabinet", label: "Кабинет", icon: "user" },
 ];
+
+const COLLAPSED_KEY = "fq.menu.collapsed";
 
 /** Сколько курсов показать в меню: остальные — на экране «Курсы». */
 const MENU_COURSES = 5;
@@ -57,11 +60,35 @@ export function DesktopShell({
   children,
 }: DesktopShellProps) {
   const { mine } = useMyCourses();
+  // Узкий десктоп: меню можно свернуть в полосу значков — по умолчанию свёрнуто, выбор запоминается. На широком
+  // окне меню всегда развёрнуто: места хватает, кнопки нет.
+  const narrow = useMediaQuery(NARROW_DESKTOP_QUERY);
+  const [stored, setStored] = useState(() => readStorage(COLLAPSED_KEY));
+  const collapsed = narrow && stored !== "0";
+  function toggle() {
+    const next = collapsed ? "0" : "1";
+    writeStorage(COLLAPSED_KEY, next);
+    setStored(next);
+  }
   if (mode === "focus") return <div className={styles.focus}>{children}</div>;
 
-  if (mode === "rail") {
+  // Кнопка — у края меню посередине высоты, поверх страницы: внутри меню её перекрывали карточки справа.
+  const edgeToggle = narrow && mode !== "rail" && (
+    <button
+      type="button"
+      className={clsx(styles.edgeToggle, collapsed && styles.edgeCollapsed)}
+      aria-label={collapsed ? "Развернуть меню" : "Свернуть меню"}
+      title={collapsed ? "Развернуть меню" : "Свернуть меню"}
+      onClick={toggle}
+    >
+      <Icon name="chevronRight" className={clsx(!collapsed && styles.flip)} />
+    </button>
+  );
+
+  if (mode === "rail" || collapsed) {
     return (
       <div className={clsx(styles.shell, styles.withRail)}>
+        {edgeToggle}
         <nav className={styles.rail} aria-label="Разделы">
           <button type="button" className={styles.logoButton} aria-label="Zubrilka — на главную" onClick={() => onSelectSection("courses")}>
             <span className={styles.logo} aria-hidden="true">
@@ -81,6 +108,8 @@ export function DesktopShell({
               {s.label}
             </button>
           ))}
+          <span className={styles.grow} />
+          {mode !== "rail" && <RailPlayer onOpenLesson={onOpenLesson} />}
         </nav>
         <div className={styles.main}>{children}</div>
       </div>
@@ -89,6 +118,7 @@ export function DesktopShell({
 
   return (
     <div className={styles.shell}>
+      {edgeToggle}
       <aside className={styles.side}>
         {/* Логотип ведёт на главную — «Курсы», как на любом сайте. */}
         {/* Справка — значком справа от логотипа: внизу меню её место занял плеер. */}

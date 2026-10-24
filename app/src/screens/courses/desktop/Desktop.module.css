@@ -249,11 +249,17 @@
   padding: 28px 32px 30px;
 }
 
+/*
+ * Шаги делят общие строки: кружок, значки/прогресс, число уроков, название. Название бывает в одну строку и в три —
+ * строки сетки подстраиваются под самый высокий шаг (subgrid), и значки стоят на одном уровне во всех шагах.
+ */
 .track {
   --line: calc(100% / var(--steps) / 2);
   position: relative;
   display: grid;
   grid-template-columns: repeat(var(--steps), minmax(0, 1fr));
+  grid-template-rows: repeat(4, auto);
+  row-gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -282,14 +288,18 @@
 .step {
   position: relative;
   z-index: 1;
+  display: grid;
+  grid-row: span 4;
+  grid-template-rows: subgrid;
   min-width: 0;
 }
 
 .stepButton {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: center;
+  display: grid;
+  grid-row: span 4;
+  grid-template-rows: subgrid;
+  justify-items: center;
+  align-items: start;
   width: 100%;
   padding: 0 6px;
   border: 0;
@@ -338,6 +348,24 @@
   font-size: var(--font-size-small);
   font-weight: 700;
   line-height: 1.3;
+}
+
+.stepMarks {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 24px;
+}
+
+/* Значки курса в дорожке — мельче, чем в карточках, и всегда в ряд. */
+.stepMarks :global(span[role="img"]) {
+  width: 24px;
+  height: 24px;
+}
+
+.stepMarks svg {
+  width: 13px;
+  height: 13px;
 }
 
 .step .mini {
@@ -542,5 +570,21 @@
 
   .stepTitle {
     font-size: var(--font-size-hint);
+  }
+}
+
+/* Узкая область рядом с меню (окно 900–1099 с развёрнутым меню): «Продолжить» и «Сегодня» — друг под другом,
+   иначе кнопки «Читать урок» и «Слушать» не помещались в ряд; подписи шагов серии — мельче и не больше двух строк. */
+@container main (max-width: 780px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stepTitle {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: var(--font-size-caption);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 }

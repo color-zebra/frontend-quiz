@@ -14,8 +14,10 @@
   --side-width: 84px;
 }
 
+/* Экраны подстраиваются под ширину этой области, а не окна: при свёрнутом меню она шире. */
 .main {
   min-width: 0;
+  container: main / inline-size;
 }
 
 .side,
@@ -263,6 +265,42 @@
   color: var(--muted);
   font-size: var(--font-size-caption);
   font-weight: 700;
+}
+
+/* Свернуть / развернуть — круглая кнопка на правом краю меню, наполовину снаружи. */
+/*
+ * «Язычок» у правого края меню: тот же фон, что у меню, рамка — только справа, продолжением линии края. Начинается
+ * на 1 px левее края меню и закрывает его рамку на своей высоте — шва нет, язычок выглядит частью меню.
+ */
+.edgeToggle {
+  position: fixed;
+  top: calc(var(--app-height) / 2 - 24px);
+  left: calc(var(--side-width) - 1px);
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 48px;
+  padding: 0 2px 0 0;
+  border: 1px solid var(--glass-border);
+  border-left: 0;
+  border-radius: 0 14px 14px 0;
+  background: var(--bar-bg);
+  color: var(--muted);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat));
+}
+
+.edgeToggle:hover {
+  color: var(--text);
+}
+
+.edgeToggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.flip {
+  transform: rotate(180deg);
 }
 
 .focus {

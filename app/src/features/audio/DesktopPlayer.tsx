@@ -81,6 +81,48 @@ export function DesktopPlayer({ onOpenLesson }: { onOpenLesson: (setId: string, 
 }
 
 /**
+ * Плеер в свёрнутом меню — вертикальный и минимальный: «−15», круглая «Пауза» с кольцом прогресса, «+15» и время.
+ * Название урока — в подсказке; щелчок по времени открывает урок. Скорость и громкость — в развёрнутом меню.
+ */
+export function RailPlayer({ onOpenLesson }: { onOpenLesson: (setId: string, lessonId: string) => void }) {
+  const audio = useAudio();
+  const { track } = audio;
+  if (!track) return null;
+  const duration = audio.duration || 0;
+  const time = audio.ended ? duration : audio.time;
+  const share = duration ? Math.min(time / duration, 1) : 0;
+  return (
+    <section className={styles.rail} aria-label="Плеер озвучки" title={`${track.title} · ${track.course}`}>
+      <span className={clsx(styles.railWave, !audio.playing && styles.paused)} aria-hidden="true">
+        {WAVE.slice(0, 5).map((delay, i) => (
+          <i key={i} style={{ animationDelay: `${delay}s`, "--h": 0.3 + ((i * 5) % 7) / 10 } as CSSProperties} />
+        ))}
+      </span>
+      <button type="button" className={styles.railSkip} aria-label={`Назад на ${SKIP_SECONDS} секунд`} onClick={() => audio.seekBy(-SKIP_SECONDS)}>
+        −{SKIP_SECONDS}
+      </button>
+      <button
+        type="button"
+        className={styles.railPlay}
+        style={{ "--progress": `${share * 360}deg` } as CSSProperties}
+        aria-label={audio.playing ? "Пауза" : "Играть"}
+        onClick={() => (audio.playing ? audio.pause() : audio.play(track))}
+      >
+        <span>
+          <Icon name={audio.playing ? "pause" : "play"} />
+        </span>
+      </button>
+      <button type="button" className={styles.railSkip} aria-label={`Вперёд на ${SKIP_SECONDS} секунд`} onClick={() => audio.seekBy(SKIP_SECONDS)}>
+        +{SKIP_SECONDS}
+      </button>
+      <button type="button" className={styles.railTime} title="Открыть урок" onClick={() => onOpenLesson(track.setId, track.lessonId)}>
+        {formatAudioTime(time)}
+      </button>
+    </section>
+  );
+}
+
+/**
  * Громкость: плашка со значком динамика, щелчок — окошко над ней с вертикальным ползунком и «без звука». Колесо мыши
  * над окошком тоже меняет громкость. Закрывается щелчком мимо и Esc.
  */

@@ -197,11 +197,15 @@ export function SeriesTrack({ name, steps, onOpen }: { name: string; steps: Trac
             <li key={step.entry.url} className={clsx(styles.step, done && styles.stepDone, here && styles.stepHere, step.dimmed && styles.dimmed)}>
               <button type="button" className={styles.stepButton} onClick={() => onOpen(step.entry)}>
                 <span className={styles.dot}>{done ? <Icon name="check" /> : i + 1}</span>
-                <span className={styles.stepTitle}>{shortTitle(step.entry.title)}</span>
+                {/* Под кружком — значки (или прогресс), уроки, название: строка, чья высота разная (название), — последней,
+                    чтобы не было пустот между строками. Строка значков есть всегда, даже пустая: ряд не едет. */}
+                <span className={styles.stepMarks}>
+                  {step.progress?.started && !done ? <MiniProgress progress={step.progress} /> : <FeatureIcons features={step.features} />}
+                </span>
                 <span className={styles.meta}>
                   {step.entry.lessons.length} {plural(step.entry.lessons.length, LESSON_FORMS)}
                 </span>
-                {step.progress?.started && !done ? <MiniProgress progress={step.progress} /> : <FeatureIcons features={step.features} />}
+                <span className={styles.stepTitle}>{shortTitle(step.entry.title)}</span>
               </button>
             </li>
           );

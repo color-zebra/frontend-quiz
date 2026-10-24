@@ -18,7 +18,7 @@
 }
 
 /* Десктоп: те же ступени, крупнее только заголовки — экран шире, и заголовок в 28 px на нём теряется. */
-@media (min-width: 1024px) {
+@media (min-width: 900px) {
   :root {
     --font-size-heading: 22px;
     --font-size-display: 32px;

@@ -257,3 +257,15 @@
     min-width: 140px;
   }
 }
+
+/* Узкая область: шапка курса — текст сверху, кольцо и плитки строкой под ним, иначе они давили на название. */
+@container main (max-width: 780px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .statTiles {
+    flex-direction: row;
+  }
+}
